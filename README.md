@@ -1,2 +1,3 @@
-# advance-signal-pro
-Exported from Caffeine project: Advance Signal Pro
+## 
+
+To run app build and run docker image: `docker build -t app . docker run -it --network host app`

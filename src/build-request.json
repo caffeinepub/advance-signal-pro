@@ -1,0 +1,187 @@
+{
+  "kind": "build_request",
+  "title": "Localize application to Portuguese (Brazil) and restrict timeframes to M1/M5/M10",
+  "projectName": "Advance Signal Pro",
+  "priority": "normal",
+  "requirements": [
+    {
+      "id": "REQ-10",
+      "text": "Translate all frontend user-facing text to Portuguese (Brazil). Replace all English text with Portuguese equivalents: 'Analyze Chart' → 'Analisar Gráfico', 'Analysis History' → 'Histórico de Análises', 'Settings' → 'Configurações', 'AI System Status' → 'Status da IA', 'Active' → 'Ativo', 'Trend Detection' → 'Detecção de Tendência', 'Buy' → 'Compra', 'Sell' → 'Venda', 'Confidence' → 'Confiança', 'Processing' → 'Processando', 'Upload' → 'Enviar Gráfico', and all other UI elements including buttons, titles, messages, notifications, and labels.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-12"
+        ]
+      },
+      "acceptanceCriteria": [
+        "All UI text throughout the application is displayed in Portuguese (Brazil)",
+        "No English text remains in buttons, titles, messages, or notifications",
+        "Translation mappings provided in the user request are applied consistently",
+        "Dashboard buttons display 'Analisar Gráfico', 'Histórico de Análises', and 'Configurações'",
+        "AI status displays 'Status da IA' with 'Ativo' when active",
+        "Results screen shows 'COMPRA' or 'VENDA' for signals",
+        "Processing stages are translated to Portuguese",
+        "Settings labels and options are in Portuguese"
+      ]
+    },
+    {
+      "id": "REQ-11",
+      "text": "Restrict timeframe selection to only three options: M1 (1 minuto), M5 (5 minutos), and M10 (10 minutos). Remove all longer timeframe periods (15m, 30m, 1h, etc.) from the settings and default timeframe selection. Set M1 as the automatic default timeframe.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-12"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Settings page timeframe selector displays only M1, M5, and M10 options with Portuguese labels",
+        "M1 is selected by default when user first accesses settings",
+        "No timeframes longer than 10 minutes are available for selection",
+        "Backend AnalysisResult includes only M1, M5, or M10 as suggested timeframes",
+        "All existing longer timeframe options are removed from the codebase"
+      ]
+    },
+    {
+      "id": "REQ-12",
+      "text": "Update the Results screen to display the suggested timeframe (M1, M5, or M10) based on the user's configured default setting, and add directional arrow symbols (↑ for buy, ↓ for sell) next to the COMPRA/VENDA signal labels for enhanced visual clarity.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-12"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Results screen shows suggested timeframe matching user's default setting from Settings",
+        "Buy signals display with '↑' arrow symbol next to 'COMPRA'",
+        "Sell signals display with '↓' arrow symbol next to 'VENDA'",
+        "Timeframe label is displayed in Portuguese (e.g., '1 minuto', '5 minutos', '10 minutos')"
+      ]
+    },
+    {
+      "id": "REQ-13",
+      "text": "Update the Settings screen to display fixed Portuguese (Português) as the language option, remove language selection controls, and ensure timeframe labels use Portuguese terminology: 'Selecionar timeframe padrão' with options 'M1 (1 minuto)', 'M5 (5 minutos)', 'M10 (10 minutos)', and 'Sensibilidade da IA' for AI sensitivity.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-12"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Language selection control is removed from Settings page",
+        "Language is fixed to Portuguese (Brasil) throughout the app",
+        "Timeframe setting label reads 'Selecionar timeframe padrão'",
+        "Timeframe options display as 'M1 (1 minuto)', 'M5 (5 minutos)', 'M10 (10 minutos)'",
+        "AI sensitivity setting label reads 'Sensibilidade da IA'"
+      ]
+    },
+    {
+      "id": "REQ-14",
+      "text": "Update the ProcessingScreen to display all four processing stages in Portuguese: 'Carregando imagem' (Loading image), 'Processando dados' (Processing data), 'Detectando padrões' (Detecting patterns), and 'Gerando resultado' (Generating result), maintaining the sequential animation flow.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-12"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Processing screen displays all stage labels in Portuguese",
+        "Stage 1 shows 'Carregando imagem'",
+        "Stage 2 shows 'Processando dados'",
+        "Stage 3 shows 'Detectando padrões'",
+        "Stage 4 shows 'Gerando resultado'",
+        "Animation sequence and timing remain unchanged"
+      ]
+    },
+    {
+      "id": "REQ-15",
+      "text": "Translate the Results screen labels and content to Portuguese: display 'Tendência' for trend with values 'ALTA', 'BAIXA', or 'LATERAL'; show 'Padrões detectados' section with pattern names in Portuguese; and ensure all explanatory text is in Portuguese (Brazil).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-12"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Trend section displays 'Tendência' as the label",
+        "Trend values show 'ALTA', 'BAIXA', or 'LATERAL' in Portuguese",
+        "Detected patterns section header reads 'Padrões detectados'",
+        "Pattern names are translated to Portuguese",
+        "All explanatory text and descriptions are in Portuguese (Brazil)",
+        "Save and share button labels are in Portuguese"
+      ]
+    },
+    {
+      "id": "REQ-16",
+      "text": "Update the AnalyzeChart page to display Portuguese labels: change 'Upload' to 'Enviar Gráfico', translate all file upload instructions and prompts to Portuguese, and ensure camera capture, gallery selection, clipboard paste, and drag-and-drop interfaces display Portuguese text.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-12"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Main upload button or section displays 'Enviar Gráfico'",
+        "File selection instructions are in Portuguese",
+        "Camera capture interface displays Portuguese labels",
+        "Gallery selection prompts are in Portuguese",
+        "Clipboard paste instructions are in Portuguese",
+        "Drag-and-drop area text is in Portuguese",
+        "File type and size limit messages are in Portuguese"
+      ]
+    },
+    {
+      "id": "REQ-17",
+      "text": "Translate the History page to Portuguese: change 'Analysis History' header to 'Histórico de Análises', translate empty state message prompting users to analyze their first chart, and ensure all date/time stamps and analysis summary text display in Portuguese format.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-12"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Page header displays 'Histórico de Análises'",
+        "Empty state message is in Portuguese",
+        "Historical analysis entries show labels in Portuguese",
+        "Date and time formatting follows Portuguese (Brazil) conventions",
+        "Signal labels in history items display 'COMPRA' or 'VENDA'"
+      ]
+    },
+    {
+      "id": "REQ-18",
+      "text": "Update the Dashboard page to display Portuguese labels: 'Analisar Gráfico' for the analyze button, 'Histórico de Análises' for history button, 'Configurações' for settings button, and 'Status da IA' with 'Ativo' for the AI status indicator.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-12"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Analyze chart button displays 'Analisar Gráfico'",
+        "History button displays 'Histórico de Análises'",
+        "Settings button displays 'Configurações'",
+        "AI status section shows 'Status da IA'",
+        "Active status displays 'Ativo' in Portuguese",
+        "App branding and titles are in Portuguese"
+      ]
+    }
+  ],
+  "constraints": [
+    "All user-facing text must be in Portuguese (Brazil) with no English text remaining",
+    "Only M1, M5, and M10 timeframes are allowed; all longer periods must be removed",
+    "M1 must be the default timeframe selection",
+    "Maintain the existing minimalist black/white/gray theme and professional trading interface",
+    "Processing time target remains under 3 seconds",
+    "Do not modify the authentication hooks (useInternetIdentity.ts, useActor.ts) or UI component library (frontend/src/components/ui)"
+  ],
+  "nonGoals": [
+    "Adding new timeframe options beyond M1, M5, M10",
+    "Supporting multiple languages or language switching functionality",
+    "Changing the visual theme or color scheme",
+    "Modifying the AI analysis algorithm or processing logic beyond localization",
+    "Adding new features not related to Portuguese localization or timeframe restrictions"
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  }
+}
