@@ -8,9 +8,7 @@ import Runtime "mo:core/Runtime";
 import Principal "mo:core/Principal";
 import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
-import Migration "migration";
 
-(with migration = Migration.run)
 actor {
   include MixinStorage();
 
@@ -68,8 +66,7 @@ actor {
   let analyses = Map.empty<Principal, [AnalysisResult]>();
   let settings = Map.empty<Principal, UserSettings>();
 
-  // Add analysis from client-side computation
-  public shared ({ caller }) func addAnalysis(result : AnalysisResult) : async () {
+  public shared ({ caller }) func storeExternalAnalysis(result : AnalysisResult) : async () {
     let userAnalyses = switch (analyses.get(caller)) {
       case (null) { [] };
       case (?data) { data };
@@ -79,7 +76,6 @@ actor {
     analyses.add(caller, newAnalyses);
   };
 
-  // Get all analyses for a user
   public query ({ caller }) func getAnalyses() : async [AnalysisResult] {
     let userAnalyses = switch (analyses.get(caller)) {
       case (null) { Runtime.trap("User not found") };
@@ -90,7 +86,6 @@ actor {
     reversedIter.take(userAnalyses.size()).toArray();
   };
 
-  // Get complete history
   public query func getAnalysisHistory() : async [AnalysisResult] {
     var result : [AnalysisResult] = [];
 
@@ -101,7 +96,6 @@ actor {
     result;
   };
 
-  // Update user settings with validation
   public shared ({ caller }) func updateSettings(newSettings : UserSettings) : async () {
     if (newSettings.aiSensitivity > 100) {
       Runtime.trap("AI sensitivity must be between 0 and 100");
@@ -110,7 +104,6 @@ actor {
     settings.add(caller, newSettings);
   };
 
-  // Get user settings or default values
   public query ({ caller }) func getSettings() : async UserSettings {
     switch (settings.get(caller)) {
       case (null) {
@@ -126,7 +119,6 @@ actor {
     };
   };
 
-  // Thresholds and criteria
   public query ({ caller }) func getCriteria() : async {
     bullishThreshold : Float;
     bearishThreshold : Float;
@@ -153,7 +145,7 @@ actor {
 
     let allLevels = allAnalyses.flatMap(
       func(analysis) { analysis.resistanceLevels.values() }
-    ).sort(); // Removed .toArray() after flatMap
+    ).sort();
 
     let topLevelsIter = allLevels.values();
     topLevelsIter.take(5).toArray();

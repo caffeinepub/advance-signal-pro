@@ -146,7 +146,6 @@ export interface backendInterface {
     _caffeineStorageCreateCertificate(blobHash: string): Promise<_CaffeineStorageCreateCertificateResult>;
     _caffeineStorageRefillCashier(refillInformation: _CaffeineStorageRefillInformation | null): Promise<_CaffeineStorageRefillResult>;
     _caffeineStorageUpdateGatewayPrincipals(): Promise<void>;
-    addAnalysis(result: AnalysisResult): Promise<void>;
     getAnalyses(): Promise<Array<AnalysisResult>>;
     getAnalysisHistory(): Promise<Array<AnalysisResult>>;
     getCriteria(): Promise<{
@@ -159,6 +158,7 @@ export interface backendInterface {
     }>;
     getSettings(): Promise<UserSettings>;
     getTopResistanceLevels(): Promise<Array<ResistanceLevel>>;
+    storeExternalAnalysis(result: AnalysisResult): Promise<void>;
     updateSettings(newSettings: UserSettings): Promise<void>;
 }
 import type { AnalysisDirection as _AnalysisDirection, AnalysisResult as _AnalysisResult, CandlestickPattern as _CandlestickPattern, ExternalBlob as _ExternalBlob, ResistanceLevel as _ResistanceLevel, Timeframe as _Timeframe, UserSettings as _UserSettings, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
@@ -248,46 +248,32 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async addAnalysis(arg0: AnalysisResult): Promise<void> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.addAnalysis(await to_candid_AnalysisResult_n8(this._uploadFile, this._downloadFile, arg0));
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.addAnalysis(await to_candid_AnalysisResult_n8(this._uploadFile, this._downloadFile, arg0));
-            return result;
-        }
-    }
     async getAnalyses(): Promise<Array<AnalysisResult>> {
         if (this.processError) {
             try {
                 const result = await this.actor.getAnalyses();
-                return from_candid_vec_n16(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n8(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getAnalyses();
-            return from_candid_vec_n16(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n8(this._uploadFile, this._downloadFile, result);
         }
     }
     async getAnalysisHistory(): Promise<Array<AnalysisResult>> {
         if (this.processError) {
             try {
                 const result = await this.actor.getAnalysisHistory();
-                return from_candid_vec_n16(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n8(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getAnalysisHistory();
-            return from_candid_vec_n16(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n8(this._uploadFile, this._downloadFile, result);
         }
     }
     async getCriteria(): Promise<{
@@ -315,14 +301,14 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getSettings();
-                return from_candid_UserSettings_n25(this._uploadFile, this._downloadFile, result);
+                return from_candid_UserSettings_n17(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getSettings();
-            return from_candid_UserSettings_n25(this._uploadFile, this._downloadFile, result);
+            return from_candid_UserSettings_n17(this._uploadFile, this._downloadFile, result);
         }
     }
     async getTopResistanceLevels(): Promise<Array<ResistanceLevel>> {
@@ -336,6 +322,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.getTopResistanceLevels();
+            return result;
+        }
+    }
+    async storeExternalAnalysis(arg0: AnalysisResult): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.storeExternalAnalysis(await to_candid_AnalysisResult_n21(this._uploadFile, this._downloadFile, arg0));
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.storeExternalAnalysis(await to_candid_AnalysisResult_n21(this._uploadFile, this._downloadFile, arg0));
             return result;
         }
     }
@@ -354,23 +354,23 @@ export class Backend implements backendInterface {
         }
     }
 }
-function from_candid_AnalysisDirection_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _AnalysisDirection): AnalysisDirection {
-    return from_candid_variant_n20(_uploadFile, _downloadFile, value);
+function from_candid_AnalysisDirection_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _AnalysisDirection): AnalysisDirection {
+    return from_candid_variant_n12(_uploadFile, _downloadFile, value);
 }
-async function from_candid_AnalysisResult_n17(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _AnalysisResult): Promise<AnalysisResult> {
-    return await from_candid_record_n18(_uploadFile, _downloadFile, value);
+async function from_candid_AnalysisResult_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _AnalysisResult): Promise<AnalysisResult> {
+    return await from_candid_record_n10(_uploadFile, _downloadFile, value);
 }
-function from_candid_CandlestickPattern_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _CandlestickPattern): CandlestickPattern {
-    return from_candid_variant_n23(_uploadFile, _downloadFile, value);
+function from_candid_CandlestickPattern_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _CandlestickPattern): CandlestickPattern {
+    return from_candid_variant_n15(_uploadFile, _downloadFile, value);
 }
-async function from_candid_ExternalBlob_n24(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ExternalBlob): Promise<ExternalBlob> {
+async function from_candid_ExternalBlob_n16(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ExternalBlob): Promise<ExternalBlob> {
     return await _downloadFile(value);
 }
-function from_candid_Timeframe_n27(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Timeframe): Timeframe {
-    return from_candid_variant_n28(_uploadFile, _downloadFile, value);
+function from_candid_Timeframe_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Timeframe): Timeframe {
+    return from_candid_variant_n20(_uploadFile, _downloadFile, value);
 }
-function from_candid_UserSettings_n25(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserSettings): UserSettings {
-    return from_candid_record_n26(_uploadFile, _downloadFile, value);
+function from_candid_UserSettings_n17(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserSettings): UserSettings {
+    return from_candid_record_n18(_uploadFile, _downloadFile, value);
 }
 function from_candid__CaffeineStorageRefillResult_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: __CaffeineStorageRefillResult): _CaffeineStorageRefillResult {
     return from_candid_record_n5(_uploadFile, _downloadFile, value);
@@ -381,7 +381,7 @@ function from_candid_opt_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Ar
 function from_candid_opt_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [bigint]): bigint | null {
     return value.length === 0 ? null : value[0];
 }
-async function from_candid_record_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+async function from_candid_record_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     direction: _AnalysisDirection;
     trendStrength: bigint;
     candlestickPatterns: Array<_CandlestickPattern>;
@@ -403,18 +403,18 @@ async function from_candid_record_n18(_uploadFile: (file: ExternalBlob) => Promi
     pullbacks: boolean;
 }> {
     return {
-        direction: from_candid_AnalysisDirection_n19(_uploadFile, _downloadFile, value.direction),
+        direction: from_candid_AnalysisDirection_n11(_uploadFile, _downloadFile, value.direction),
         trendStrength: value.trendStrength,
-        candlestickPatterns: from_candid_vec_n21(_uploadFile, _downloadFile, value.candlestickPatterns),
+        candlestickPatterns: from_candid_vec_n13(_uploadFile, _downloadFile, value.candlestickPatterns),
         breakouts: value.breakouts,
         resistanceLevels: value.resistanceLevels,
         timestamp: value.timestamp,
         confidencePercentage: value.confidencePercentage,
-        image: await from_candid_ExternalBlob_n24(_uploadFile, _downloadFile, value.image),
+        image: await from_candid_ExternalBlob_n16(_uploadFile, _downloadFile, value.image),
         pullbacks: value.pullbacks
     };
 }
-function from_candid_record_n26(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     theme: string;
     signalNotifications: boolean;
     language: string;
@@ -432,7 +432,7 @@ function from_candid_record_n26(_uploadFile: (file: ExternalBlob) => Promise<Uin
         signalNotifications: value.signalNotifications,
         language: value.language,
         aiSensitivity: value.aiSensitivity,
-        defaultTimeframe: from_candid_Timeframe_n27(_uploadFile, _downloadFile, value.defaultTimeframe)
+        defaultTimeframe: from_candid_Timeframe_n19(_uploadFile, _downloadFile, value.defaultTimeframe)
     };
 }
 function from_candid_record_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
@@ -447,7 +447,7 @@ function from_candid_record_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint
         topped_up_amount: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.topped_up_amount))
     };
 }
-function from_candid_variant_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     bullish: null;
 } | {
     sideways: null;
@@ -456,7 +456,7 @@ function from_candid_variant_n20(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): AnalysisDirection {
     return "bullish" in value ? AnalysisDirection.bullish : "sideways" in value ? AnalysisDirection.sideways : "bearish" in value ? AnalysisDirection.bearish : value;
 }
-function from_candid_variant_n23(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n15(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     shootingStar: null;
 } | {
     doji: null;
@@ -469,7 +469,7 @@ function from_candid_variant_n23(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): CandlestickPattern {
     return "shootingStar" in value ? CandlestickPattern.shootingStar : "doji" in value ? CandlestickPattern.doji : "none" in value ? CandlestickPattern.none : "hammer" in value ? CandlestickPattern.hammer : "engulfing" in value ? CandlestickPattern.engulfing : value;
 }
-function from_candid_variant_n28(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     M1: null;
 } | {
     M5: null;
@@ -478,22 +478,22 @@ function from_candid_variant_n28(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): Timeframe {
     return "M1" in value ? Timeframe.M1 : "M5" in value ? Timeframe.M5 : "M10" in value ? Timeframe.M10 : value;
 }
-async function from_candid_vec_n16(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_AnalysisResult>): Promise<Array<AnalysisResult>> {
-    return await Promise.all(value.map(async (x)=>await from_candid_AnalysisResult_n17(_uploadFile, _downloadFile, x)));
+function from_candid_vec_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_CandlestickPattern>): Array<CandlestickPattern> {
+    return value.map((x)=>from_candid_CandlestickPattern_n14(_uploadFile, _downloadFile, x));
 }
-function from_candid_vec_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_CandlestickPattern>): Array<CandlestickPattern> {
-    return value.map((x)=>from_candid_CandlestickPattern_n22(_uploadFile, _downloadFile, x));
+async function from_candid_vec_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_AnalysisResult>): Promise<Array<AnalysisResult>> {
+    return await Promise.all(value.map(async (x)=>await from_candid_AnalysisResult_n9(_uploadFile, _downloadFile, x)));
 }
-function to_candid_AnalysisDirection_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: AnalysisDirection): _AnalysisDirection {
-    return to_candid_variant_n11(_uploadFile, _downloadFile, value);
+function to_candid_AnalysisDirection_n23(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: AnalysisDirection): _AnalysisDirection {
+    return to_candid_variant_n24(_uploadFile, _downloadFile, value);
 }
-async function to_candid_AnalysisResult_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: AnalysisResult): Promise<_AnalysisResult> {
-    return await to_candid_record_n9(_uploadFile, _downloadFile, value);
+async function to_candid_AnalysisResult_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: AnalysisResult): Promise<_AnalysisResult> {
+    return await to_candid_record_n22(_uploadFile, _downloadFile, value);
 }
-function to_candid_CandlestickPattern_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: CandlestickPattern): _CandlestickPattern {
-    return to_candid_variant_n14(_uploadFile, _downloadFile, value);
+function to_candid_CandlestickPattern_n26(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: CandlestickPattern): _CandlestickPattern {
+    return to_candid_variant_n27(_uploadFile, _downloadFile, value);
 }
-async function to_candid_ExternalBlob_n15(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ExternalBlob): Promise<_ExternalBlob> {
+async function to_candid_ExternalBlob_n28(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ExternalBlob): Promise<_ExternalBlob> {
     return await _uploadFile(value);
 }
 function to_candid_Timeframe_n31(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Timeframe): _Timeframe {
@@ -507,6 +507,39 @@ function to_candid__CaffeineStorageRefillInformation_n2(_uploadFile: (file: Exte
 }
 function to_candid_opt_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _CaffeineStorageRefillInformation | null): [] | [__CaffeineStorageRefillInformation] {
     return value === null ? candid_none() : candid_some(to_candid__CaffeineStorageRefillInformation_n2(_uploadFile, _downloadFile, value));
+}
+async function to_candid_record_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    direction: AnalysisDirection;
+    trendStrength: bigint;
+    candlestickPatterns: Array<CandlestickPattern>;
+    breakouts: boolean;
+    resistanceLevels: Array<ResistanceLevel>;
+    timestamp: bigint;
+    confidencePercentage: bigint;
+    image: ExternalBlob;
+    pullbacks: boolean;
+}): Promise<{
+    direction: _AnalysisDirection;
+    trendStrength: bigint;
+    candlestickPatterns: Array<_CandlestickPattern>;
+    breakouts: boolean;
+    resistanceLevels: Array<_ResistanceLevel>;
+    timestamp: bigint;
+    confidencePercentage: bigint;
+    image: _ExternalBlob;
+    pullbacks: boolean;
+}> {
+    return {
+        direction: to_candid_AnalysisDirection_n23(_uploadFile, _downloadFile, value.direction),
+        trendStrength: value.trendStrength,
+        candlestickPatterns: to_candid_vec_n25(_uploadFile, _downloadFile, value.candlestickPatterns),
+        breakouts: value.breakouts,
+        resistanceLevels: value.resistanceLevels,
+        timestamp: value.timestamp,
+        confidencePercentage: value.confidencePercentage,
+        image: await to_candid_ExternalBlob_n28(_uploadFile, _downloadFile, value.image),
+        pullbacks: value.pullbacks
+    };
 }
 function to_candid_record_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     proposed_top_up_amount?: bigint;
@@ -538,40 +571,7 @@ function to_candid_record_n30(_uploadFile: (file: ExternalBlob) => Promise<Uint8
         defaultTimeframe: to_candid_Timeframe_n31(_uploadFile, _downloadFile, value.defaultTimeframe)
     };
 }
-async function to_candid_record_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    direction: AnalysisDirection;
-    trendStrength: bigint;
-    candlestickPatterns: Array<CandlestickPattern>;
-    breakouts: boolean;
-    resistanceLevels: Array<ResistanceLevel>;
-    timestamp: bigint;
-    confidencePercentage: bigint;
-    image: ExternalBlob;
-    pullbacks: boolean;
-}): Promise<{
-    direction: _AnalysisDirection;
-    trendStrength: bigint;
-    candlestickPatterns: Array<_CandlestickPattern>;
-    breakouts: boolean;
-    resistanceLevels: Array<_ResistanceLevel>;
-    timestamp: bigint;
-    confidencePercentage: bigint;
-    image: _ExternalBlob;
-    pullbacks: boolean;
-}> {
-    return {
-        direction: to_candid_AnalysisDirection_n10(_uploadFile, _downloadFile, value.direction),
-        trendStrength: value.trendStrength,
-        candlestickPatterns: to_candid_vec_n12(_uploadFile, _downloadFile, value.candlestickPatterns),
-        breakouts: value.breakouts,
-        resistanceLevels: value.resistanceLevels,
-        timestamp: value.timestamp,
-        confidencePercentage: value.confidencePercentage,
-        image: await to_candid_ExternalBlob_n15(_uploadFile, _downloadFile, value.image),
-        pullbacks: value.pullbacks
-    };
-}
-function to_candid_variant_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: AnalysisDirection): {
+function to_candid_variant_n24(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: AnalysisDirection): {
     bullish: null;
 } | {
     sideways: null;
@@ -586,7 +586,7 @@ function to_candid_variant_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint
         bearish: null
     } : value;
 }
-function to_candid_variant_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: CandlestickPattern): {
+function to_candid_variant_n27(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: CandlestickPattern): {
     shootingStar: null;
 } | {
     doji: null;
@@ -624,8 +624,8 @@ function to_candid_variant_n32(_uploadFile: (file: ExternalBlob) => Promise<Uint
         M10: null
     } : value;
 }
-function to_candid_vec_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<CandlestickPattern>): Array<_CandlestickPattern> {
-    return value.map((x)=>to_candid_CandlestickPattern_n13(_uploadFile, _downloadFile, x));
+function to_candid_vec_n25(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<CandlestickPattern>): Array<_CandlestickPattern> {
+    return value.map((x)=>to_candid_CandlestickPattern_n26(_uploadFile, _downloadFile, x));
 }
 export interface CreateActorOptions {
     agent?: Agent;

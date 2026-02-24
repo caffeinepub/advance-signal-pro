@@ -1,9 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
+import { AlertCircle, RefreshCw } from 'lucide-react';
 import ProcessingStage from '../components/ProcessingStage';
-import { useAnalyzeChart } from '../hooks/useQueries';
-import { ExternalBlob, AnalysisDirection, CandlestickPattern, Timeframe } from '../backend';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { ExternalBlob } from '../backend';
 import { toast } from 'sonner';
+import { analyzeChartImage, AnalysisApiError } from '../services/analysisApi';
+import { mapApiResponseToAnalysisResult } from '../utils/mapApiResponse';
+import { useAnalyzeChart } from '../hooks/useQueries';
 
 const stages = [
   { id: 1, label: 'Carregando imagem', duration: 800 },
@@ -16,6 +21,9 @@ export default function ProcessingScreen() {
   const navigate = useNavigate();
   const [currentStage, setCurrentStage] = useState(0);
   const [imageBlob, setImageBlob] = useState<ExternalBlob | null>(null);
+  const [imageFile, setImageFile] = useState<Blob | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   const analyzeChart = useAnalyzeChart();
 
   useEffect(() => {
@@ -30,75 +38,134 @@ export default function ProcessingScreen() {
     // Convert base64 to blob
     fetch(imageData)
       .then((res) => res.blob())
-      .then((blob) => blob.arrayBuffer())
+      .then((blob) => {
+        setImageFile(blob);
+        return blob.arrayBuffer();
+      })
       .then((buffer) => {
         const uint8Array = new Uint8Array(buffer);
         const externalBlob = ExternalBlob.fromBytes(uint8Array);
         setImageBlob(externalBlob);
+      })
+      .catch((err) => {
+        console.error('Error loading image:', err);
+        toast.error('Erro ao carregar imagem');
+        navigate({ to: '/analyze' });
       });
   }, [navigate]);
 
   useEffect(() => {
-    if (currentStage >= stages.length) {
-      // Processing complete, perform analysis
-      if (imageBlob) {
-        performAnalysis();
-      }
-      return;
-    }
+    if (!imageBlob || !imageFile || isProcessing) return;
 
-    const timer = setTimeout(() => {
-      setCurrentStage((prev) => prev + 1);
-    }, stages[currentStage].duration);
+    // Start processing animation and API call
+    startAnalysis();
+  }, [imageBlob, imageFile]);
 
-    return () => clearTimeout(timer);
-  }, [currentStage, imageBlob]);
+  const startAnalysis = async () => {
+    if (!imageBlob || !imageFile || isProcessing) return;
 
-  const performAnalysis = async () => {
-    if (!imageBlob) return;
+    setIsProcessing(true);
+    setError(null);
+    setCurrentStage(0);
 
     try {
-      // Simulate AI analysis with realistic results - only M1, M5, M10
-      const timeframes = [Timeframe.M1, Timeframe.M5, Timeframe.M10];
-      const randomTimeframe = timeframes[Math.floor(Math.random() * timeframes.length)];
-      
-      const mockResult = {
-        direction: Math.random() > 0.5 ? AnalysisDirection.bullish : AnalysisDirection.bearish,
-        resistanceLevels: [
-          { price: 45000 + Math.random() * 5000, strength: BigInt(Math.floor(Math.random() * 100)) },
-          { price: 42000 + Math.random() * 3000, strength: BigInt(Math.floor(Math.random() * 100)) },
-        ],
-        candlestickPatterns: [
-          Math.random() > 0.5 ? CandlestickPattern.engulfing : CandlestickPattern.hammer,
-        ],
-        pullbacks: Math.random() > 0.5,
-        breakouts: Math.random() > 0.5,
-        trendStrength: BigInt(Math.floor(Math.random() * 100)),
-        confidencePercentage: BigInt(Math.floor(60 + Math.random() * 35)),
-        timestamp: BigInt(Date.now() * 1000000),
+      // Animate through stages while waiting for API
+      const stageInterval = setInterval(() => {
+        setCurrentStage((prev) => {
+          if (prev < stages.length - 1) {
+            return prev + 1;
+          }
+          return prev;
+        });
+      }, 1000);
+
+      // Call external API
+      const apiResponse = await analyzeChartImage(imageFile);
+
+      // Clear stage animation
+      clearInterval(stageInterval);
+      setCurrentStage(stages.length);
+
+      // Map API response to internal format
+      const analysisResult = mapApiResponseToAnalysisResult(apiResponse, imageBlob);
+
+      // Store in backend
+      await analyzeChart.mutateAsync({
+        direction: analysisResult.direction,
+        resistanceLevels: analysisResult.resistanceLevels,
+        candlestickPatterns: analysisResult.candlestickPatterns,
+        pullbacks: analysisResult.pullbacks,
+        breakouts: analysisResult.breakouts,
+        trendStrength: analysisResult.trendStrength,
+        confidencePercentage: analysisResult.confidencePercentage,
+        timestamp: analysisResult.timestamp,
         image: imageBlob,
-        defaultTimeframe: randomTimeframe,
-      };
+      });
 
-      await analyzeChart.mutateAsync(mockResult);
-      
-      // Store result for display
-      sessionStorage.setItem('latestAnalysis', JSON.stringify({
-        ...mockResult,
-        direction: mockResult.direction,
-        resistanceLevels: mockResult.resistanceLevels.map(r => ({ ...r, strength: Number(r.strength) })),
-        trendStrength: Number(mockResult.trendStrength),
-        confidencePercentage: Number(mockResult.confidencePercentage),
-        timestamp: Number(mockResult.timestamp),
-        defaultTimeframe: mockResult.defaultTimeframe,
-      }));
+      // Store result for display (including explanation from API)
+      sessionStorage.setItem(
+        'latestAnalysis',
+        JSON.stringify({
+          ...analysisResult,
+          direction: analysisResult.direction,
+          resistanceLevels: analysisResult.resistanceLevels.map((r: any) => ({
+            ...r,
+            strength: Number(r.strength),
+          })),
+          trendStrength: Number(analysisResult.trendStrength),
+          confidencePercentage: Number(analysisResult.confidencePercentage),
+          timestamp: Number(analysisResult.timestamp),
+        })
+      );
 
+      // Navigate to results
       navigate({ to: '/results/$id', params: { id: 'latest' } });
-    } catch (error) {
-      toast.error('Análise falhou. Por favor, tente novamente.');
-      navigate({ to: '/analyze' });
+    } catch (err) {
+      console.error('Analysis error:', err);
+
+      let errorMessage = 'Erro ao analisar gráfico';
+
+      if (err instanceof AnalysisApiError) {
+        errorMessage = err.message;
+      }
+
+      setError(errorMessage);
+      setIsProcessing(false);
+      toast.error(errorMessage);
     }
   };
+
+  const handleRetry = () => {
+    startAnalysis();
+  };
+
+  const handleGoBack = () => {
+    navigate({ to: '/analyze' });
+  };
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <Card className="max-w-md w-full p-6">
+          <div className="text-center mb-6">
+            <AlertCircle className="w-16 h-16 text-destructive mx-auto mb-4" />
+            <h2 className="text-2xl font-bold mb-2">Erro na Análise</h2>
+            <p className="text-muted-foreground">{error}</p>
+          </div>
+
+          <div className="space-y-3">
+            <Button onClick={handleRetry} className="w-full" size="lg">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Tentar Novamente
+            </Button>
+            <Button onClick={handleGoBack} variant="outline" className="w-full" size="lg">
+              Voltar
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">

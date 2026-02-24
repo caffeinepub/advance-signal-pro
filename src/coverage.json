@@ -1,178 +1,127 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-23T22:49:23.061Z",
+  "generatedAt": "2026-02-24T00:12:10.253Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 9,
-    "implemented": 9,
+    "total": 8,
+    "implemented": 7,
     "items": [
       {
-        "id": "REQ-10",
-        "summary": "Translate all frontend user-facing text to Portuguese (Brazil). Replace all English text with Portuguese equivalents: 'Analyze Chart' → 'Analisar Gráfico', 'Analysis History' → 'Histórico de Análises', 'Settings' → 'Configurações', 'AI System Status' → 'Status da IA', 'Active' → 'Ativo', 'Trend Detection' → 'Detecção de Tendência', 'Buy' → 'Compra', 'Sell' → 'Venda', 'Confidence' → 'Confiança', 'Processing' → 'Processando', 'Upload' → 'Enviar Gráfico', and all other UI elements including buttons, titles, messages, notifications, and labels.",
+        "id": "REQ-19",
+        "summary": "Remove all local AI analysis logic from the frontend. Delete or disable mock analysis generation code in ProcessingScreen.tsx that creates simulated results.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/Dashboard.tsx",
-          "frontend/src/pages/AnalyzeChart.tsx",
-          "frontend/src/pages/ProcessingScreen.tsx",
-          "frontend/src/pages/Results.tsx",
-          "frontend/src/pages/History.tsx",
-          "frontend/src/pages/Settings.tsx",
-          "frontend/src/components/SignalCard.tsx",
-          "frontend/src/components/HistoryListItem.tsx",
-          "frontend/src/components/FileUpload.tsx",
-          "frontend/src/components/CameraCapture.tsx",
-          "frontend/src/components/Layout.tsx",
-          "frontend/src/utils/formatTimestamp.ts",
-          "frontend/src/utils/shareAnalysis.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/Dashboard.tsx",
-          "frontend/src/pages/AnalyzeChart.tsx",
-          "frontend/src/pages/ProcessingScreen.tsx",
-          "frontend/src/pages/Results.tsx",
-          "frontend/src/pages/History.tsx",
-          "frontend/src/pages/Settings.tsx",
-          "frontend/src/components/SignalCard.tsx",
-          "frontend/src/components/HistoryListItem.tsx",
-          "frontend/src/components/FileUpload.tsx",
-          "frontend/src/components/CameraCapture.tsx",
-          "frontend/src/components/Layout.tsx",
-          "frontend/src/utils/formatTimestamp.ts",
-          "frontend/src/utils/shareAnalysis.ts"
-        ]
-      },
-      {
-        "id": "REQ-11",
-        "summary": "Restrict timeframe selection to only three options: M1 (1 minuto), M5 (5 minutos), and M10 (10 minutos). Remove all longer timeframe periods (15m, 30m, 1h, etc.) from the settings and default timeframe selection. Set M1 as the automatic default timeframe.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/Settings.tsx",
           "frontend/src/pages/ProcessingScreen.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/Settings.tsx",
           "frontend/src/pages/ProcessingScreen.tsx"
         ]
       },
       {
-        "id": "REQ-12",
-        "summary": "Update the Results screen to display the suggested timeframe (M1, M5, or M10) based on the user's configured default setting, and add directional arrow symbols (↑ for buy, ↓ for sell) next to the COMPRA/VENDA signal labels for enhanced visual clarity.",
+        "id": "REQ-20",
+        "summary": "Create a new API service module (frontend/src/services/analysisApi.ts) that handles HTTP requests to an external REST API endpoint. Implement a function to POST chart images as multipart/form-data to '/analisar-grafico' endpoint, with the image file in a field named 'imagem'.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/services/analysisApi.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/services/analysisApi.ts"
+        ]
+      },
+      {
+        "id": "REQ-21",
+        "summary": "Define TypeScript interfaces for the external API response schema. The response JSON must include: sinal (string: 'COMPRA' or 'VENDA'), tendencia (string: trend description), confianca (number: confidence percentage), padroes (array of strings: detected pattern names), and explicacao (string: textual explanation).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/types/apiTypes.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/types/apiTypes.ts"
+        ]
+      },
+      {
+        "id": "REQ-22",
+        "summary": "Update ProcessingScreen.tsx to call the external API service when analysis starts. Send the uploaded chart image to the API, display the four processing stages ('Carregando imagem', 'Processando dados', 'Detectando padrões', 'Gerando resultado') while waiting for the response, handle API errors gracefully with Portuguese error messages, and navigate to the Results page with the API response data upon success.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/ProcessingScreen.tsx",
+          "frontend/src/utils/mapApiResponse.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/ProcessingScreen.tsx",
+          "frontend/src/utils/mapApiResponse.ts"
+        ]
+      },
+      {
+        "id": "REQ-23",
+        "summary": "Update Results.tsx to render analysis results received from the external API response. Map API response fields (sinal, tendencia, confianca, padroes, explicacao) to the existing UI components and display format, ensuring all Portuguese labels and formatting remain consistent.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/pages/Results.tsx",
           "frontend/src/components/SignalCard.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/Results.tsx",
-          "frontend/src/components/SignalCard.tsx"
+          "frontend/src/pages/Results.tsx"
         ]
       },
       {
-        "id": "REQ-13",
-        "summary": "Update the Settings screen to display fixed Portuguese (Português) as the language option, remove language selection controls, and ensure timeframe labels use Portuguese terminology: 'Selecionar timeframe padrão' with options 'M1 (1 minuto)', 'M5 (5 minutos)', 'M10 (10 minutos)', and 'Sensibilidade da IA' for AI sensitivity.",
+        "id": "REQ-24",
+        "summary": "Add configuration support for multiple external AI providers in the API service module. Create a configuration object or environment variable structure that allows switching between OpenAI ChatGPT Vision, Google Gemini Vision, or a custom Python backend endpoint without changing application code. Include placeholder endpoint URLs and prepare the API service to adapt request formats for different providers if needed.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/Settings.tsx"
+          "frontend/src/services/analysisApi.ts",
+          "frontend/src/config/apiConfig.ts"
         ],
         "matchedFiles": [
-          "frontend/src/pages/Settings.tsx"
+          "frontend/src/services/analysisApi.ts",
+          "frontend/src/config/apiConfig.ts"
         ]
       },
       {
-        "id": "REQ-14",
-        "summary": "Update the ProcessingScreen to display all four processing stages in Portuguese: 'Carregando imagem' (Loading image), 'Processando dados' (Processing data), 'Detectando padrões' (Detecting patterns), and 'Gerando resultado' (Generating result), maintaining the sequential animation flow.",
+        "id": "REQ-25",
+        "summary": "Update the backend to remove or deprecate local analysis storage if it conflicts with the new external API flow. Ensure that analysis results returned by the external API can still be saved to the backend's history (backend/main.mo) by adapting the storage functions to accept externally-generated analysis data.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-26",
+        "summary": "Add error handling and retry logic to the API service for network failures, timeouts, and non-200 HTTP responses. Display Portuguese error messages to users when API requests fail (e.g., 'Erro ao conectar com o servidor', 'Tempo esgotado', 'Erro na análise').",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/ProcessingScreen.tsx",
-          "frontend/src/components/ProcessingStage.tsx"
-        ],
-        "matchedFiles": [
+          "frontend/src/services/analysisApi.ts",
           "frontend/src/pages/ProcessingScreen.tsx"
-        ]
-      },
-      {
-        "id": "REQ-15",
-        "summary": "Translate the Results screen labels and content to Portuguese: display 'Tendência' for trend with values 'ALTA', 'BAIXA', or 'LATERAL'; show 'Padrões detectados' section with pattern names in Portuguese; and ensure all explanatory text is in Portuguese (Brazil).",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/Results.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/Results.tsx"
-        ]
-      },
-      {
-        "id": "REQ-16",
-        "summary": "Update the AnalyzeChart page to display Portuguese labels: change 'Upload' to 'Enviar Gráfico', translate all file upload instructions and prompts to Portuguese, and ensure camera capture, gallery selection, clipboard paste, and drag-and-drop interfaces display Portuguese text.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/AnalyzeChart.tsx",
-          "frontend/src/components/FileUpload.tsx",
-          "frontend/src/components/CameraCapture.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/AnalyzeChart.tsx",
-          "frontend/src/components/FileUpload.tsx",
-          "frontend/src/components/CameraCapture.tsx"
-        ]
-      },
-      {
-        "id": "REQ-17",
-        "summary": "Translate the History page to Portuguese: change 'Analysis History' header to 'Histórico de Análises', translate empty state message prompting users to analyze their first chart, and ensure all date/time stamps and analysis summary text display in Portuguese format.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/History.tsx",
-          "frontend/src/components/HistoryListItem.tsx",
-          "frontend/src/utils/formatTimestamp.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/History.tsx",
-          "frontend/src/components/HistoryListItem.tsx",
-          "frontend/src/utils/formatTimestamp.ts"
-        ]
-      },
-      {
-        "id": "REQ-18",
-        "summary": "Update the Dashboard page to display Portuguese labels: 'Analisar Gráfico' for the analyze button, 'Histórico de Análises' for history button, 'Configurações' for settings button, and 'Status da IA' with 'Ativo' for the AI status indicator.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/Dashboard.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/Dashboard.tsx"
+          "frontend/src/services/analysisApi.ts",
+          "frontend/src/pages/ProcessingScreen.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
+    "backend/http-outcalls/outcall.mo",
     "backend/main.mo",
-    "backend/migration.mo",
     "build-request.json",
-    "build-template/README.md",
+    "caffeine.lock.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
     "frontend/src/backend.d.ts",
     "frontend/src/backend.ts",
-    "frontend/src/components/CameraCapture.tsx",
-    "frontend/src/components/FileUpload.tsx",
-    "frontend/src/components/HistoryListItem.tsx",
-    "frontend/src/components/Layout.tsx",
-    "frontend/src/components/SignalCard.tsx",
+    "frontend/src/config/apiConfig.ts",
     "frontend/src/declarations/backend.did.d.ts",
     "frontend/src/declarations/backend.did.js",
-    "frontend/src/pages/AnalyzeChart.tsx",
-    "frontend/src/pages/Dashboard.tsx",
-    "frontend/src/pages/History.tsx",
+    "frontend/src/hooks/useQueries.ts",
     "frontend/src/pages/ProcessingScreen.tsx",
     "frontend/src/pages/Results.tsx",
-    "frontend/src/pages/Settings.tsx",
-    "frontend/src/utils/formatTimestamp.ts",
-    "frontend/src/utils/shareAnalysis.ts",
+    "frontend/src/services/analysisApi.ts",
+    "frontend/src/types/apiTypes.ts",
+    "frontend/src/utils/mapApiResponse.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

@@ -87,7 +87,6 @@ export const idlService = IDL.Service({
       [],
     ),
   '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
-  'addAnalysis' : IDL.Func([AnalysisResult], [], []),
   'getAnalyses' : IDL.Func([], [IDL.Vec(AnalysisResult)], ['query']),
   'getAnalysisHistory' : IDL.Func([], [IDL.Vec(AnalysisResult)], ['query']),
   'getCriteria' : IDL.Func(
@@ -110,6 +109,7 @@ export const idlService = IDL.Service({
       [IDL.Vec(ResistanceLevel)],
       ['query'],
     ),
+  'storeExternalAnalysis' : IDL.Func([AnalysisResult], [], []),
   'updateSettings' : IDL.Func([UserSettings], [], []),
 });
 
@@ -195,7 +195,6 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
-    'addAnalysis' : IDL.Func([AnalysisResult], [], []),
     'getAnalyses' : IDL.Func([], [IDL.Vec(AnalysisResult)], ['query']),
     'getAnalysisHistory' : IDL.Func([], [IDL.Vec(AnalysisResult)], ['query']),
     'getCriteria' : IDL.Func(
@@ -218,6 +217,7 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(ResistanceLevel)],
         ['query'],
       ),
+    'storeExternalAnalysis' : IDL.Func([AnalysisResult], [], []),
     'updateSettings' : IDL.Func([UserSettings], [], []),
   });
 };

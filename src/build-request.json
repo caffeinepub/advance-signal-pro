@@ -1,184 +1,183 @@
 {
   "kind": "build_request",
-  "title": "Localize application to Portuguese (Brazil) and restrict timeframes to M1/M5/M10",
+  "title": "Replace local AI analysis with external REST API integration",
   "projectName": "Advance Signal Pro",
-  "priority": "normal",
+  "priority": "high",
   "requirements": [
     {
-      "id": "REQ-10",
-      "text": "Translate all frontend user-facing text to Portuguese (Brazil). Replace all English text with Portuguese equivalents: 'Analyze Chart' → 'Analisar Gráfico', 'Analysis History' → 'Histórico de Análises', 'Settings' → 'Configurações', 'AI System Status' → 'Status da IA', 'Active' → 'Ativo', 'Trend Detection' → 'Detecção de Tendência', 'Buy' → 'Compra', 'Sell' → 'Venda', 'Confidence' → 'Confiança', 'Processing' → 'Processando', 'Upload' → 'Enviar Gráfico', and all other UI elements including buttons, titles, messages, notifications, and labels.",
+      "id": "REQ-19",
+      "text": "Remove all local AI analysis logic from the frontend. Delete or disable mock analysis generation code in ProcessingScreen.tsx that creates simulated results.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-12"
+          "msg-5"
+        ],
+        "quotes": [
+          "Modificar o app para NÃO fazer a análise local",
+          "Separar frontend da lógica de IA"
         ]
       },
       "acceptanceCriteria": [
-        "All UI text throughout the application is displayed in Portuguese (Brazil)",
-        "No English text remains in buttons, titles, messages, or notifications",
-        "Translation mappings provided in the user request are applied consistently",
-        "Dashboard buttons display 'Analisar Gráfico', 'Histórico de Análises', and 'Configurações'",
-        "AI status displays 'Status da IA' with 'Ativo' when active",
-        "Results screen shows 'COMPRA' or 'VENDA' for signals",
-        "Processing stages are translated to Portuguese",
-        "Settings labels and options are in Portuguese"
+        "ProcessingScreen.tsx no longer generates mock analysis data locally",
+        "All simulated delay logic for fake AI processing is removed",
+        "Frontend depends entirely on external API responses for analysis results"
       ]
     },
     {
-      "id": "REQ-11",
-      "text": "Restrict timeframe selection to only three options: M1 (1 minuto), M5 (5 minutos), and M10 (10 minutos). Remove all longer timeframe periods (15m, 30m, 1h, etc.) from the settings and default timeframe selection. Set M1 as the automatic default timeframe.",
-      "target": "both",
-      "source": {
-        "messageIds": [
-          "msg-12"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Settings page timeframe selector displays only M1, M5, and M10 options with Portuguese labels",
-        "M1 is selected by default when user first accesses settings",
-        "No timeframes longer than 10 minutes are available for selection",
-        "Backend AnalysisResult includes only M1, M5, or M10 as suggested timeframes",
-        "All existing longer timeframe options are removed from the codebase"
-      ]
-    },
-    {
-      "id": "REQ-12",
-      "text": "Update the Results screen to display the suggested timeframe (M1, M5, or M10) based on the user's configured default setting, and add directional arrow symbols (↑ for buy, ↓ for sell) next to the COMPRA/VENDA signal labels for enhanced visual clarity.",
+      "id": "REQ-20",
+      "text": "Create a new API service module (frontend/src/services/analysisApi.ts) that handles HTTP requests to an external REST API endpoint. Implement a function to POST chart images as multipart/form-data to '/analisar-grafico' endpoint, with the image file in a field named 'imagem'.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-12"
+          "msg-5"
+        ],
+        "quotes": [
+          "POST /analisar-grafico\nmultipart/form-data\ncampo: imagem"
         ]
       },
       "acceptanceCriteria": [
-        "Results screen shows suggested timeframe matching user's default setting from Settings",
-        "Buy signals display with '↑' arrow symbol next to 'COMPRA'",
-        "Sell signals display with '↓' arrow symbol next to 'VENDA'",
-        "Timeframe label is displayed in Portuguese (e.g., '1 minuto', '5 minutos', '10 minutos')"
+        "API service module exports a function that accepts an image file (File or Blob)",
+        "Function constructs multipart/form-data request with 'imagem' field containing the image",
+        "Function sends POST request to '/analisar-grafico' endpoint",
+        "Function returns a Promise that resolves to the parsed JSON response"
       ]
     },
     {
-      "id": "REQ-13",
-      "text": "Update the Settings screen to display fixed Portuguese (Português) as the language option, remove language selection controls, and ensure timeframe labels use Portuguese terminology: 'Selecionar timeframe padrão' with options 'M1 (1 minuto)', 'M5 (5 minutos)', 'M10 (10 minutos)', and 'Sensibilidade da IA' for AI sensitivity.",
+      "id": "REQ-21",
+      "text": "Define TypeScript interfaces for the external API response schema. The response JSON must include: sinal (string: 'COMPRA' or 'VENDA'), tendencia (string: trend description), confianca (number: confidence percentage), padroes (array of strings: detected pattern names), and explicacao (string: textual explanation).",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-12"
+          "msg-5"
+        ],
+        "quotes": [
+          "API retorna JSON com:\n   - sinal (COMPRA ou VENDA)\n   - tendência\n   - confiança\n   - padrões detectados\n   - explicação textual"
         ]
       },
       "acceptanceCriteria": [
-        "Language selection control is removed from Settings page",
-        "Language is fixed to Portuguese (Brasil) throughout the app",
-        "Timeframe setting label reads 'Selecionar timeframe padrão'",
-        "Timeframe options display as 'M1 (1 minuto)', 'M5 (5 minutos)', 'M10 (10 minutos)'",
-        "AI sensitivity setting label reads 'Sensibilidade da IA'"
+        "TypeScript interface ApiAnalysisResponse defines all required fields with correct types",
+        "Interface includes sinal as 'COMPRA' | 'VENDA' literal type",
+        "Interface includes tendencia, confianca, padroes array, and explicacao fields",
+        "Interface is exported and used for type safety in API service module"
       ]
     },
     {
-      "id": "REQ-14",
-      "text": "Update the ProcessingScreen to display all four processing stages in Portuguese: 'Carregando imagem' (Loading image), 'Processando dados' (Processing data), 'Detectando padrões' (Detecting patterns), and 'Gerando resultado' (Generating result), maintaining the sequential animation flow.",
+      "id": "REQ-22",
+      "text": "Update ProcessingScreen.tsx to call the external API service when analysis starts. Send the uploaded chart image to the API, display the four processing stages ('Carregando imagem', 'Processando dados', 'Detectando padrões', 'Gerando resultado') while waiting for the response, handle API errors gracefully with Portuguese error messages, and navigate to the Results page with the API response data upon success.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-12"
+          "msg-5"
+        ],
+        "quotes": [
+          "1. Usuário envia imagem do gráfico\n2. App envia imagem para API REST\n3. API retorna JSON",
+          "4. App apenas exibe o resultado"
         ]
       },
       "acceptanceCriteria": [
-        "Processing screen displays all stage labels in Portuguese",
-        "Stage 1 shows 'Carregando imagem'",
-        "Stage 2 shows 'Processando dados'",
-        "Stage 3 shows 'Detectando padrões'",
-        "Stage 4 shows 'Gerando resultado'",
-        "Animation sequence and timing remain unchanged"
+        "ProcessingScreen imports and calls the external API service function",
+        "Image data from route state is passed to API service",
+        "Processing stages animate during actual API request",
+        "API errors display user-friendly Portuguese messages",
+        "Success response navigates to Results page with API data",
+        "Loading states reflect real API request timing"
       ]
     },
     {
-      "id": "REQ-15",
-      "text": "Translate the Results screen labels and content to Portuguese: display 'Tendência' for trend with values 'ALTA', 'BAIXA', or 'LATERAL'; show 'Padrões detectados' section with pattern names in Portuguese; and ensure all explanatory text is in Portuguese (Brazil).",
+      "id": "REQ-23",
+      "text": "Update Results.tsx to render analysis results received from the external API response. Map API response fields (sinal, tendencia, confianca, padroes, explicacao) to the existing UI components and display format, ensuring all Portuguese labels and formatting remain consistent.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-12"
+          "msg-5"
+        ],
+        "quotes": [
+          "4. App apenas exibe o resultado"
         ]
       },
       "acceptanceCriteria": [
-        "Trend section displays 'Tendência' as the label",
-        "Trend values show 'ALTA', 'BAIXA', or 'LATERAL' in Portuguese",
-        "Detected patterns section header reads 'Padrões detectados'",
-        "Pattern names are translated to Portuguese",
-        "All explanatory text and descriptions are in Portuguese (Brazil)",
-        "Save and share button labels are in Portuguese"
+        "Results page accepts and displays API response data structure",
+        "Signal (sinal) displays as COMPRA or VENDA with appropriate directional arrows",
+        "Confidence (confianca) displays as percentage",
+        "Trend (tendencia) displays with existing Portuguese formatting",
+        "Patterns (padroes) list displays detected pattern names",
+        "Explanation (explicacao) displays as descriptive text",
+        "All existing Portuguese labels and styling are preserved"
       ]
     },
     {
-      "id": "REQ-16",
-      "text": "Update the AnalyzeChart page to display Portuguese labels: change 'Upload' to 'Enviar Gráfico', translate all file upload instructions and prompts to Portuguese, and ensure camera capture, gallery selection, clipboard paste, and drag-and-drop interfaces display Portuguese text.",
+      "id": "REQ-24",
+      "text": "Add configuration support for multiple external AI providers in the API service module. Create a configuration object or environment variable structure that allows switching between OpenAI ChatGPT Vision, Google Gemini Vision, or a custom Python backend endpoint without changing application code. Include placeholder endpoint URLs and prepare the API service to adapt request formats for different providers if needed.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-12"
+          "msg-5"
+        ],
+        "quotes": [
+          "Deixar o app pronto para conectar com:\n- OpenAI (ChatGPT Vision)\n- Google Gemini Vision\n- ou backend Python"
         ]
       },
       "acceptanceCriteria": [
-        "Main upload button or section displays 'Enviar Gráfico'",
-        "File selection instructions are in Portuguese",
-        "Camera capture interface displays Portuguese labels",
-        "Gallery selection prompts are in Portuguese",
-        "Clipboard paste instructions are in Portuguese",
-        "Drag-and-drop area text is in Portuguese",
-        "File type and size limit messages are in Portuguese"
+        "API service module includes configuration for multiple AI provider endpoints",
+        "Configuration supports OpenAI, Google Gemini, and custom Python backend URLs",
+        "Provider selection mechanism allows easy switching (e.g., via environment variable or config file)",
+        "Code structure is prepared to handle provider-specific request formatting if needed",
+        "Default configuration points to a placeholder endpoint that can be replaced"
       ]
     },
     {
-      "id": "REQ-17",
-      "text": "Translate the History page to Portuguese: change 'Analysis History' header to 'Histórico de Análises', translate empty state message prompting users to analyze their first chart, and ensure all date/time stamps and analysis summary text display in Portuguese format.",
-      "target": "frontend",
+      "id": "REQ-25",
+      "text": "Update the backend to remove or deprecate local analysis storage if it conflicts with the new external API flow. Ensure that analysis results returned by the external API can still be saved to the backend's history (backend/main.mo) by adapting the storage functions to accept externally-generated analysis data.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-12"
+          "msg-5"
+        ],
+        "quotes": [
+          "Separar frontend da lógica de IA"
         ]
       },
       "acceptanceCriteria": [
-        "Page header displays 'Histórico de Análises'",
-        "Empty state message is in Portuguese",
-        "Historical analysis entries show labels in Portuguese",
-        "Date and time formatting follows Portuguese (Brazil) conventions",
-        "Signal labels in history items display 'COMPRA' or 'VENDA'"
+        "Backend analysis storage functions accept analysis data from external sources",
+        "No backend logic generates or processes analysis locally",
+        "History storage remains functional for externally-analyzed results",
+        "Backend serves as data persistence layer only, not analysis engine"
       ]
     },
     {
-      "id": "REQ-18",
-      "text": "Update the Dashboard page to display Portuguese labels: 'Analisar Gráfico' for the analyze button, 'Histórico de Análises' for history button, 'Configurações' for settings button, and 'Status da IA' with 'Ativo' for the AI status indicator.",
+      "id": "REQ-26",
+      "text": "Add error handling and retry logic to the API service for network failures, timeouts, and non-200 HTTP responses. Display Portuguese error messages to users when API requests fail (e.g., 'Erro ao conectar com o servidor', 'Tempo esgotado', 'Erro na análise').",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-12"
+          "msg-5"
         ]
       },
       "acceptanceCriteria": [
-        "Analyze chart button displays 'Analisar Gráfico'",
-        "History button displays 'Histórico de Análises'",
-        "Settings button displays 'Configurações'",
-        "AI status section shows 'Status da IA'",
-        "Active status displays 'Ativo' in Portuguese",
-        "App branding and titles are in Portuguese"
+        "API service catches network errors and HTTP error responses",
+        "User-friendly Portuguese error messages display for common failure scenarios",
+        "Retry logic attempts failed requests up to a reasonable limit",
+        "Timeout handling prevents indefinite waiting",
+        "ProcessingScreen shows error state with option to retry or go back"
       ]
     }
   ],
   "constraints": [
-    "All user-facing text must be in Portuguese (Brazil) with no English text remaining",
-    "Only M1, M5, and M10 timeframes are allowed; all longer periods must be removed",
-    "M1 must be the default timeframe selection",
-    "Maintain the existing minimalist black/white/gray theme and professional trading interface",
-    "Processing time target remains under 3 seconds",
-    "Do not modify the authentication hooks (useInternetIdentity.ts, useActor.ts) or UI component library (frontend/src/components/ui)"
+    "Do not modify files in frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui",
+    "Maintain single-actor architecture for backend (backend/main.mo)",
+    "All user-facing text must remain in Portuguese (Brazil)",
+    "Preserve existing M1/M5/M10 timeframe restrictions",
+    "Maintain existing dark/light theme and minimalist visual design",
+    "Do not implement actual AI analysis logic in the frontend or backend"
   ],
   "nonGoals": [
-    "Adding new timeframe options beyond M1, M5, M10",
-    "Supporting multiple languages or language switching functionality",
-    "Changing the visual theme or color scheme",
-    "Modifying the AI analysis algorithm or processing logic beyond localization",
-    "Adding new features not related to Portuguese localization or timeframe restrictions"
+    "Implementing the actual external AI API server or endpoint",
+    "Providing API keys or credentials for OpenAI or Google Gemini",
+    "Creating Python backend for AI processing",
+    "Modifying the chart upload functionality or image capture mechanisms",
+    "Changing the Portuguese translations or UI language",
+    "Altering the timeframe options or settings screen structure",
+    "Implementing authentication or authorization for the external API"
   ],
   "imageRequirements": {
     "required": [],

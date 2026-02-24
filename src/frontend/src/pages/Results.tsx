@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import SignalCard from '../components/SignalCard';
 import ChartOverlay from '../components/ChartOverlay';
 import { shareAnalysis } from '../utils/shareAnalysis';
-import { AnalysisDirection, Timeframe, type AnalysisResult } from '../backend';
+import { AnalysisDirection, Timeframe } from '../backend';
 import { toast } from 'sonner';
 import { useSettings } from '../hooks/useSettings';
 
@@ -193,19 +193,11 @@ export default function Results() {
           </div>
         </Card>
 
-        {/* Explanation */}
+        {/* Explanation - now from API */}
         <Card className="p-4 mb-6">
           <h3 className="font-semibold mb-3">Explicação</h3>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Com base na análise do gráfico, a IA detectou uma tendência de{' '}
-            <strong>{getTrendLabel(analysis.direction)}</strong> com{' '}
-            <strong>{analysis.confidencePercentage}%</strong> de confiança. Os padrões de candles
-            identificados sugerem um sinal de{' '}
-            <strong>
-              {analysis.direction === AnalysisDirection.bullish ? 'COMPRA' : 'VENDA'}
-            </strong>
-            . Recomenda-se operar no timeframe de{' '}
-            <strong>{getTimeframeLabel(timeframeToUse)}</strong> para operações de scalp na Pocket Option.
+            {analysis.explicacao || `Com base na análise do gráfico, a IA detectou uma tendência de ${getTrendLabel(analysis.direction)} com ${analysis.confidencePercentage}% de confiança. Os padrões de candles identificados sugerem um sinal de ${analysis.direction === AnalysisDirection.bullish ? 'COMPRA' : 'VENDA'}. Recomenda-se operar no timeframe de ${getTimeframeLabel(timeframeToUse)} para operações de scalp na Pocket Option.`}
           </p>
         </Card>
 

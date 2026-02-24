@@ -1,45 +1,37 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-23T22:49:23.057Z",
-  "summary": "The diff implements comprehensive Portuguese (Brazil) localization and timeframe restrictions (M1/M5/M10 only). All user-facing text is translated, timeframe options are limited to M1/M5/M10 with M1 as default, and directional arrows (↑/↓) are added to buy/sell signals. Processing stages, results screen, history, settings, and all UI components display Portuguese text. Backend migration handles timeframe type conversion. Some implementation details may be incomplete due to file truncation.",
-  "missing_requirements": [
+  "generatedAt": "2026-02-24T00:12:10.249Z",
+  "summary": "The implementation successfully integrates external REST API for chart analysis, replacing all local mock analysis logic. All requirements are implemented with proper TypeScript types, error handling, retry logic, multi-provider configuration, and backend persistence layer adapted for external analysis data. Portuguese text is preserved throughout.",
+  "missing_requirements": [],
+  "hallucinated_features": [
     {
-      "id": "REQ-11",
-      "requirement": "Backend AnalysisResult includes only M1, M5, or M10 as suggested timeframes",
-      "reason": "The backend AnalysisResult type does not include a suggested timeframe field based on the visible backend/main.mo code. The type definition shows direction, resistanceLevels, candlestickPatterns, pullbacks, breakouts, trendStrength, confidencePercentage, timestamp, and image fields, but no timeframe field for suggested timeframes.",
+      "description": "Added mapping utility (mapApiResponse.ts) to convert API response format to internal AnalysisResult format with mock resistance levels generation",
+      "reason": "BuildRequest does not specify creating a mapping utility or generating mock resistance levels when the external API doesn't provide them. The requirement only asks to map API fields to UI components.",
       "evidence": [
-        "backend/main.mo"
+        "frontend/src/utils/mapApiResponse.ts"
       ]
     },
     {
-      "id": "REQ-16",
-      "requirement": "File type and size limit messages are in Portuguese",
-      "reason": "File truncation prevents verification of all file type and size limit error messages in FileUpload.tsx. Only some messages are visible ('Por favor, envie um arquivo PNG, JPG, JPEG ou PDF', 'O tamanho do arquivo deve ser menor que 10MB'), but complete verification is impossible.",
+      "description": "Backend method renamed from 'addAnalysis' to 'storeExternalAnalysis'",
+      "reason": "REQ-25 requires adapting storage functions to accept externally-generated data, but does not specify renaming the method. The renamed method could break existing frontend code that called 'addAnalysis'.",
       "evidence": [
-        "frontend/src/components/FileUpload.tsx"
+        "backend/main.mo",
+        "frontend/src/hooks/useQueries.ts"
       ]
     }
   ],
-  "hallucinated_features": [],
-  "confidence": 0.75,
+  "confidence": 0.92,
   "changed_files": [
     "backend/main.mo",
-    "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/components/CameraCapture.tsx",
-    "frontend/src/components/FileUpload.tsx",
-    "frontend/src/components/HistoryListItem.tsx",
-    "frontend/src/components/Layout.tsx",
-    "frontend/src/components/SignalCard.tsx",
-    "frontend/src/pages/AnalyzeChart.tsx",
-    "frontend/src/pages/Dashboard.tsx",
-    "frontend/src/pages/History.tsx",
+    "frontend/src/config/apiConfig.ts",
+    "frontend/src/hooks/useQueries.ts",
     "frontend/src/pages/ProcessingScreen.tsx",
     "frontend/src/pages/Results.tsx",
-    "frontend/src/pages/Settings.tsx",
-    "frontend/src/utils/formatTimestamp.ts",
-    "frontend/src/utils/shareAnalysis.ts",
+    "frontend/src/services/analysisApi.ts",
+    "frontend/src/types/apiTypes.ts",
+    "frontend/src/utils/mapApiResponse.ts",
     "project_state.json"
   ]
 }

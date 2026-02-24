@@ -27,7 +27,7 @@ export function useAnalyzeChart() {
   return useMutation({
     mutationFn: async (result: AnalysisResult) => {
       if (!actor) throw new Error('Actor not initialized');
-      return await actor.addAnalysis(result);
+      return await actor.storeExternalAnalysis(result);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['analyses'] });

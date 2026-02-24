@@ -1,17 +1,16 @@
 # Specification
 
 ## Summary
-**Goal:** Localize the Advance Signal Pro application to Portuguese (Brazil) and restrict timeframe selection to M1, M5, and M10 only.
+**Goal:** Replace local AI analysis with external REST API integration to separate frontend from AI processing logic.
 
 **Planned changes:**
-- Translate all user-facing text throughout the application to Portuguese (Brazil), including buttons, labels, titles, messages, and notifications
-- Restrict timeframe options to M1 (1 minuto), M5 (5 minutos), and M10 (10 minutos), removing all longer timeframe periods
-- Set M1 as the default timeframe
-- Add directional arrow symbols (↑ for buy, ↓ for sell) next to signal labels on Results screen
-- Remove language selection controls from Settings, fixing the language to Portuguese
-- Update all processing stage labels to Portuguese
-- Translate trend values to ALTA, BAIXA, or LATERAL
-- Update detected patterns section and all analysis content to Portuguese
-- Localize date/time formatting to Portuguese (Brazil) conventions
+- Remove all local mock AI analysis generation from ProcessingScreen.tsx
+- Create new API service module (analysisApi.ts) to POST chart images to external '/analisar-grafico' endpoint using multipart/form-data
+- Define TypeScript interfaces for API response schema (sinal, tendencia, confianca, padroes, explicacao)
+- Update ProcessingScreen to call external API and handle real network requests with error handling
+- Update Results.tsx to render analysis data from external API response
+- Add configuration support for multiple AI providers (OpenAI ChatGPT Vision, Google Gemini Vision, custom Python backend)
+- Update backend to accept externally-generated analysis data for history storage
+- Implement error handling with Portuguese messages for network failures and timeouts
 
-**User-visible outcome:** Users will interact with a fully Portuguese (Brazil) interface with simplified timeframe options (M1, M5, M10 only), enhanced visual clarity with directional arrows on signals, and all content displayed in their native language.
+**User-visible outcome:** Users upload chart images that are sent to an external AI API for analysis. The app displays processing stages during the real API request, then shows analysis results (signal, trend, confidence, patterns, explanation) returned from the external service. Error messages appear in Portuguese if the API connection fails.

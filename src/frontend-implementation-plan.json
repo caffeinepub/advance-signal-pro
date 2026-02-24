@@ -1,269 +1,150 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Localize application to Portuguese (Brazil) and restrict timeframes to M1/M5/M10",
+  "title": "Replace local AI analysis with external REST API integration",
   "requirements": [
     {
-      "id": "REQ-10",
-      "summary": "Translate all frontend user-facing text to Portuguese (Brazil)",
+      "id": "REQ-19",
+      "summary": "Remove all local AI analysis logic from ProcessingScreen.tsx",
       "acceptanceCriteria": [
-        "All UI text throughout the application is displayed in Portuguese (Brazil)",
-        "No English text remains in buttons, titles, messages, or notifications",
-        "Translation mappings provided in the user request are applied consistently",
-        "Dashboard buttons display 'Analisar Gráfico', 'Histórico de Análises', and 'Configurações'",
-        "AI status displays 'Status da IA' with 'Ativo' when active",
-        "Results screen shows 'COMPRA' or 'VENDA' for signals",
-        "Processing stages are translated to Portuguese",
-        "Settings labels and options are in Portuguese"
+        "ProcessingScreen.tsx no longer generates mock analysis data locally",
+        "All simulated delay logic for fake AI processing is removed",
+        "Frontend depends entirely on external API responses for analysis results"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/Dashboard.tsx",
+          "path": "frontend/src/pages/ProcessingScreen.tsx",
           "operation": "modify",
-          "description": "Replace all English UI text with Portuguese translations: 'Analyze Chart' → 'Analisar Gráfico', 'Analysis History' → 'Histórico de Análises', 'Settings' → 'Configurações', 'AI System Status' → 'Status da IA', 'Active' → 'Ativo', ensuring all buttons, titles, and status indicators display in Portuguese (Brazil)."
-        },
+          "description": "Remove the mock analysis generation logic that creates simulated AnalysisResult objects with hardcoded values. Delete the setTimeout-based fake processing delays and random value generation for direction, confidence, patterns, and resistance levels. Keep only the processing stage animation UI and prepare to call external API service instead."
+        }
+      ]
+    },
+    {
+      "id": "REQ-20",
+      "summary": "Create API service module for external REST endpoint integration",
+      "acceptanceCriteria": [
+        "API service module exports a function that accepts an image file (File or Blob)",
+        "Function constructs multipart/form-data request with 'imagem' field containing the image",
+        "Function sends POST request to '/analisar-grafico' endpoint",
+        "Function returns a Promise that resolves to the parsed JSON response"
+      ],
+      "file_operations": [
         {
-          "path": "frontend/src/pages/AnalyzeChart.tsx",
-          "operation": "modify",
-          "description": "Translate all upload interface text to Portuguese: 'Upload' → 'Enviar Gráfico', file selection instructions, camera/gallery/clipboard prompts, drag-and-drop area messages, and file validation error messages to Portuguese (Brazil)."
-        },
+          "path": "frontend/src/services/analysisApi.ts",
+          "operation": "create",
+          "description": "Create a new API service module that exports an async function to send chart images to the external REST API. The function should accept a File or Blob parameter, construct a FormData object with the image in a field named 'imagem', POST to '/analisar-grafico' endpoint, and return the parsed JSON response. Include proper error handling for network failures and non-200 responses."
+        }
+      ]
+    },
+    {
+      "id": "REQ-21",
+      "summary": "Define TypeScript interfaces for external API response schema",
+      "acceptanceCriteria": [
+        "TypeScript interface ApiAnalysisResponse defines all required fields with correct types",
+        "Interface includes sinal as 'COMPRA' | 'VENDA' literal type",
+        "Interface includes tendencia, confianca, padroes array, and explicacao fields",
+        "Interface is exported and used for type safety in API service module"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/types/apiTypes.ts",
+          "operation": "create",
+          "description": "Create a new types file that defines the ApiAnalysisResponse interface matching the external API response schema. Include fields: sinal (literal type 'COMPRA' | 'VENDA'), tendencia (string), confianca (number), padroes (string array), and explicacao (string). Export this interface for use in the API service and components."
+        }
+      ]
+    },
+    {
+      "id": "REQ-22",
+      "summary": "Update ProcessingScreen to call external API and handle responses",
+      "acceptanceCriteria": [
+        "ProcessingScreen imports and calls the external API service function",
+        "Image data from route state is passed to API service",
+        "Processing stages animate during actual API request",
+        "API errors display user-friendly Portuguese messages",
+        "Success response navigates to Results page with API data",
+        "Loading states reflect real API request timing"
+      ],
+      "file_operations": [
         {
           "path": "frontend/src/pages/ProcessingScreen.tsx",
           "operation": "modify",
-          "description": "Replace all four processing stage labels with Portuguese translations: 'Loading image' → 'Carregando imagem', 'Processing data' → 'Processando dados', 'Detecting patterns' → 'Detectando padrões', 'Generating result' → 'Gerando resultado', maintaining the existing animation flow."
+          "description": "Import the analysisApi service and call it with the chart image from location state when the component mounts. Display the four processing stages ('Carregando imagem', 'Processando dados', 'Detectando padrões', 'Gerando resultado') while waiting for the API response. Handle API errors by showing Portuguese error messages with retry option. On success, transform the API response to match the AnalysisResult format and navigate to Results page with the data."
         },
+        {
+          "path": "frontend/src/utils/mapApiResponse.ts",
+          "operation": "create",
+          "description": "Create a utility function that maps the external API response structure (sinal, tendencia, confianca, padroes, explicacao) to the internal AnalysisResult type expected by the Results page. Handle the conversion of 'COMPRA'/'VENDA' signals to AnalysisDirection enum values, map padroes to CandlestickPattern enum values, and populate other required fields with appropriate defaults or derived values."
+        }
+      ]
+    },
+    {
+      "id": "REQ-23",
+      "summary": "Update Results page to render API response data",
+      "acceptanceCriteria": [
+        "Results page accepts and displays API response data structure",
+        "Signal (sinal) displays as COMPRA or VENDA with appropriate directional arrows",
+        "Confidence (confianca) displays as percentage",
+        "Trend (tendencia) displays with existing Portuguese formatting",
+        "Patterns (padroes) list displays detected pattern names",
+        "Explanation (explicacao) displays as descriptive text",
+        "All existing Portuguese labels and styling are preserved"
+      ],
+      "file_operations": [
         {
           "path": "frontend/src/pages/Results.tsx",
           "operation": "modify",
-          "description": "Translate all results screen content to Portuguese: signal labels ('Buy' → 'COMPRA', 'Sell' → 'VENDA'), 'Trend Detection' → 'Tendência', trend values ('bullish' → 'ALTA', 'bearish' → 'BAIXA', 'sideways' → 'LATERAL'), 'Confidence' → 'Confiança', pattern section headers, and all explanatory text to Portuguese (Brazil)."
-        },
-        {
-          "path": "frontend/src/pages/History.tsx",
-          "operation": "modify",
-          "description": "Translate history page text to Portuguese: 'Analysis History' → 'Histórico de Análises', empty state message prompting users to analyze their first chart, and ensure date/time formatting follows Portuguese (Brazil) conventions with localized labels."
-        },
-        {
-          "path": "frontend/src/pages/Settings.tsx",
-          "operation": "modify",
-          "description": "Translate all settings labels and options to Portuguese: 'Settings' → 'Configurações', theme labels, AI sensitivity label → 'Sensibilidade da IA', timeframe label → 'Selecionar timeframe padrão', notification labels, and all other UI text to Portuguese (Brazil)."
+          "description": "Ensure the Results page correctly renders analysis data received from the external API after transformation. Verify that the mapped AnalysisResult structure displays correctly in all sections: signal direction with arrows, confidence percentage, trend description, detected patterns list, and textual explanation. Maintain all existing Portuguese labels and visual styling."
         },
         {
           "path": "frontend/src/components/SignalCard.tsx",
           "operation": "modify",
-          "description": "Replace signal labels with Portuguese translations: 'BUY' → 'COMPRA', 'SELL' → 'VENDA', 'HOLD' → 'MANTER', 'Confidence' → 'Confiança', ensuring all card text displays in Portuguese (Brazil)."
-        },
-        {
-          "path": "frontend/src/components/HistoryListItem.tsx",
-          "operation": "modify",
-          "description": "Translate history item labels to Portuguese: trend direction values, confidence label → 'Confiança', and any other displayed text to Portuguese (Brazil), ensuring consistent translation with other components."
-        },
-        {
-          "path": "frontend/src/components/FileUpload.tsx",
-          "operation": "modify",
-          "description": "Translate all file upload component text to Portuguese: drag-and-drop instructions, file type restrictions, size limit messages, validation errors, and upload prompts to Portuguese (Brazil)."
-        },
-        {
-          "path": "frontend/src/components/CameraCapture.tsx",
-          "operation": "modify",
-          "description": "Translate camera component UI text to Portuguese: capture button label, camera switch button, retake button, permission error messages, and all camera-related instructions to Portuguese (Brazil). Verify the camera component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/components/Layout.tsx",
-          "operation": "modify",
-          "description": "Translate layout component text to Portuguese: header titles, footer text, navigation labels, and any global UI strings to Portuguese (Brazil)."
-        },
-        {
-          "path": "frontend/src/utils/formatTimestamp.ts",
-          "operation": "modify",
-          "description": "Update timestamp formatting to use Portuguese (Brazil) locale, including month names, date format conventions, and AM/PM indicators translated to Portuguese equivalents."
-        },
-        {
-          "path": "frontend/src/utils/shareAnalysis.ts",
-          "operation": "modify",
-          "description": "Translate share functionality messages to Portuguese: share prompt text, copy confirmation messages, and error messages to Portuguese (Brazil)."
+          "description": "Update the SignalCard component if necessary to handle the API-sourced direction values and ensure proper display of COMPRA/VENDA signals with appropriate colors, icons, and Portuguese labels. Verify compatibility with the transformed API response data structure."
         }
       ]
     },
     {
-      "id": "REQ-11",
-      "summary": "Restrict timeframe selection to only M1, M5, and M10 with M1 as default",
+      "id": "REQ-24",
+      "summary": "Add multi-provider configuration support to API service",
       "acceptanceCriteria": [
-        "Settings page timeframe selector displays only M1, M5, and M10 options with Portuguese labels",
-        "M1 is selected by default when user first accesses settings",
-        "No timeframes longer than 10 minutes are available for selection",
-        "Backend AnalysisResult includes only M1, M5, or M10 as suggested timeframes",
-        "All existing longer timeframe options are removed from the codebase"
+        "API service module includes configuration for multiple AI provider endpoints",
+        "Configuration supports OpenAI, Google Gemini, and custom Python backend URLs",
+        "Provider selection mechanism allows easy switching (e.g., via environment variable or config file)",
+        "Code structure is prepared to handle provider-specific request formatting if needed",
+        "Default configuration points to a placeholder endpoint that can be replaced"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/Settings.tsx",
+          "path": "frontend/src/services/analysisApi.ts",
           "operation": "modify",
-          "description": "Restrict timeframe selector to display only three options: 'M1 (1 minuto)', 'M5 (5 minutos)', 'M10 (10 minutos)' in Portuguese. Set M1 as the default selected value when settings are first loaded. Remove all references to longer timeframe options (15m, 30m, 1h, etc.) from the dropdown and ensure only M1, M5, M10 are selectable."
+          "description": "Add a configuration object or environment variable mechanism to support multiple AI provider endpoints (OpenAI ChatGPT Vision, Google Gemini Vision, custom Python backend). Include placeholder URLs for each provider and implement provider selection logic (e.g., via VITE_AI_PROVIDER env var). Structure the code to allow provider-specific request formatting if different providers require different payload structures or headers."
+        },
+        {
+          "path": "frontend/src/config/apiConfig.ts",
+          "operation": "create",
+          "description": "Create a configuration file that defines provider endpoint URLs, default provider selection, and any provider-specific settings. Include constants for OpenAI, Google Gemini, and Python backend endpoints with placeholder values that can be overridden via environment variables. Export a function to get the active provider configuration."
+        }
+      ]
+    },
+    {
+      "id": "REQ-26",
+      "summary": "Add error handling and retry logic to API service",
+      "acceptanceCriteria": [
+        "API service catches network errors and HTTP error responses",
+        "User-friendly Portuguese error messages display for common failure scenarios",
+        "Retry logic attempts failed requests up to a reasonable limit",
+        "Timeout handling prevents indefinite waiting",
+        "ProcessingScreen shows error state with option to retry or go back"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/services/analysisApi.ts",
+          "operation": "modify",
+          "description": "Implement comprehensive error handling for network failures, timeouts, and non-200 HTTP responses in the API service. Add retry logic (e.g., up to 2 retries with exponential backoff) for transient failures. Define Portuguese error messages for common scenarios: 'Erro ao conectar com o servidor' (connection error), 'Tempo esgotado' (timeout), 'Erro na análise' (analysis error). Return structured error objects that components can display to users."
         },
         {
           "path": "frontend/src/pages/ProcessingScreen.tsx",
           "operation": "modify",
-          "description": "Update mock analysis result generation to only use M1, M5, or M10 as the defaultTimeframe value, ensuring no longer timeframes are generated during processing or stored in sessionStorage."
-        }
-      ]
-    },
-    {
-      "id": "REQ-12",
-      "summary": "Display suggested timeframe and add directional arrow symbols to signal labels on Results screen",
-      "acceptanceCriteria": [
-        "Results screen shows suggested timeframe matching user's default setting from Settings",
-        "Buy signals display with '↑' arrow symbol next to 'COMPRA'",
-        "Sell signals display with '↓' arrow symbol next to 'VENDA'",
-        "Timeframe label is displayed in Portuguese (e.g., '1 minuto', '5 minutos', '10 minutos')"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/Results.tsx",
-          "operation": "modify",
-          "description": "Add display of the suggested timeframe from user's default settings (retrieved via useSettings hook), showing the timeframe in Portuguese format ('1 minuto', '5 minutos', or '10 minutos'). Add directional arrow symbols to signal labels: '↑' for buy signals next to 'COMPRA' and '↓' for sell signals next to 'VENDA'."
-        },
-        {
-          "path": "frontend/src/components/SignalCard.tsx",
-          "operation": "modify",
-          "description": "Add directional arrow symbols to signal labels: display '↑' arrow next to 'COMPRA' for buy signals and '↓' arrow next to 'VENDA' for sell signals, ensuring visual clarity and consistency with the Results page."
-        }
-      ]
-    },
-    {
-      "id": "REQ-13",
-      "summary": "Fix language to Portuguese and update Settings screen timeframe labels",
-      "acceptanceCriteria": [
-        "Language selection control is removed from Settings page",
-        "Language is fixed to Portuguese (Brasil) throughout the app",
-        "Timeframe setting label reads 'Selecionar timeframe padrão'",
-        "Timeframe options display as 'M1 (1 minuto)', 'M5 (5 minutos)', 'M10 (10 minutos)'",
-        "AI sensitivity setting label reads 'Sensibilidade da IA'"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/Settings.tsx",
-          "operation": "modify",
-          "description": "Remove language selection control from the Settings page UI. Update timeframe setting label to 'Selecionar timeframe padrão' and ensure options display as 'M1 (1 minuto)', 'M5 (5 minutos)', 'M10 (10 minutos)' in Portuguese. Update AI sensitivity label to 'Sensibilidade da IA'. Language is now fixed to Portuguese (Brasil) with no user selection available."
-        }
-      ]
-    },
-    {
-      "id": "REQ-14",
-      "summary": "Translate ProcessingScreen stages to Portuguese",
-      "acceptanceCriteria": [
-        "Processing screen displays all stage labels in Portuguese",
-        "Stage 1 shows 'Carregando imagem'",
-        "Stage 2 shows 'Processando dados'",
-        "Stage 3 shows 'Detectando padrões'",
-        "Stage 4 shows 'Gerando resultado'",
-        "Animation sequence and timing remain unchanged"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/ProcessingScreen.tsx",
-          "operation": "modify",
-          "description": "Update all four processing stage labels to Portuguese while maintaining the existing animation sequence and timing: Stage 1 → 'Carregando imagem', Stage 2 → 'Processando dados', Stage 3 → 'Detectando padrões', Stage 4 → 'Gerando resultado'."
-        },
-        {
-          "path": "frontend/src/components/ProcessingStage.tsx",
-          "operation": "modify",
-          "description": "Ensure ProcessingStage component properly displays Portuguese stage labels passed as props, maintaining the three visual states (inactive, active with spinner, complete with checkmark) without modification."
-        }
-      ]
-    },
-    {
-      "id": "REQ-15",
-      "summary": "Translate Results screen trend and pattern labels to Portuguese",
-      "acceptanceCriteria": [
-        "Trend section displays 'Tendência' as the label",
-        "Trend values show 'ALTA', 'BAIXA', or 'LATERAL' in Portuguese",
-        "Detected patterns section header reads 'Padrões detectados'",
-        "Pattern names are translated to Portuguese",
-        "All explanatory text and descriptions are in Portuguese (Brazil)",
-        "Save and share button labels are in Portuguese"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/Results.tsx",
-          "operation": "modify",
-          "description": "Translate trend section label to 'Tendência' and trend values to 'ALTA' (bullish), 'BAIXA' (bearish), 'LATERAL' (sideways). Translate detected patterns section header to 'Padrões detectados' and all pattern names (hammer → 'Martelo', doji → 'Doji', engulfing → 'Envolvente', shootingStar → 'Estrela Cadente') to Portuguese. Translate save and share button labels to Portuguese and ensure all explanatory text is in Portuguese (Brazil)."
-        }
-      ]
-    },
-    {
-      "id": "REQ-16",
-      "summary": "Translate AnalyzeChart page upload interface to Portuguese",
-      "acceptanceCriteria": [
-        "Main upload button or section displays 'Enviar Gráfico'",
-        "File selection instructions are in Portuguese",
-        "Camera capture interface displays Portuguese labels",
-        "Gallery selection prompts are in Portuguese",
-        "Clipboard paste instructions are in Portuguese",
-        "Drag-and-drop area text is in Portuguese",
-        "File type and size limit messages are in Portuguese"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/AnalyzeChart.tsx",
-          "operation": "modify",
-          "description": "Translate upload button to 'Enviar Gráfico', file selection instructions, camera capture button labels, gallery selection prompts, clipboard paste instructions, drag-and-drop area text, file type restrictions, and size limit messages to Portuguese (Brazil)."
-        },
-        {
-          "path": "frontend/src/components/FileUpload.tsx",
-          "operation": "modify",
-          "description": "Translate FileUpload component text to Portuguese: drag-and-drop instructions ('Arraste e solte' or equivalent), file type messages, size limit warnings, and validation error messages to Portuguese (Brazil)."
-        },
-        {
-          "path": "frontend/src/components/CameraCapture.tsx",
-          "operation": "modify",
-          "description": "Translate CameraCapture component labels and instructions to Portuguese: capture button, switch camera button (mobile only), retake button, error messages, and permission prompts to Portuguese (Brazil). Verify the camera component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-17",
-      "summary": "Translate History page to Portuguese with localized date/time formatting",
-      "acceptanceCriteria": [
-        "Page header displays 'Histórico de Análises'",
-        "Empty state message is in Portuguese",
-        "Historical analysis entries show labels in Portuguese",
-        "Date and time formatting follows Portuguese (Brazil) conventions",
-        "Signal labels in history items display 'COMPRA' or 'VENDA'"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/History.tsx",
-          "operation": "modify",
-          "description": "Translate page header to 'Histórico de Análises', empty state message prompting users to analyze their first chart to Portuguese, and ensure all historical analysis entry labels are in Portuguese (Brazil) with proper date/time formatting."
-        },
-        {
-          "path": "frontend/src/components/HistoryListItem.tsx",
-          "operation": "modify",
-          "description": "Translate all history item labels to Portuguese: signal labels ('BUY' → 'COMPRA', 'SELL' → 'VENDA'), confidence label, trend direction values, and ensure date/time stamps use Portuguese (Brazil) formatting conventions via formatTimestamp utility."
-        },
-        {
-          "path": "frontend/src/utils/formatTimestamp.ts",
-          "operation": "modify",
-          "description": "Update timestamp formatting function to use Portuguese (Brazil) locale (pt-BR) with localized month names, date format, and time conventions, ensuring consistent date/time display throughout the History page and HistoryListItem component."
-        }
-      ]
-    },
-    {
-      "id": "REQ-18",
-      "summary": "Translate Dashboard page labels and AI status to Portuguese",
-      "acceptanceCriteria": [
-        "Analyze chart button displays 'Analisar Gráfico'",
-        "History button displays 'Histórico de Análises'",
-        "Settings button displays 'Configurações'",
-        "AI status section shows 'Status da IA'",
-        "Active status displays 'Ativo' in Portuguese",
-        "App branding and titles are in Portuguese"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/Dashboard.tsx",
-          "operation": "modify",
-          "description": "Translate all Dashboard labels to Portuguese: analyze chart button → 'Analisar Gráfico', history button → 'Histórico de Análises', settings button → 'Configurações', AI status section header → 'Status da IA', active status indicator → 'Ativo', and ensure all app branding and page titles are in Portuguese (Brazil)."
+          "description": "Update ProcessingScreen to display error states from API failures with Portuguese error messages. Add a retry button that calls the API service again with the same image data. Include a back/cancel button to return to the AnalyzeChart page. Show appropriate loading states during retry attempts."
         }
       ]
     }

@@ -54,7 +54,6 @@ export enum Timeframe {
     M10 = "M10"
 }
 export interface backendInterface {
-    addAnalysis(result: AnalysisResult): Promise<void>;
     getAnalyses(): Promise<Array<AnalysisResult>>;
     getAnalysisHistory(): Promise<Array<AnalysisResult>>;
     getCriteria(): Promise<{
@@ -67,5 +66,6 @@ export interface backendInterface {
     }>;
     getSettings(): Promise<UserSettings>;
     getTopResistanceLevels(): Promise<Array<ResistanceLevel>>;
+    storeExternalAnalysis(result: AnalysisResult): Promise<void>;
     updateSettings(newSettings: UserSettings): Promise<void>;
 }

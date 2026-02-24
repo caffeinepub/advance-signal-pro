@@ -68,7 +68,6 @@ export interface _SERVICE {
     _CaffeineStorageRefillResult
   >,
   '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
-  'addAnalysis' : ActorMethod<[AnalysisResult], undefined>,
   'getAnalyses' : ActorMethod<[], Array<AnalysisResult>>,
   'getAnalysisHistory' : ActorMethod<[], Array<AnalysisResult>>,
   'getCriteria' : ActorMethod<
@@ -84,6 +83,7 @@ export interface _SERVICE {
   >,
   'getSettings' : ActorMethod<[], UserSettings>,
   'getTopResistanceLevels' : ActorMethod<[], Array<ResistanceLevel>>,
+  'storeExternalAnalysis' : ActorMethod<[AnalysisResult], undefined>,
   'updateSettings' : ActorMethod<[UserSettings], undefined>,
 }
 export declare const idlService: IDL.ServiceClass;

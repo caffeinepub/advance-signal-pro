@@ -1,18 +1,18 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 5,
-  "summary": "Advance Signal Pro: Mobile app (Android/iOS) for automated financial chart analysis using AI, focused on Price Action, candle patterns, and trend identification (bullish/bearish/sideways). Optimized for Pocket Option charts and binary options trading with fast scalping analysis (<3s). Features dark/light themes, professional trading interface, chart upload (camera/gallery/clipboard/drag-drop), AI-powered pattern detection (support/resistance, candlestick patterns, pullbacks, breakouts), buy/sell signals with confidence levels, analysis history, and customizable settings. Exclusively supports short timeframes: M1 (1 minute - default), M5 (5 minutes), and M10 (10 minutes). Full Portuguese (Brazil) interface.",
+  "projectStateVersion": 7,
+  "summary": "Advance Signal Pro: Mobile app (Android/iOS) for automated financial chart analysis using external AI via REST API, focused on Price Action, candle patterns, and trend identification (bullish/bearish/sideways). Optimized for Pocket Option charts and binary options trading with fast scalping analysis (<3s). Features dark/light themes, professional trading interface, chart upload (camera/gallery/clipboard/drag-drop), and displays AI-powered results (buy/sell signals with confidence levels, trend analysis, detected patterns, and explanations) received from external API. Supports integration with OpenAI ChatGPT Vision, Google Gemini Vision, or custom Python backend. Analysis history and customizable settings included. Exclusively supports short timeframes: M1 (1 minute - default), M5 (5 minutes), and M10 (10 minutes). Full Portuguese (Brazil) interface.",
   "architectural_notes": [
     "Mobile-first architecture for Android and iOS platforms",
-    "Computer vision module for automatic chart and candlestick detection",
-    "AI/ML engine for pattern recognition (local or API-based)",
     "Modular, clean, and scalable code structure",
     "Image processing pipeline supporting PNG, JPG, JPEG, PDF formats",
     "Professional trading-style UI with dark/light theme support",
     "Fast, lightweight performance optimized for small screens",
     "Navigation flow: Dashboard → Upload → Processing → Results → History/Settings",
     "Optimized for Pocket Option charts and binary options trading",
-    "Fast processing target: <3 seconds for analysis results"
+    "Fast processing target: <3 seconds for analysis results",
+    "External AI analysis via REST API (POST /analisar-grafico)",
+    "Frontend displays results from external API only (no local AI processing)"
   ],
   "known_issues": [],
   "isFixRequest": false,
@@ -144,6 +144,62 @@
         "REQ-18"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-remove-all-local-ai-analysis-logic-from-the-frontend-delete-or-disable-mock-analysis-generation-code-in-processingscreen-tsx-that-creates-simulated-results",
+      "title": "Remove all local AI analysis logic from the frontend. Delete or disable mock analysis generation code in ProcessingScreen.tsx that creates simulated results.",
+      "reqIds": [
+        "REQ-19"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-new-api-service-module-frontend-src-services-analysisapi-ts-that-handles-http-requests-to-an-external-rest-api-endpoint-implement-a-function-to-post-chart-images-as-multipart-form-data-to-analisar-grafico-endpoint-with-the-image-file-in-a-field-named-imagem",
+      "title": "Create a new API service module (frontend/src/services/analysisApi.ts) that handles HTTP requests to an external REST API endpoint. Implement a function to POST chart images as multipart/form-data to '/analisar-grafico' endpoint, with the image file in a field named 'imagem'.",
+      "reqIds": [
+        "REQ-20"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-define-typescript-interfaces-for-the-external-api-response-schema-the-response-json-must-include-sinal-string-compra-or-venda-tendencia-string-trend-description-confianca-number-confidence-percentage-padroes-array-of-strings-detected-pattern-names-and-explicacao-string-textual-explanation",
+      "title": "Define TypeScript interfaces for the external API response schema. The response JSON must include: sinal (string: 'COMPRA' or 'VENDA'), tendencia (string: trend description), confianca (number: confidence percentage), padroes (array of strings: detected pattern names), and explicacao (string: textual explanation).",
+      "reqIds": [
+        "REQ-21"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-processingscreen-tsx-to-call-the-external-api-service-when-analysis-starts-send-the-uploaded-chart-image-to-the-api-display-the-four-processing-stages-carregando-imagem-processando-dados-detectando-padr-es-gerando-resultado-while-waiting-for-the-response-handle-api-errors-gracefully-with-portuguese-error-messages-and-navigate-to-the-results-page-with-the-api-response-data-upon-success",
+      "title": "Update ProcessingScreen.tsx to call the external API service when analysis starts. Send the uploaded chart image to the API, display the four processing stages ('Carregando imagem', 'Processando dados', 'Detectando padrões', 'Gerando resultado') while waiting for the response, handle API errors gracefully with Portuguese error messages, and navigate to the Results page with the API response data upon success.",
+      "reqIds": [
+        "REQ-22"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-results-tsx-to-render-analysis-results-received-from-the-external-api-response-map-api-response-fields-sinal-tendencia-confianca-padroes-explicacao-to-the-existing-ui-components-and-display-format-ensuring-all-portuguese-labels-and-formatting-remain-consistent",
+      "title": "Update Results.tsx to render analysis results received from the external API response. Map API response fields (sinal, tendencia, confianca, padroes, explicacao) to the existing UI components and display format, ensuring all Portuguese labels and formatting remain consistent.",
+      "reqIds": [
+        "REQ-23"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-configuration-support-for-multiple-external-ai-providers-in-the-api-service-module-create-a-configuration-object-or-environment-variable-structure-that-allows-switching-between-openai-chatgpt-vision-google-gemini-vision-or-a-custom-python-backend-endpoint-without-changing-application-code-include-placeholder-endpoint-urls-and-prepare-the-api-service-to-adapt-request-formats-for-different-providers-if-needed",
+      "title": "Add configuration support for multiple external AI providers in the API service module. Create a configuration object or environment variable structure that allows switching between OpenAI ChatGPT Vision, Google Gemini Vision, or a custom Python backend endpoint without changing application code. Include placeholder endpoint URLs and prepare the API service to adapt request formats for different providers if needed.",
+      "reqIds": [
+        "REQ-24"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-error-handling-and-retry-logic-to-the-api-service-for-network-failures-timeouts-and-non-200-http-responses-display-portuguese-error-messages-to-users-when-api-requests-fail-e-g-erro-ao-conectar-com-o-servidor-tempo-esgotado-erro-na-an-lise",
+      "title": "Add error handling and retry logic to the API service for network failures, timeouts, and non-200 HTTP responses. Display Portuguese error messages to users when API requests fail (e.g., 'Erro ao conectar com o servidor', 'Tempo esgotado', 'Erro na análise').",
+      "reqIds": [
+        "REQ-26"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -162,12 +218,6 @@
     {
       "id": "AR-3",
       "summary": "AI processing animation showing loading stages (image load, data processing, pattern detection, result generation)",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-4",
-      "summary": "AI analysis engine detecting trend, support/resistance, candlestick patterns, pullbacks, breakouts, trend strength, and confidence probability",
       "reqIds": [],
       "status": "pending"
     },
@@ -196,31 +246,9 @@
       "status": "pending"
     },
     {
-      "id": "AR-9",
-      "summary": "Computer vision system for chart reading, automatic candle detection, and price action pattern recognition",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
       "id": "AR-10",
       "summary": "App icon with minimalist 'ASP' letters and display name 'Advance Signal Pro'",
       "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-14",
-      "summary": "Build an AI analysis engine in the backend that processes uploaded chart images and detects: trend direction (bullish/bearish/sideways), support and resistance levels, candlestick patterns (engulfing, hammer, doji, shooting star, etc.), pullbacks, breakouts, trend strength, and confidence probability percentage. Return structured analysis results including all detected patterns and metrics.",
-      "reqIds": [
-        "REQ-4"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-18",
-      "summary": "Implement computer vision system in the backend to automatically read and interpret financial chart images, detect individual candlesticks, recognize price action patterns, and extract chart data. The system should work with various chart styles and timeframes commonly used in trading.",
-      "reqIds": [
-        "REQ-8"
-      ],
       "status": "pending"
     },
     {
@@ -239,6 +267,32 @@
       "id": "AR-21",
       "summary": "Optimize analysis for Pocket Option charts with fast scalping detection (<3 seconds processing time)",
       "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-22",
+      "summary": "Implement external AI analysis via REST API: POST /analisar-grafico with multipart/form-data image upload, receiving JSON response with signal (COMPRA/VENDA), trend, confidence, detected patterns, and explanatory text",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-23",
+      "summary": "Prepare API integration layer to support OpenAI ChatGPT Vision, Google Gemini Vision, or custom Python backend",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-24",
+      "summary": "Separate frontend from AI logic: remove local analysis implementation and use external API responses only",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-31",
+      "summary": "Update the backend to remove or deprecate local analysis storage if it conflicts with the new external API flow. Ensure that analysis results returned by the external API can still be saved to the backend's history (backend/main.mo) by adapting the storage functions to accept externally-generated analysis data.",
+      "reqIds": [
+        "REQ-25"
+      ],
       "status": "pending"
     }
   ],
