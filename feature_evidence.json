@@ -1,0 +1,50 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-audit-and-fix-the-settings-page-frontend-src-pages-settings-tsx-to-ensure-all-settings-controls-are-fully-functional-the-gemini-api-key-input-field-must-correctly-read-the-stored-key-from-the-backend-save-it-on-submit-and-display-validation-feedback-the-default-timeframe-selector-m1-m5-m10-must-load-the-persisted-value-and-update-it-via-the-backend-mutation-the-ai-sensitivity-slider-must-load-and-save-correctly-the-theme-toggle-must-apply-the-selected-theme-immediately-and-the-daily-operation-limit-selector-must-load-the-current-value-and-trigger-the-setdailyoperationlimit-mutation-on-change-all-save-actions-must-show-a-portuguese-success-or-error-toast",
+      "featureTitle": "Audit and fix the Settings page (frontend/src/pages/Settings.tsx) to ensure all settings controls are fully functional: the Gemini API key input field must correctly read the stored key from the backend, save it on submit, and display validation feedback; the default timeframe selector (M1/M5/M10) must load the persisted value and update it via the backend mutation; the AI sensitivity slider must load and save correctly; the theme toggle must apply the selected theme immediately; and the daily operation limit selector must load the current value and trigger the setDailyOperationLimit mutation on change. All save actions must show a Portuguese success or error toast.",
+      "files": [
+        "frontend/src/pages/Settings.tsx"
+      ],
+      "components": [
+        "blob-storage@4.0.0",
+        "camera@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "http-outcalls@3.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-70"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-audit-and-fix-frontend-src-hooks-usesettings-ts-and-frontend-src-hooks-usequeries-ts-to-ensure-the-backend-actor-calls-for-getsettings-updatesettings-getgeminiapikey-setgeminiapikey-getdailyoperationprogress-and-setdailyoperationlimit-are-correctly-wired-verify-that-the-motoko-function-signatures-in-backend-main-mo-match-the-frontend-call-signatures-and-fix-any-mismatches-that-would-cause-settings-to-fail-silently",
+      "featureTitle": "Audit and fix frontend/src/hooks/useSettings.ts and frontend/src/hooks/useQueries.ts to ensure the backend actor calls for getSettings, updateSettings, getGeminiApiKey, setGeminiApiKey, getDailyOperationProgress, and setDailyOperationLimit are correctly wired. Verify that the Motoko function signatures in backend/main.mo match the frontend call signatures and fix any mismatches that would cause settings to fail silently.",
+      "files": [
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/hooks/useSettings.ts"
+      ],
+      "components": [
+        "blob-storage@4.0.0",
+        "camera@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "http-outcalls@3.0.0",
+        "authorization@4.0.0"
+      ],
+      "testIds": [
+        "REQ-71"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "kind": "build_request",
+  "title": "Fix Settings page functionality",
+  "projectName": "Advance Signal Pro",
+  "priority": "normal",
+  "requirements": [
+    {
+      "id": "REQ-70",
+      "text": "Audit and fix the Settings page (frontend/src/pages/Settings.tsx) to ensure all settings controls are fully functional: the Gemini API key input field must correctly read the stored key from the backend, save it on submit, and display validation feedback; the default timeframe selector (M1/M5/M10) must load the persisted value and update it via the backend mutation; the AI sensitivity slider must load and save correctly; the theme toggle must apply the selected theme immediately; and the daily operation limit selector must load the current value and trigger the setDailyOperationLimit mutation on change. All save actions must show a Portuguese success or error toast.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "faz a configuração funcionar",
+          "atualizar configuração"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Gemini API key field loads the existing stored key on page open and saves changes to the backend on submit",
+        "API key save shows 'Chave salva com sucesso!' toast on success and a Portuguese error message on failure",
+        "Default timeframe selector (M1/M5/M10) reflects the persisted value from backend settings on load",
+        "Changing the timeframe selector persists the new value via the backend mutation",
+        "AI sensitivity slider loads current value from backend settings and saves on change",
+        "Theme toggle correctly applies dark/light theme immediately via ThemeContext and persists preference",
+        "Daily operation limit selector (3/4/6/8) loads current value from backend settings and calls setDailyOperationLimit mutation on change",
+        "All setting controls display loading states while fetching data from the backend",
+        "All save actions show appropriate Portuguese feedback toasts (success or error)"
+      ]
+    },
+    {
+      "id": "REQ-71",
+      "text": "Audit and fix frontend/src/hooks/useSettings.ts and frontend/src/hooks/useQueries.ts to ensure the backend actor calls for getSettings, updateSettings, getGeminiApiKey, setGeminiApiKey, getDailyOperationProgress, and setDailyOperationLimit are correctly wired. Verify that the Motoko function signatures in backend/main.mo match the frontend call signatures and fix any mismatches that would cause settings to fail silently.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "faz a configuração funcionar",
+          "atualizar configuração"
+        ]
+      },
+      "acceptanceCriteria": [
+        "useSettings hook returns settings data without errors when the backend is available",
+        "updateSettings mutation successfully persists changes to the backend",
+        "getGeminiApiKey and setGeminiApiKey calls resolve without errors",
+        "getDailyOperationProgress and setDailyOperationLimit calls resolve without errors",
+        "Any mismatches between Motoko function signatures and frontend call arguments are corrected"
+      ]
+    }
+  ],
+  "constraints": [
+    "Do not modify files listed in frontend.immutablePaths",
+    "Maintain all existing Portuguese (Brazil) UI text",
+    "Preserve all existing features and analysis history functionality",
+    "Do not change the backend data schema in a breaking way; use migration.mo if schema changes are needed"
+  ],
+  "nonGoals": [
+    "Adding new settings options beyond those already designed",
+    "Changing the visual design of the Settings page",
+    "Modifying the Gemini API analysis logic",
+    "Changing the Results or History pages"
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  }
+}

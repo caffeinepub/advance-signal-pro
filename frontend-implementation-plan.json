@@ -1,0 +1,52 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Fix Settings page functionality",
+  "requirements": [
+    {
+      "id": "REQ-70",
+      "summary": "Audit and fix the Settings page to ensure all settings controls (Gemini API key input, default timeframe selector, AI sensitivity slider, theme toggle, daily operation limit selector) are fully functional with proper backend integration and Portuguese toast feedback",
+      "acceptanceCriteria": [
+        "Gemini API key field loads the existing stored key on page open and saves changes to the backend on submit",
+        "API key save shows 'Chave salva com sucesso!' toast on success and a Portuguese error message on failure",
+        "Default timeframe selector (M1/M5/M10) reflects the persisted value from backend settings on load",
+        "Changing the timeframe selector persists the new value via the backend mutation",
+        "AI sensitivity slider loads current value from backend settings and saves on change",
+        "Theme toggle correctly applies dark/light theme immediately via ThemeContext and persists preference",
+        "Daily operation limit selector (3/4/6/8) loads current value from backend settings and calls setDailyOperationLimit mutation on change",
+        "All setting controls display loading states while fetching data from the backend",
+        "All save actions show appropriate Portuguese feedback toasts (success or error)"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/Settings.tsx",
+          "operation": "modify",
+          "description": "Fix the Settings page to ensure all controls are fully wired to backend queries and mutations. Add a separate state and query for the Gemini API key using getGeminiApiKey from the backend actor. Wire the API key input field to load the stored key on mount and call setGeminiApiKey mutation on submit with Portuguese success toast 'Chave salva com sucesso!' or error feedback. Ensure the default timeframe selector loads the persisted value from settings.defaultTimeframe and updates it via the updateSettings mutation. Verify the AI sensitivity slider loads settings.aiSensitivity and persists changes on change. Confirm the theme toggle applies the theme immediately via ThemeContext and persists the preference in settings.theme. Wire the daily operation limit selector to load settings.dailyOperationLimit and call setDailyOperationLimit mutation on change. Add loading states for all controls while queries are pending. Display Portuguese toast notifications for all save actions (success and error cases)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-71",
+      "summary": "Audit and fix useSettings and useQueries hooks to ensure backend actor calls for getSettings, updateSettings, getGeminiApiKey, setGeminiApiKey, getDailyOperationProgress, and setDailyOperationLimit are correctly wired and match the backend interface signatures",
+      "acceptanceCriteria": [
+        "useSettings hook returns settings data without errors when the backend is available",
+        "updateSettings mutation successfully persists changes to the backend",
+        "getGeminiApiKey and setGeminiApiKey calls resolve without errors",
+        "getDailyOperationProgress and setDailyOperationLimit calls resolve without errors",
+        "Any mismatches between Motoko function signatures and frontend call arguments are corrected"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Audit and fix all backend actor calls to match the backend interface in frontend/src/backend.d.ts. Verify getSettings query is correctly implemented and returns UserSettings. Ensure updateSettings mutation accepts UserSettings and returns a success message string. Add queries and mutations for getGeminiApiKey (returns string | null), setGeminiApiKey (accepts apiKey: string, returns string), getDailyOperationProgress (accepts userId: Principal, returns object with dailyLimit and completedOperations), and setDailyOperationLimit (accepts limit: bigint, returns string). Ensure all calls use the correct parameter types (e.g., bigint for numeric IDs and limits, Principal for user IDs) and handle null return values appropriately. Add proper error handling and query invalidation on mutation success."
+        },
+        {
+          "path": "frontend/src/hooks/useSettings.ts",
+          "operation": "modify",
+          "description": "Audit and fix the useSettings hook to ensure it correctly wraps the getSettings query and updateSettings mutation from useQueries. Verify the hook exposes settings data, loading state, error state, and an update function that triggers the mutation and invalidates the settings query on success. Ensure the hook handles null or undefined settings gracefully during the initial loading phase."
+        }
+      ]
+    }
+  ]
+}

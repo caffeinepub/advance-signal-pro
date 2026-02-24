@@ -1,0 +1,714 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 25,
+  "summary": "Advance Signal Pro: Mobile app (Android/iOS) for automated financial chart analysis using Google Gemini Vision API, focused on basic chart analysis: support/resistance levels, candlestick patterns of the last candle, and trend identification (bullish/bearish/sideways). Accepts mobile screenshots showing the full phone screen and analyzes only the chart portion. Optimized for Pocket Option charts and binary options trading with fast scalping analysis (<3s). Features dark/light themes, professional trading interface, chart upload (camera/gallery/clipboard/drag-drop), and displays AI-powered results (buy/sell signals with confidence levels, trend analysis, detected patterns, and explanations) received from Gemini API. Analysis history and customizable settings included. Exclusively supports short timeframes: M1 (1 minute - default), M5 (5 minutes), and M10 (10 minutes). Full Portuguese (Brazil) interface. Extended with advanced candle analysis engine: probability calculation for next candle direction (bullish/bearish %), practical action suggestions based on previous candle high/low breakouts, entry/stop-loss/target price examples, daily operation management (user selects 3/4/6/8 ops per day with progressive clock tracking and midnight reset), operation history with confirmation buttons (green=followed, red=not followed), and progress tracking display.",
+  "architectural_notes": [
+    "Mobile-first architecture for Android and iOS platforms",
+    "Modular, clean, and scalable code structure",
+    "Image processing pipeline supporting PNG, JPG, JPEG, PDF formats",
+    "Professional trading-style UI with dark/light theme support",
+    "Fast, lightweight performance optimized for small screens",
+    "Navigation flow: Dashboard → Upload → Processing → Results → History/Settings",
+    "Fast processing target: <3 seconds for analysis results",
+    "External AI analysis via REST API (POST /analisar-grafico)",
+    "Frontend displays results from external API only (no local AI processing)",
+    "Gemini Vision API performs basic analysis: support/resistance, last candle patterns, trend direction only"
+  ],
+  "known_issues": [
+    "Error occurs after image upload completes loading but before analysis result returns",
+    "User reports persistent error after image upload despite error handling improvements"
+  ],
+  "isFixRequest": true,
+  "existing_features": [
+    {
+      "id": "feature-create-a-dashboard-home-screen-with-four-primary-action-buttons-analyze-chart-analysis-history-settings-and-an-ai-status-indicator-showing-system-readiness-use-a-minimalist-black-white-and-gray-color-scheme-with-large-prominent-buttons-and-simple-iconography-in-a-professional-trading-app-style",
+      "title": "Create a Dashboard home screen with four primary action buttons: 'Analyze Chart', 'Analysis History', 'Settings', and an AI status indicator showing system readiness. Use a minimalist black, white, and gray color scheme with large, prominent buttons and simple iconography in a professional trading app style.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-chart-upload-functionality-supporting-multiple-input-methods-camera-capture-gallery-selection-clipboard-paste-and-drag-and-drop-accept-png-jpg-jpeg-and-pdf-file-formats-display-a-file-selection-interface-with-clear-options-for-each-upload-method",
+      "title": "Implement chart upload functionality supporting multiple input methods: camera capture, gallery selection, clipboard paste, and drag-and-drop. Accept PNG, JPG, JPEG, and PDF file formats. Display a file selection interface with clear options for each upload method.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-an-ai-processing-animation-screen-that-displays-four-sequential-loading-stages-loading-image-processing-data-detecting-patterns-and-generating-result-show-animated-progress-indicators-for-each-stage-to-provide-visual-feedback-during-chart-analysis",
+      "title": "Create an AI processing animation screen that displays four sequential loading stages: 'Loading image', 'Processing data', 'Detecting patterns', and 'Generating result'. Show animated progress indicators for each stage to provide visual feedback during chart analysis.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-results-screen-that-displays-the-complete-analysis-output-buy-or-sell-signal-confidence-percentage-current-trend-precision-level-low-medium-high-suggested-timeframe-detailed-explanatory-text-visual-markings-drawn-on-the-chart-image-lines-and-arrows-a-save-analysis-button-and-a-share-button-design-with-clear-visual-hierarchy-and-professional-trading-app-aesthetics",
+      "title": "Create a Results screen that displays the complete analysis output: BUY or SELL signal, confidence percentage, current trend, precision level (Low/Medium/High), suggested timeframe, detailed explanatory text, visual markings drawn on the chart image (lines and arrows), a 'Save Analysis' button, and a 'Share' button. Design with clear visual hierarchy and professional trading app aesthetics.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-an-analysis-history-screen-that-lists-all-previous-analyses-with-date-time-stamps-and-results-allow-users-to-tap-any-historical-entry-to-reopen-and-view-the-full-analysis-details-display-entries-in-reverse-chronological-order-with-clear-visual-separation-between-items",
+      "title": "Implement an Analysis History screen that lists all previous analyses with date/time stamps and results. Allow users to tap any historical entry to reopen and view the full analysis details. Display entries in reverse chronological order with clear visual separation between items.",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-settings-screen-with-configuration-options-for-theme-toggle-dark-light-mode-ai-sensitivity-adjustment-default-timeframe-preferences-signal-notifications-toggle-and-language-selection-each-setting-should-have-clear-labels-and-intuitive-controls-toggles-sliders-dropdowns-as-appropriate",
+      "title": "Create a Settings screen with configuration options for: theme toggle (dark/light mode), AI sensitivity adjustment, default timeframe preferences, signal notifications toggle, and language selection. Each setting should have clear labels and intuitive controls (toggles, sliders, dropdowns as appropriate).",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-design-and-implement-a-cohesive-minimalist-visual-theme-using-black-white-and-gray-colors-throughout-the-application-create-a-professional-trading-interface-aesthetic-with-dark-mode-as-default-and-optional-light-mode-ensure-large-touch-friendly-buttons-simple-clear-icons-highly-visible-charts-and-premium-appearance-with-clean-layouts-and-ample-whitespace",
+      "title": "Design and implement a cohesive minimalist visual theme using black, white, and gray colors throughout the application. Create a professional trading interface aesthetic with dark mode as default and optional light mode. Ensure large touch-friendly buttons, simple clear icons, highly visible charts, and premium appearance with clean layouts and ample whitespace.",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-translate-all-frontend-user-facing-text-to-portuguese-brazil-replace-all-english-text-with-portuguese-equivalents-analyze-chart-analisar-gr-fico-analysis-history-hist-rico-de-an-lises-settings-configura-es-ai-system-status-status-da-ia-active-ativo-trend-detection-detec-o-de-tend-ncia-buy-compra-sell-venda-confidence-confian-a-processing-processando-upload-enviar-gr-fico-and-all-other-ui-elements-including-buttons-titles-messages-notifications-and-labels",
+      "title": "Translate all frontend user-facing text to Portuguese (Brazil). Replace all English text with Portuguese equivalents: 'Analyze Chart' → 'Analisar Gráfico', 'Analysis History' → 'Histórico de Análises', 'Settings' → 'Configurações', 'AI System Status' → 'Status da IA', 'Active' → 'Ativo', 'Trend Detection' → 'Detecção de Tendência', 'Buy' → 'Compra', 'Sell' → 'Venda', 'Confidence' → 'Confiança', 'Processing' → 'Processando', 'Upload' → 'Enviar Gráfico', and all other UI elements including buttons, titles, messages, notifications, and labels.",
+      "reqIds": [
+        "REQ-10"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-restrict-timeframe-selection-to-only-three-options-m1-1-minuto-m5-5-minutos-and-m10-10-minutos-remove-all-longer-timeframe-periods-15m-30m-1h-etc-from-the-settings-and-default-timeframe-selection-set-m1-as-the-automatic-default-timeframe",
+      "title": "Restrict timeframe selection to only three options: M1 (1 minuto), M5 (5 minutos), and M10 (10 minutos). Remove all longer timeframe periods (15m, 30m, 1h, etc.) from the settings and default timeframe selection. Set M1 as the automatic default timeframe.",
+      "reqIds": [
+        "REQ-11"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-results-screen-to-display-the-suggested-timeframe-m1-m5-or-m10-based-on-the-user-s-configured-default-setting-and-add-directional-arrow-symbols-for-buy-for-sell-next-to-the-compra-venda-signal-labels-for-enhanced-visual-clarity",
+      "title": "Update the Results screen to display the suggested timeframe (M1, M5, or M10) based on the user's configured default setting, and add directional arrow symbols (↑ for buy, ↓ for sell) next to the COMPRA/VENDA signal labels for enhanced visual clarity.",
+      "reqIds": [
+        "REQ-12"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-settings-screen-to-display-fixed-portuguese-portugu-s-as-the-language-option-remove-language-selection-controls-and-ensure-timeframe-labels-use-portuguese-terminology-selecionar-timeframe-padr-o-with-options-m1-1-minuto-m5-5-minutos-m10-10-minutos-and-sensibilidade-da-ia-for-ai-sensitivity",
+      "title": "Update the Settings screen to display fixed Portuguese (Português) as the language option, remove language selection controls, and ensure timeframe labels use Portuguese terminology: 'Selecionar timeframe padrão' with options 'M1 (1 minuto)', 'M5 (5 minutos)', 'M10 (10 minutos)', and 'Sensibilidade da IA' for AI sensitivity.",
+      "reqIds": [
+        "REQ-13"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-processingscreen-to-display-all-four-processing-stages-in-portuguese-carregando-imagem-loading-image-processando-dados-processing-data-detectando-padr-es-detecting-patterns-and-gerando-resultado-generating-result-maintaining-the-sequential-animation-flow",
+      "title": "Update the ProcessingScreen to display all four processing stages in Portuguese: 'Carregando imagem' (Loading image), 'Processando dados' (Processing data), 'Detectando padrões' (Detecting patterns), and 'Gerando resultado' (Generating result), maintaining the sequential animation flow.",
+      "reqIds": [
+        "REQ-14"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-translate-the-results-screen-labels-and-content-to-portuguese-display-tend-ncia-for-trend-with-values-alta-baixa-or-lateral-show-padr-es-detectados-section-with-pattern-names-in-portuguese-and-ensure-all-explanatory-text-is-in-portuguese-brazil",
+      "title": "Translate the Results screen labels and content to Portuguese: display 'Tendência' for trend with values 'ALTA', 'BAIXA', or 'LATERAL'; show 'Padrões detectados' section with pattern names in Portuguese; and ensure all explanatory text is in Portuguese (Brazil).",
+      "reqIds": [
+        "REQ-15"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-analyzechart-page-to-display-portuguese-labels-change-upload-to-enviar-gr-fico-translate-all-file-upload-instructions-and-prompts-to-portuguese-and-ensure-camera-capture-gallery-selection-clipboard-paste-and-drag-and-drop-interfaces-display-portuguese-text",
+      "title": "Update the AnalyzeChart page to display Portuguese labels: change 'Upload' to 'Enviar Gráfico', translate all file upload instructions and prompts to Portuguese, and ensure camera capture, gallery selection, clipboard paste, and drag-and-drop interfaces display Portuguese text.",
+      "reqIds": [
+        "REQ-16"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-translate-the-history-page-to-portuguese-change-analysis-history-header-to-hist-rico-de-an-lises-translate-empty-state-message-prompting-users-to-analyze-their-first-chart-and-ensure-all-date-time-stamps-and-analysis-summary-text-display-in-portuguese-format",
+      "title": "Translate the History page to Portuguese: change 'Analysis History' header to 'Histórico de Análises', translate empty state message prompting users to analyze their first chart, and ensure all date/time stamps and analysis summary text display in Portuguese format.",
+      "reqIds": [
+        "REQ-17"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-dashboard-page-to-display-portuguese-labels-analisar-gr-fico-for-the-analyze-button-hist-rico-de-an-lises-for-history-button-configura-es-for-settings-button-and-status-da-ia-with-ativo-for-the-ai-status-indicator",
+      "title": "Update the Dashboard page to display Portuguese labels: 'Analisar Gráfico' for the analyze button, 'Histórico de Análises' for history button, 'Configurações' for settings button, and 'Status da IA' with 'Ativo' for the AI status indicator.",
+      "reqIds": [
+        "REQ-18"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-remove-all-local-ai-analysis-logic-from-the-frontend-delete-or-disable-mock-analysis-generation-code-in-processingscreen-tsx-that-creates-simulated-results",
+      "title": "Remove all local AI analysis logic from the frontend. Delete or disable mock analysis generation code in ProcessingScreen.tsx that creates simulated results.",
+      "reqIds": [
+        "REQ-19"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-new-api-service-module-frontend-src-services-analysisapi-ts-that-handles-http-requests-to-an-external-rest-api-endpoint-implement-a-function-to-post-chart-images-as-multipart-form-data-to-analisar-grafico-endpoint-with-the-image-file-in-a-field-named-imagem",
+      "title": "Create a new API service module (frontend/src/services/analysisApi.ts) that handles HTTP requests to an external REST API endpoint. Implement a function to POST chart images as multipart/form-data to '/analisar-grafico' endpoint, with the image file in a field named 'imagem'.",
+      "reqIds": [
+        "REQ-20"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-define-typescript-interfaces-for-the-external-api-response-schema-the-response-json-must-include-sinal-string-compra-or-venda-tendencia-string-trend-description-confianca-number-confidence-percentage-padroes-array-of-strings-detected-pattern-names-and-explicacao-string-textual-explanation",
+      "title": "Define TypeScript interfaces for the external API response schema. The response JSON must include: sinal (string: 'COMPRA' or 'VENDA'), tendencia (string: trend description), confianca (number: confidence percentage), padroes (array of strings: detected pattern names), and explicacao (string: textual explanation).",
+      "reqIds": [
+        "REQ-21"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-processingscreen-tsx-to-call-the-external-api-service-when-analysis-starts-send-the-uploaded-chart-image-to-the-api-display-the-four-processing-stages-carregando-imagem-processando-dados-detectando-padr-es-gerando-resultado-while-waiting-for-the-response-handle-api-errors-gracefully-with-portuguese-error-messages-and-navigate-to-the-results-page-with-the-api-response-data-upon-success",
+      "title": "Update ProcessingScreen.tsx to call the external API service when analysis starts. Send the uploaded chart image to the API, display the four processing stages ('Carregando imagem', 'Processando dados', 'Detectando padrões', 'Gerando resultado') while waiting for the response, handle API errors gracefully with Portuguese error messages, and navigate to the Results page with the API response data upon success.",
+      "reqIds": [
+        "REQ-22"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-results-tsx-to-render-analysis-results-received-from-the-external-api-response-map-api-response-fields-sinal-tendencia-confianca-padroes-explicacao-to-the-existing-ui-components-and-display-format-ensuring-all-portuguese-labels-and-formatting-remain-consistent",
+      "title": "Update Results.tsx to render analysis results received from the external API response. Map API response fields (sinal, tendencia, confianca, padroes, explicacao) to the existing UI components and display format, ensuring all Portuguese labels and formatting remain consistent.",
+      "reqIds": [
+        "REQ-23"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-configuration-support-for-multiple-external-ai-providers-in-the-api-service-module-create-a-configuration-object-or-environment-variable-structure-that-allows-switching-between-openai-chatgpt-vision-google-gemini-vision-or-a-custom-python-backend-endpoint-without-changing-application-code-include-placeholder-endpoint-urls-and-prepare-the-api-service-to-adapt-request-formats-for-different-providers-if-needed",
+      "title": "Add configuration support for multiple external AI providers in the API service module. Create a configuration object or environment variable structure that allows switching between OpenAI ChatGPT Vision, Google Gemini Vision, or a custom Python backend endpoint without changing application code. Include placeholder endpoint URLs and prepare the API service to adapt request formats for different providers if needed.",
+      "reqIds": [
+        "REQ-24"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-error-handling-and-retry-logic-to-the-api-service-for-network-failures-timeouts-and-non-200-http-responses-display-portuguese-error-messages-to-users-when-api-requests-fail-e-g-erro-ao-conectar-com-o-servidor-tempo-esgotado-erro-na-an-lise",
+      "title": "Add error handling and retry logic to the API service for network failures, timeouts, and non-200 HTTP responses. Display Portuguese error messages to users when API requests fail (e.g., 'Erro ao conectar com o servidor', 'Tempo esgotado', 'Erro na análise').",
+      "reqIds": [
+        "REQ-26"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-external-api-integration-documentation-in-frontend-src-config-apiconfig-ts-to-specify-that-the-api-endpoint-must-implement-a-6-step-rule-based-technical-analysis-process-1-image-preprocessing-increase-contrast-convert-to-high-sharpness-detect-individual-candles-identify-wick-body-high-low-ignore-broker-ui-elements-2-candle-reading-extract-direction-up-down-body-size-wick-size-color-sequence-movement-strength-3-trend-identification-ascending-tops-bottoms-alta-descending-baixa-sideways-lateral-4-price-action-pattern-detection-engulfing-high-low-hammer-shooting-star-doji-pullback-breakout-support-resistance-only-when-rules-are-confirmed-5-signal-scoring-system-2-points-strong-trend-1-favorable-pattern-1-resistance-against-2-contrary-pattern-result-2-compra-2-venda-between-1-and-1-neutro-6-mandatory-return-showing-trend-detected-patterns-total-score-confidence-percentage-final-signal-and-brief-technical-explanation-add-comments-describing-these-requirements-for-api-provider-implementation",
+      "title": "Update the external API integration documentation in frontend/src/config/apiConfig.ts to specify that the API endpoint must implement a 6-step rule-based technical analysis process: 1) image preprocessing (increase contrast, convert to high sharpness, detect individual candles, identify wick/body/high/low, ignore broker UI elements), 2) candle reading (extract direction up/down, body size, wick size, color sequence, movement strength), 3) trend identification (ascending tops/bottoms = ALTA, descending = BAIXA, sideways = LATERAL), 4) price action pattern detection (engulfing high/low, hammer, shooting star, doji, pullback, breakout, support/resistance - only when rules are confirmed), 5) signal scoring system (+2 points strong trend, +1 favorable pattern, -1 resistance against, -2 contrary pattern; result >= 2 = COMPRA, <= -2 = VENDA, between -1 and 1 = NEUTRO), 6) mandatory return showing trend, detected patterns, total score, confidence percentage, final signal, and brief technical explanation. Add comments describing these requirements for API provider implementation.",
+      "reqIds": [
+        "REQ-27"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-typescript-interface-definitions-in-frontend-src-types-apitypes-ts-to-extend-apianalysisresponse-with-an-optional-pontuacao-number-field-for-the-total-score-ensure-sinal-accepts-compra-venda-neutro-and-sem-entrada-as-valid-values-and-add-jsdoc-comments-explaining-the-scoring-system-2-2-point-scale-and-that-sem-entrada-indicates-no-clear-trading-signal-was-detected",
+      "title": "Update the TypeScript interface definitions in frontend/src/types/apiTypes.ts to extend ApiAnalysisResponse with an optional 'pontuacao' (number) field for the total score, ensure 'sinal' accepts 'COMPRA', 'VENDA', 'NEUTRO', and 'SEM ENTRADA' as valid values, and add JSDoc comments explaining the scoring system (+2/-2 point scale) and that 'SEM ENTRADA' indicates no clear trading signal was detected.",
+      "reqIds": [
+        "REQ-28"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-utils-mapapiresponse-ts-to-handle-the-new-neutro-and-sem-entrada-signal-values-from-the-api-response-map-neutro-to-a-neutral-state-in-the-internal-analysisresult-format-map-sem-entrada-to-indicate-no-entry-signal-and-ensure-the-mapping-logic-preserves-the-pontuacao-field-if-present-in-the-api-response-add-appropriate-handling-for-these-cases-in-the-ui-mapping-logic",
+      "title": "Update frontend/src/utils/mapApiResponse.ts to handle the new 'NEUTRO' and 'SEM ENTRADA' signal values from the API response. Map 'NEUTRO' to a neutral state in the internal AnalysisResult format, map 'SEM ENTRADA' to indicate no entry signal, and ensure the mapping logic preserves the 'pontuacao' field if present in the API response. Add appropriate handling for these cases in the UI mapping logic.",
+      "reqIds": [
+        "REQ-29"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-components-signalcard-tsx-to-display-neutro-signals-with-a-neutral-visual-style-gray-or-yellow-indicator-display-sem-entrada-signals-with-a-warning-style-and-appropriate-portuguese-text-sem-sinal-de-entrada-detectado-show-the-total-score-pontuacao-if-available-in-the-analysis-result-with-a-label-pontua-o-and-ensure-all-signal-types-compra-venda-neutro-sem-entrada-have-distinct-visual-indicators-and-portuguese-labels",
+      "title": "Update frontend/src/components/SignalCard.tsx to display 'NEUTRO' signals with a neutral visual style (gray or yellow indicator), display 'SEM ENTRADA' signals with a warning style and appropriate Portuguese text ('Sem sinal de entrada detectado'), show the total score (pontuacao) if available in the analysis result with a label 'Pontuação:', and ensure all signal types (COMPRA, VENDA, NEUTRO, SEM ENTRADA) have distinct visual indicators and Portuguese labels.",
+      "reqIds": [
+        "REQ-30"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-pages-results-tsx-to-handle-and-display-neutro-and-sem-entrada-signal-types-for-neutro-signals-display-appropriate-messaging-in-portuguese-mercado-em-consolida-o-aguarde-confirma-o-for-sem-entrada-signals-display-clear-messaging-in-portuguese-nenhum-sinal-claro-detectado-aguarde-melhor-oportunidade-and-consider-hiding-or-disabling-the-save-analysis-button-for-sem-entrada-results-ensure-the-score-pontuacao-is-prominently-displayed-if-present",
+      "title": "Update frontend/src/pages/Results.tsx to handle and display NEUTRO and SEM ENTRADA signal types. For NEUTRO signals, display appropriate messaging in Portuguese ('Mercado em consolidação - aguarde confirmação'). For SEM ENTRADA signals, display clear messaging in Portuguese ('Nenhum sinal claro detectado - aguarde melhor oportunidade') and consider hiding or disabling the 'Save Analysis' button for SEM ENTRADA results. Ensure the score (pontuacao) is prominently displayed if present.",
+      "reqIds": [
+        "REQ-31"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-services-analysisapi-ts-to-include-in-the-request-payload-or-headers-an-instruction-field-specifying-the-requirement-for-objective-rule-based-analysis-without-subjective-interpretation-add-a-comment-or-configuration-note-explaining-that-the-api-must-follow-the-6-step-technical-process-and-never-fabricate-signals-when-confirmation-is-unclear",
+      "title": "Update frontend/src/services/analysisApi.ts to include in the request payload or headers an instruction field specifying the requirement for objective rule-based analysis without subjective interpretation. Add a comment or configuration note explaining that the API must follow the 6-step technical process and never fabricate signals when confirmation is unclear.",
+      "reqIds": [
+        "REQ-32"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-pages-history-tsx-and-frontend-src-components-historylistitem-tsx-to-display-neutro-and-sem-entrada-signals-in-the-analysis-history-list-with-appropriate-visual-indicators-and-portuguese-labels-ensure-that-neutro-signals-show-as-neutro-and-sem-entrada-signals-show-as-sem-entrada-with-distinct-styling-to-differentiate-them-from-compra-venda-signals",
+      "title": "Update frontend/src/pages/History.tsx and frontend/src/components/HistoryListItem.tsx to display NEUTRO and SEM ENTRADA signals in the analysis history list with appropriate visual indicators and Portuguese labels. Ensure that NEUTRO signals show as 'Neutro' and SEM ENTRADA signals show as 'Sem entrada' with distinct styling to differentiate them from COMPRA/VENDA signals.",
+      "reqIds": [
+        "REQ-33"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-config-apiconfig-ts-to-set-google-gemini-vision-as-the-active-ai-provider-configure-the-gemini-api-endpoint-url-required-headers-structure-api-key-authentication-and-ensure-the-provider-configuration-is-marked-as-active",
+      "title": "Update frontend/src/config/apiConfig.ts to set Google Gemini Vision as the active AI provider. Configure the Gemini API endpoint URL, required headers structure (API key authentication), and ensure the provider configuration is marked as active.",
+      "reqIds": [
+        "REQ-34"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-services-analysisapi-ts-to-format-requests-specifically-for-google-gemini-vision-api-ensure-the-multipart-form-data-image-upload-and-request-payload-structure-comply-with-gemini-vision-s-expected-format-while-maintaining-the-existing-6-step-technical-analysis-instruction-requirements",
+      "title": "Update frontend/src/services/analysisApi.ts to format requests specifically for Google Gemini Vision API. Ensure the multipart/form-data image upload and request payload structure comply with Gemini Vision's expected format, while maintaining the existing 6-step technical analysis instruction requirements.",
+      "reqIds": [
+        "REQ-35"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-app-tagline-in-frontend-src-pages-dashboard-tsx-from-an-lise-de-gr-ficos-com-ia-sinais-de-trading-to-an-lise-de-gr-ficos-com-ia-sinais-de-trading-1-0-ensure-the-version-number-1-0-appears-as-part-of-the-main-heading-or-tagline",
+      "title": "Update the app tagline in frontend/src/pages/Dashboard.tsx from 'Análise de Gráficos com IA & Sinais de Trading' to 'Análise de Gráficos com IA & Sinais de Trading 1.0'. Ensure the version number '1.0' appears as part of the main heading or tagline.",
+      "reqIds": [
+        "REQ-36"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-inline-documentation-comments-in-frontend-src-config-apiconfig-ts-explaining-how-to-configure-google-gemini-vision-api-credentials-include-instructions-for-obtaining-a-gemini-api-key-setting-the-endpoint-url-and-configuring-authentication-headers",
+      "title": "Add inline documentation comments in frontend/src/config/apiConfig.ts explaining how to configure Google Gemini Vision API credentials. Include instructions for obtaining a Gemini API key, setting the endpoint URL, and configuring authentication headers.",
+      "reqIds": [
+        "REQ-37"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-investigate-and-fix-the-http-403-error-erro-na-an-lise-403-that-occurs-when-users-upload-chart-images-from-mobile-devices-review-the-api-request-format-in-frontend-src-services-analysisapi-ts-to-ensure-mobile-screenshots-are-properly-encoded-and-sent-with-correct-headers-and-authentication",
+      "title": "Investigate and fix the HTTP 403 error ('Erro na análise: 403') that occurs when users upload chart images from mobile devices. Review the API request format in frontend/src/services/analysisApi.ts to ensure mobile screenshots are properly encoded and sent with correct headers and authentication.",
+      "reqIds": [
+        "REQ-38"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-diagnostic-logging-to-frontend-src-services-analysisapi-ts-to-capture-request-details-headers-payload-size-content-type-when-api-calls-fail-with-403-status-helping-identify-authentication-or-permission-issues-specific-to-mobile-image-uploads",
+      "title": "Add diagnostic logging to frontend/src/services/analysisApi.ts to capture request details (headers, payload size, content type) when API calls fail with 403 status, helping identify authentication or permission issues specific to mobile image uploads.",
+      "reqIds": [
+        "REQ-39"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-verify-that-the-google-gemini-vision-api-key-in-frontend-src-config-apiconfig-ts-has-the-necessary-permissions-and-quotas-enabled-for-image-analysis-requests-add-validation-to-check-if-the-api-key-is-properly-configured-before-sending-requests",
+      "title": "Verify that the Google Gemini Vision API key in frontend/src/config/apiConfig.ts has the necessary permissions and quotas enabled for image analysis requests. Add validation to check if the API key is properly configured before sending requests.",
+      "reqIds": [
+        "REQ-40"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-mobile-screenshot-images-are-properly-converted-to-the-correct-format-and-size-before-being-sent-to-the-google-gemini-vision-api-add-image-preprocessing-in-frontend-src-services-analysisapi-ts-to-handle-different-mobile-screenshot-formats-and-dimensions-that-may-trigger-403-errors",
+      "title": "Ensure mobile screenshot images are properly converted to the correct format and size before being sent to the Google Gemini Vision API. Add image preprocessing in frontend/src/services/analysisApi.ts to handle different mobile screenshot formats and dimensions that may trigger 403 errors.",
+      "reqIds": [
+        "REQ-41"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-config-apiconfig-ts-to-add-proper-api-key-configuration-validation-that-checks-if-the-gemini-api-key-is-set-before-allowing-analysis-requests-display-a-clear-portuguese-error-message-chave-de-api-n-o-configurada-configure-a-chave-da-api-nas-configura-es-when-the-key-is-missing-or-invalid",
+      "title": "Update frontend/src/config/apiConfig.ts to add proper API key configuration validation that checks if the Gemini API key is set before allowing analysis requests. Display a clear Portuguese error message 'CHAVE DE API NÃO CONFIGURADA - Configure a chave da API nas configurações' when the key is missing or invalid.",
+      "reqIds": [
+        "REQ-42"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-services-analysisapi-ts-to-handle-mobile-screenshot-uploads-from-pocket-option-broker-specifically-add-detection-for-pocket-option-chart-characteristics-dark-theme-candlestick-layout-broker-ui-elements-visible-in-screenshot-and-ensure-the-image-preprocessing-pipeline-preserves-chart-data-quality-while-removing-broker-interface-artifacts",
+      "title": "Update frontend/src/services/analysisApi.ts to handle mobile screenshot uploads from Pocket Option broker specifically. Add detection for Pocket Option chart characteristics (dark theme, candlestick layout, broker UI elements visible in screenshot) and ensure the image preprocessing pipeline preserves chart data quality while removing broker interface artifacts.",
+      "reqIds": [
+        "REQ-43"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-services-analysisapi-ts-to-include-enhanced-logging-for-mobile-screenshot-analysis-requests-log-the-image-source-type-mobile-camera-screenshot-image-dimensions-file-size-detected-broker-interface-if-pocket-option-and-preprocessing-steps-applied-this-diagnostic-information-should-help-identify-why-mobile-screenshots-trigger-api-key-errors",
+      "title": "Update frontend/src/services/analysisApi.ts to include enhanced logging for mobile screenshot analysis requests. Log the image source type (mobile camera/screenshot), image dimensions, file size, detected broker interface (if Pocket Option), and preprocessing steps applied. This diagnostic information should help identify why mobile screenshots trigger API key errors.",
+      "reqIds": [
+        "REQ-44"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-pages-processingscreen-tsx-to-validate-api-key-configuration-immediately-when-analysis-begins-before-starting-the-image-upload-process-if-the-api-key-is-not-configured-display-the-error-message-chave-de-api-n-o-configurada-with-a-button-to-navigate-to-settings-and-do-not-proceed-with-the-analysis-stages",
+      "title": "Update frontend/src/pages/ProcessingScreen.tsx to validate API key configuration immediately when analysis begins, before starting the image upload process. If the API key is not configured, display the error message 'CHAVE DE API NÃO CONFIGURADA' with a button to navigate to Settings, and do not proceed with the analysis stages.",
+      "reqIds": [
+        "REQ-45"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-gemini-api-key-configuration-field-to-the-settings-page-frontend-src-pages-settings-tsx-include-a-secure-text-input-field-labeled-chave-da-api-gemini-a-save-button-and-validation-to-ensure-the-key-format-is-correct-store-the-api-key-securely-in-the-backend-or-encrypted-local-storage-and-update-the-api-service-to-read-from-this-configuration",
+      "title": "Add a Gemini API key configuration field to the Settings page (frontend/src/pages/Settings.tsx). Include a secure text input field labeled 'Chave da API Gemini', a save button, and validation to ensure the key format is correct. Store the API key securely in the backend or encrypted local storage, and update the API service to read from this configuration.",
+      "reqIds": [
+        "REQ-46"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-investigate-and-fix-the-http-404-error-erro-http-404-that-occurs-after-successful-api-key-configuration-and-image-upload-review-the-gemini-api-endpoint-url-configuration-in-frontend-src-config-apiconfig-ts-and-frontend-src-services-analysisapi-ts-to-ensure-the-correct-endpoint-is-being-used-for-image-analysis-requests",
+      "title": "Investigate and fix the HTTP 404 error ('Erro HTTP 404') that occurs after successful API key configuration and image upload. Review the Gemini API endpoint URL configuration in frontend/src/config/apiConfig.ts and frontend/src/services/analysisApi.ts to ensure the correct endpoint is being used for image analysis requests.",
+      "reqIds": [
+        "REQ-47"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-services-analysisapi-ts-to-validate-that-the-gemini-api-endpoint-configuration-is-correct-before-sending-requests-add-validation-to-check-if-the-endpoint-url-is-properly-formatted-and-includes-the-correct-api-version-e-g-v1-models-gemini-pro-vision-generatecontent-or-similar",
+      "title": "Update frontend/src/services/analysisApi.ts to validate that the Gemini API endpoint configuration is correct before sending requests. Add validation to check if the endpoint URL is properly formatted and includes the correct API version (e.g., '/v1/models/gemini-pro-vision:generateContent' or similar).",
+      "reqIds": [
+        "REQ-48"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-enhanced-error-handling-in-frontend-src-pages-processingscreen-tsx-to-catch-and-display-specific-http-404-errors-during-analysis-when-a-404-error-occurs-show-a-user-friendly-portuguese-message-explaining-that-the-api-endpoint-may-be-incorrectly-configured-with-a-button-to-return-to-settings",
+      "title": "Add enhanced error handling in frontend/src/pages/ProcessingScreen.tsx to catch and display specific HTTP 404 errors during analysis. When a 404 error occurs, show a user-friendly Portuguese message explaining that the API endpoint may be incorrectly configured, with a button to return to Settings.",
+      "reqIds": [
+        "REQ-49"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-google-gemini-vision-api-configuration-documentation-in-frontend-src-config-apiconfig-ts-to-include-the-correct-endpoint-url-format-and-path-research-and-document-the-exact-endpoint-structure-required-by-gemini-vision-api-for-image-analysis-requests-including-model-name-api-version-and-any-required-query-parameters",
+      "title": "Update the Google Gemini Vision API configuration documentation in frontend/src/config/apiConfig.ts to include the correct endpoint URL format and path. Research and document the exact endpoint structure required by Gemini Vision API for image analysis requests, including model name, API version, and any required query parameters.",
+      "reqIds": [
+        "REQ-50"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-services-analysisapi-ts-to-simplify-the-gemini-api-prompt-instructions-remove-all-complex-multi-step-process-descriptions-and-broker-specific-detection-logic-instead-send-a-focused-prompt-that-instructs-the-ai-to-1-analyze-only-the-candlestick-chart-visible-in-the-image-2-ignore-all-ui-elements-text-buttons-and-broker-interface-components-3-focus-exclusively-on-candle-patterns-trend-direction-and-price-action-4-return-a-simple-analysis-with-signal-compra-venda-neutro-sem-entrada-trend-alta-baixa-lateral-confidence-percentage-detected-patterns-and-brief-explanation-in-portuguese",
+      "title": "Update frontend/src/services/analysisApi.ts to simplify the Gemini API prompt instructions. Remove all complex multi-step process descriptions and broker-specific detection logic. Instead, send a focused prompt that instructs the AI to: 1) analyze only the candlestick chart visible in the image, 2) ignore all UI elements, text, buttons, and broker interface components, 3) focus exclusively on candle patterns, trend direction, and price action, 4) return a simple analysis with signal (COMPRA/VENDA/NEUTRO/SEM ENTRADA), trend (ALTA/BAIXA/LATERAL), confidence percentage, detected patterns, and brief explanation in Portuguese.",
+      "reqIds": [
+        "REQ-51"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-remove-or-comment-out-the-pocket-option-broker-detection-logic-in-frontend-src-services-analysisapi-ts-since-the-focus-should-be-purely-on-chart-analysis-eliminate-any-code-that-attempts-to-detect-or-handle-pocket-option-specific-ui-characteristics-dark-theme-detection-or-broker-interface-artifact-removal",
+      "title": "Remove or comment out the Pocket Option broker detection logic in frontend/src/services/analysisApi.ts. Since the focus should be purely on chart analysis, eliminate any code that attempts to detect or handle Pocket Option-specific UI characteristics, dark theme detection, or broker interface artifact removal.",
+      "reqIds": [
+        "REQ-52"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-enhanced-error-logging-to-frontend-src-services-analysisapi-ts-and-frontend-src-pages-processingscreen-tsx-to-capture-the-exact-error-response-from-gemini-api-when-analysis-fails-log-the-complete-error-message-status-code-response-body-and-any-api-error-details-to-help-diagnose-why-the-error-persists-after-image-upload",
+      "title": "Add enhanced error logging to frontend/src/services/analysisApi.ts and frontend/src/pages/ProcessingScreen.tsx to capture the exact error response from Gemini API when analysis fails. Log the complete error message, status code, response body, and any API error details to help diagnose why the error persists after image upload.",
+      "reqIds": [
+        "REQ-53"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-config-apiconfig-ts-documentation-to-clarify-that-the-simplified-approach-requires-the-ai-to-perform-direct-visual-analysis-of-the-chart-image-without-complex-preprocessing-steps-add-comments-explaining-that-the-api-should-receive-clear-chart-images-and-focus-analysis-on-visible-candlestick-patterns-trend-lines-and-price-action-only",
+      "title": "Update frontend/src/config/apiConfig.ts documentation to clarify that the simplified approach requires the AI to perform direct visual analysis of the chart image without complex preprocessing steps. Add comments explaining that the API should receive clear chart images and focus analysis on visible candlestick patterns, trend lines, and price action only.",
+      "reqIds": [
+        "REQ-54"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-gemini-api-prompt-in-frontend-src-services-analysisapi-ts-to-perform-basic-chart-analysis-only-the-prompt-must-instruct-the-ai-to-1-accept-full-mobile-phone-screen-screenshots-including-status-bar-notifications-broker-ui-elements-and-automatically-identify-and-isolate-the-candlestick-chart-area-within-the-image-ignoring-everything-outside-it-2-identify-key-support-and-resistance-levels-visible-on-the-chart-3-analyze-only-the-last-candle-on-the-chart-for-patterns-e-g-engulfing-hammer-shooting-star-doji-pin-bar-4-determine-the-overall-trend-direction-alta-baixa-or-lateral-5-return-a-json-response-with-fields-sinal-compra-venda-neutro-sem-entrada-tendencia-alta-baixa-lateral-confianca-0-100-padroes-array-of-detected-pattern-strings-in-portuguese-and-explicacao-brief-portuguese-explanation-keep-the-prompt-concise-and-focused-no-multi-step-scoring-systems-or-complex-preprocessing-instructions",
+      "title": "Update the Gemini API prompt in frontend/src/services/analysisApi.ts to perform basic chart analysis only. The prompt must instruct the AI to: 1) accept full mobile phone screen screenshots (including status bar, notifications, broker UI elements) and automatically identify and isolate the candlestick chart area within the image, ignoring everything outside it; 2) identify key support and resistance levels visible on the chart; 3) analyze only the last candle on the chart for patterns (e.g., engulfing, hammer, shooting star, doji, pin bar); 4) determine the overall trend direction (ALTA, BAIXA, or LATERAL); 5) return a JSON response with fields: sinal (COMPRA/VENDA/NEUTRO/SEM ENTRADA), tendencia (ALTA/BAIXA/LATERAL), confianca (0-100), padroes (array of detected pattern strings in Portuguese), and explicacao (brief Portuguese explanation). Keep the prompt concise and focused — no multi-step scoring systems or complex preprocessing instructions.",
+      "reqIds": [
+        "REQ-55"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-image-preprocessing-pipeline-in-frontend-src-services-analysisapi-ts-to-accept-and-properly-handle-full-mobile-phone-screen-screenshots-without-rejecting-or-distorting-them-remove-any-validation-or-preprocessing-logic-that-would-reject-screenshots-due-to-aspect-ratio-resolution-or-content-type-assumptions-ensure-the-image-is-sent-to-gemini-at-a-reasonable-size-resize-if-over-4mb-while-preserving-image-quality-so-gemini-can-visually-identify-the-chart-portion-within-the-full-screen-capture",
+      "title": "Update the image preprocessing pipeline in frontend/src/services/analysisApi.ts to accept and properly handle full mobile phone screen screenshots without rejecting or distorting them. Remove any validation or preprocessing logic that would reject screenshots due to aspect ratio, resolution, or content type assumptions. Ensure the image is sent to Gemini at a reasonable size (resize if over 4MB) while preserving image quality so Gemini can visually identify the chart portion within the full screen capture.",
+      "reqIds": [
+        "REQ-56"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-gemini-api-endpoint-configuration-in-frontend-src-config-apiconfig-ts-to-use-the-correct-v1beta-endpoint-url-for-the-gemini-1-5-flash-model-https-generativelanguage-googleapis-com-v1beta-models-gemini-1-5-flash-generatecontent-ensure-the-api-key-is-appended-as-a-query-parameter-key-api-key-and-that-the-request-content-type-header-is-set-to-application-json-update-documentation-comments-to-reflect-the-correct-endpoint-format",
+      "title": "Update the Gemini API endpoint configuration in frontend/src/config/apiConfig.ts to use the correct v1beta endpoint URL for the gemini-1.5-flash model: `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`. Ensure the API key is appended as a query parameter (`?key=API_KEY`) and that the request Content-Type header is set to `application/json`. Update documentation comments to reflect the correct endpoint format.",
+      "reqIds": [
+        "REQ-57"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-services-analysisapi-ts-to-send-requests-to-the-gemini-api-using-the-correct-json-body-format-for-the-gemini-vision-api-the-request-body-must-use-the-contents-array-with-a-parts-array-containing-both-the-text-prompt-and-the-image-as-an-inlinedata-object-with-mimetype-and-base64-encoded-data-remove-any-multipart-form-data-or-fetch-formdata-approach-for-the-gemini-provider-use-fetch-with-method-post-content-type-application-json-and-a-json-stringified-body-instead",
+      "title": "Update frontend/src/services/analysisApi.ts to send requests to the Gemini API using the correct JSON body format for the Gemini Vision API. The request body must use the `contents` array with a `parts` array containing both the text prompt and the image as an `inlineData` object with `mimeType` and `base64`-encoded `data`. Remove any multipart/form-data or fetch FormData approach for the Gemini provider — use `fetch` with `method: POST`, `Content-Type: application/json`, and a JSON-stringified body instead.",
+      "reqIds": [
+        "REQ-58"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-audit-and-fix-the-settings-page-frontend-src-pages-settings-tsx-to-ensure-all-settings-controls-are-fully-functional-the-gemini-api-key-input-field-must-correctly-read-the-stored-key-from-the-backend-save-it-on-submit-and-display-validation-feedback-the-default-timeframe-selector-m1-m5-m10-must-load-the-persisted-value-and-update-it-via-the-backend-mutation-the-ai-sensitivity-slider-must-load-and-save-correctly-the-theme-toggle-must-apply-the-selected-theme-immediately-and-the-daily-operation-limit-selector-must-load-the-current-value-and-trigger-the-setdailyoperationlimit-mutation-on-change-all-save-actions-must-show-a-portuguese-success-or-error-toast",
+      "title": "Audit and fix the Settings page (frontend/src/pages/Settings.tsx) to ensure all settings controls are fully functional: the Gemini API key input field must correctly read the stored key from the backend, save it on submit, and display validation feedback; the default timeframe selector (M1/M5/M10) must load the persisted value and update it via the backend mutation; the AI sensitivity slider must load and save correctly; the theme toggle must apply the selected theme immediately; and the daily operation limit selector must load the current value and trigger the setDailyOperationLimit mutation on change. All save actions must show a Portuguese success or error toast.",
+      "reqIds": [
+        "REQ-70"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-audit-and-fix-frontend-src-hooks-usesettings-ts-and-frontend-src-hooks-usequeries-ts-to-ensure-the-backend-actor-calls-for-getsettings-updatesettings-getgeminiapikey-setgeminiapikey-getdailyoperationprogress-and-setdailyoperationlimit-are-correctly-wired-verify-that-the-motoko-function-signatures-in-backend-main-mo-match-the-frontend-call-signatures-and-fix-any-mismatches-that-would-cause-settings-to-fail-silently",
+      "title": "Audit and fix frontend/src/hooks/useSettings.ts and frontend/src/hooks/useQueries.ts to ensure the backend actor calls for getSettings, updateSettings, getGeminiApiKey, setGeminiApiKey, getDailyOperationProgress, and setDailyOperationLimit are correctly wired. Verify that the Motoko function signatures in backend/main.mo match the frontend call signatures and fix any mismatches that would cause settings to fail silently.",
+      "reqIds": [
+        "REQ-71"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Dashboard with Analyze Chart, History, Settings buttons and AI status indicator",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Chart upload via camera, gallery, clipboard paste, and drag-drop (PNG/JPG/JPEG/PDF)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "AI processing animation showing loading stages (image load, data processing, pattern detection, result generation)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Results screen showing BUY/SELL signal, confidence %, trend, precision level, timeframe suggestion, explanation text, visual markings on chart, save and share buttons",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Analysis history with date/time, results, and ability to reopen past analyses",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-7",
+      "summary": "Settings for theme toggle (dark/light), AI sensitivity, default timeframes, signal notifications, and language selection",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-8",
+      "summary": "Dark/light minimalist theme with black, white, and gray color scheme, trading-style UI, large buttons, simple icons, visible charts, premium appearance",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "App icon with minimalist 'ASP' letters and display name 'Advance Signal Pro'",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-19",
+      "summary": "Complete Portuguese (Brazil) localization for all UI elements, buttons, titles, messages, and notifications",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-20",
+      "summary": "Restrict timeframe selection to M1 (1 minute - default), M5 (5 minutes), and M10 (10 minutes) only",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-21",
+      "summary": "Optimize analysis for Pocket Option charts with fast scalping detection (<3 seconds processing time)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-22",
+      "summary": "Implement external AI analysis via REST API: POST /analisar-grafico with multipart/form-data image upload, receiving JSON response with signal (COMPRA/VENDA), trend, confidence, detected patterns, and explanatory text",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-23",
+      "summary": "Prepare API integration layer to support OpenAI ChatGPT Vision, Google Gemini Vision, or custom Python backend",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-24",
+      "summary": "Separate frontend from AI logic: remove local analysis implementation and use external API responses only",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-31",
+      "summary": "Update the backend to remove or deprecate local analysis storage if it conflicts with the new external API flow. Ensure that analysis results returned by the external API can still be saved to the backend's history (backend/main.mo) by adapting the storage functions to accept externally-generated analysis data.",
+      "reqIds": [
+        "REQ-25"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-33",
+      "summary": "Integrate Google Gemini Vision API for chart image analysis",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-34",
+      "summary": "Update app tagline to 'Análise de Gráficos com IA & Sinais de Trading 1.0'",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-35",
+      "summary": "Configure Google Gemini Vision API key to enable chart analysis for mobile screenshots from Pocket Option broker",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-36",
+      "summary": "Fix error that occurs after image upload loads: add detailed error handling with Portuguese error messages, validate image format/size before API call, auto-resize large images, add diagnostic logging for Gemini API response errors",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-37",
+      "summary": "Simplify Gemini API analysis to basic chart analysis: support/resistance levels, last candle patterns, and trend direction. Accept full mobile phone screen screenshots and analyze only the chart area within the image, ignoring all other screen elements (notifications, status bar, broker UI).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-38",
+      "summary": "Advanced candle analysis: calculate probability of next candle being bullish or bearish (%), suggest action based on previous candle high/low breakout, provide numeric entry/stop-loss/target example, and display disclaimer",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-39",
+      "summary": "Operation history with green/red confirmation buttons per operation (green=followed, red=not followed)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-40",
+      "summary": "Daily operation management system: user selects daily operation count (3, 4, 6, or 8), progressive clock tracking each operation, resets at midnight, shows progress (e.g., '2/3 operações completadas hoje')",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-41",
+      "summary": "Update the Gemini API prompt in frontend/src/services/analysisApi.ts to include advanced candle analysis instructions. The prompt must instruct the AI to analyze the last 3–5 visible candles on the chart and return two additional fields in the JSON response: 'probabilidade_alta' (number 0–100: probability that the next candle will be bullish) and 'probabilidade_baixa' (number 0–100: probability that the next candle will be bearish). The probabilities must sum to 100. Additionally, the prompt must request: 'acao_sugerida' (string: 'COMPRA', 'VENDA', or 'AGUARDAR') based on whether the current candle breaks above the previous candle's high (buy) or below the previous candle's low (sell), and 'exemplo_operacao' (object with fields: 'entrada' number, 'stop' number, 'alvo' number) providing a numeric example using the previous candle's high/low as reference prices. The prompt must also consider volume, trend direction across the last candles, and simple patterns (engulfing, hammer, doji) when calculating probabilities.",
+      "reqIds": [
+        "REQ-59"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-42",
+      "summary": "Extend the TypeScript interface ApiAnalysisResponse in frontend/src/types/apiTypes.ts to include the new fields returned by the advanced candle analysis prompt: 'probabilidade_alta' (optional number), 'probabilidade_baixa' (optional number), 'acao_sugerida' (optional string: 'COMPRA' | 'VENDA' | 'AGUARDAR'), and 'exemplo_operacao' (optional object with fields 'entrada': number, 'stop': number, 'alvo': number). Add JSDoc comments explaining each field.",
+      "reqIds": [
+        "REQ-60"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-43",
+      "summary": "Update frontend/src/utils/mapApiResponse.ts to map the new API response fields ('probabilidade_alta', 'probabilidade_baixa', 'acao_sugerida', 'exemplo_operacao') into the internal AnalysisResult format. Preserve these values so they are available for display in the Results screen.",
+      "reqIds": [
+        "REQ-61"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-44",
+      "summary": "Update frontend/src/pages/Results.tsx to display the advanced candle analysis output. Add a new section below the existing signal card showing: (1) 'Probabilidade de alta: XX%' and 'Probabilidade de baixa: XX%' with visual percentage bars; (2) 'Ação sugerida: [COMPRA/VENDA/AGUARDAR]' with color coding (green for COMPRA, red for VENDA, yellow for AGUARDAR); (3) 'Exemplo de operação' block showing 'Entrada: [value]', 'Stop: [value]', 'Alvo: [value]'; (4) A disclaimer text in Portuguese: '⚠️ Este é um cálculo de probabilidade baseado em análise técnica, não garante resultados.' All labels must be in Portuguese (Brazil). Only render this section if the probability or operation example fields are present in the result.",
+      "reqIds": [
+        "REQ-62"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-45",
+      "summary": "Update the backend actor in backend/main.mo to extend the stored analysis record type to include optional fields for the advanced candle analysis: probabilidadeAlta (optional Float or Nat), probabilidadeBaixa (optional Float or Nat), acaoSugerida (optional Text), entradaExemplo (optional Float), stopExemplo (optional Float), alvoExemplo (optional Float), and operationFollowed (optional Bool, representing whether the user confirmed they followed the suggested operation). Update the storeAnalysis function to accept and persist these new optional fields. Ensure backward compatibility with existing stored analyses that lack these fields.",
+      "reqIds": [
+        "REQ-63"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-46",
+      "summary": "Update the backend actor in backend/main.mo to add a daily operation management system. Add a per-user settings field for 'dailyOperationLimit' (Nat, accepting values 3, 4, 6, or 8, defaulting to 3). Add a function 'getDailyOperationProgress(userId)' that counts how many analyses have been stored for the current UTC day (after 00:00) and returns the count along with the user's configured daily limit. Add a function 'setDailyOperationLimit(limit: Nat)' to update the user's daily limit. Store analyses with a timestamp so day-based filtering is possible.",
+      "reqIds": [
+        "REQ-64"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-47",
+      "summary": "Update frontend/src/hooks/useQueries.ts to add React Query hooks for the new daily operation management backend functions: a 'useGetDailyProgress' hook that calls 'getDailyOperationProgress' and returns today's operation count and limit, a 'useSetDailyOperationLimit' mutation hook that calls 'setDailyOperationLimit', and a 'useUpdateOperationFollowed' mutation hook that calls 'updateOperationFollowed' with an analysis ID and boolean value.",
+      "reqIds": [
+        "REQ-65"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-48",
+      "summary": "Update frontend/src/pages/Results.tsx to add two confirmation buttons per analysis result: a green button labeled 'Segui a operação ✓' and a red button labeled 'Não segui ✗'. When clicked, each button calls the 'useUpdateOperationFollowed' mutation with the current analysis ID and true (green) or false (red). After confirmation, show a brief Portuguese feedback message (e.g., 'Operação registrada!'). Disable both buttons after one is selected. Display the daily progress indicator (e.g., '2/3 operações completadas hoje') using data from 'useGetDailyProgress'.",
+      "reqIds": [
+        "REQ-66"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-49",
+      "summary": "Update frontend/src/pages/History.tsx and frontend/src/components/HistoryListItem.tsx to display the green/red confirmation status for each past operation. If 'operationFollowed' is true, show a green indicator labeled 'Seguiu'; if false, show a red indicator labeled 'Não seguiu'; if null/undefined, show no indicator. Also display the daily progress summary at the top of the History page: 'X/Y operações completadas hoje' using data from 'useGetDailyProgress'.",
+      "reqIds": [
+        "REQ-67"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-50",
+      "summary": "Update frontend/src/pages/Settings.tsx to add a 'Daily Operation Limit' setting. Display a selector labeled 'Operações por dia' with four options: 3, 4, 6, and 8. Use the existing SettingRow component for layout. On change, call the 'useSetDailyOperationLimit' mutation hook and show a Portuguese success toast. Load the current value from the backend settings using the existing useSettings hook pattern. Show the current daily progress below the selector: 'Hoje: X/Y operações realizadas'.",
+      "reqIds": [
+        "REQ-68"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-51",
+      "summary": "Update frontend/src/pages/Dashboard.tsx to display a daily operation progress bar or text badge in the AI status area. Show the text 'X/Y operações hoje' using data from 'useGetDailyProgress'. Use a subtle progress bar styled consistently with the dark/light theme. This should update in real time when the user returns to the dashboard after completing an analysis.",
+      "reqIds": [
+        "REQ-69"
+      ],
+      "status": "pending"
+    }
+  ],
+  "gameProjectType": "none",
+  "projectName": "Advance Signal Pro",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}
