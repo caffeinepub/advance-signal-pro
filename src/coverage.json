@@ -1,80 +1,87 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-24T01:39:59.976Z",
+  "generatedAt": "2026-02-24T01:57:40.995Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
-    "implemented": 4,
+    "total": 5,
+    "implemented": 5,
     "items": [
       {
-        "id": "REQ-38",
-        "summary": "Investigate and fix the HTTP 403 error ('Erro na análise: 403') that occurs when users upload chart images from mobile devices. Review the API request format in frontend/src/services/analysisApi.ts to ensure mobile screenshots are properly encoded and sent with correct headers and authentication.",
+        "id": "REQ-42",
+        "summary": "Update frontend/src/config/apiConfig.ts to add proper API key configuration validation that checks if the Gemini API key is set before allowing analysis requests. Display a clear Portuguese error message 'CHAVE DE API NÃO CONFIGURADA - Configure a chave da API nas configurações' when the key is missing or invalid.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/services/analysisApi.ts",
           "frontend/src/config/apiConfig.ts"
         ],
         "matchedFiles": [
-          "frontend/src/services/analysisApi.ts",
           "frontend/src/config/apiConfig.ts"
         ]
       },
       {
-        "id": "REQ-39",
-        "summary": "Add diagnostic logging to frontend/src/services/analysisApi.ts to capture request details (headers, payload size, content type) when API calls fail with 403 status, helping identify authentication or permission issues specific to mobile image uploads.",
+        "id": "REQ-43",
+        "summary": "Update frontend/src/services/analysisApi.ts to handle mobile screenshot uploads from Pocket Option broker specifically. Add detection for Pocket Option chart characteristics (dark theme, candlestick layout, broker UI elements visible in screenshot) and ensure the image preprocessing pipeline preserves chart data quality while removing broker interface artifacts.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/services/analysisApi.ts",
+          "frontend/src/services/analysisApi.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/services/analysisApi.ts"
+        ]
+      },
+      {
+        "id": "REQ-44",
+        "summary": "Update frontend/src/services/analysisApi.ts to include enhanced logging for mobile screenshot analysis requests. Log the image source type (mobile camera/screenshot), image dimensions, file size, detected broker interface (if Pocket Option), and preprocessing steps applied. This diagnostic information should help identify why mobile screenshots trigger API key errors.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/services/analysisApi.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/services/analysisApi.ts"
+        ]
+      },
+      {
+        "id": "REQ-45",
+        "summary": "Update frontend/src/pages/ProcessingScreen.tsx to validate API key configuration immediately when analysis begins, before starting the image upload process. If the API key is not configured, display the error message 'CHAVE DE API NÃO CONFIGURADA' with a button to navigate to Settings, and do not proceed with the analysis stages.",
+        "status": "implemented",
+        "plannedFiles": [
           "frontend/src/pages/ProcessingScreen.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/services/analysisApi.ts",
           "frontend/src/pages/ProcessingScreen.tsx"
         ]
       },
       {
-        "id": "REQ-40",
-        "summary": "Verify that the Google Gemini Vision API key in frontend/src/config/apiConfig.ts has the necessary permissions and quotas enabled for image analysis requests. Add validation to check if the API key is properly configured before sending requests.",
+        "id": "REQ-46",
+        "summary": "Add a Gemini API key configuration field to the Settings page (frontend/src/pages/Settings.tsx). Include a secure text input field labeled 'Chave da API Gemini', a save button, and validation to ensure the key format is correct. Store the API key securely in the backend or encrypted local storage, and update the API service to read from this configuration.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/services/analysisApi.ts",
-          "frontend/src/config/apiConfig.ts"
+          "frontend/src/pages/Settings.tsx",
+          "frontend/src/services/analysisApi.ts"
         ],
         "matchedFiles": [
-          "frontend/src/services/analysisApi.ts",
-          "frontend/src/config/apiConfig.ts"
-        ]
-      },
-      {
-        "id": "REQ-41",
-        "summary": "Ensure mobile screenshot images are properly converted to the correct format and size before being sent to the Google Gemini Vision API. Add image preprocessing in frontend/src/services/analysisApi.ts to handle different mobile screenshot formats and dimensions that may trigger 403 errors.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/services/analysisApi.ts",
-          "frontend/src/components/FileUpload.tsx",
-          "frontend/src/pages/AnalyzeChart.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/services/analysisApi.ts",
-          "frontend/src/components/FileUpload.tsx",
-          "frontend/src/pages/AnalyzeChart.tsx"
+          "frontend/src/pages/Settings.tsx",
+          "frontend/src/services/analysisApi.ts"
         ]
       }
     ]
   },
   "changedFiles": [
+    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/FileUpload.tsx",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
     "frontend/src/config/apiConfig.ts",
-    "frontend/src/pages/AnalyzeChart.tsx",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
     "frontend/src/pages/ProcessingScreen.tsx",
+    "frontend/src/pages/Settings.tsx",
     "frontend/src/services/analysisApi.ts",
     "project_state.json",
     "scratch/component-selection.json",

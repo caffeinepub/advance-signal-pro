@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw, Settings } from 'lucide-react';
 import ProcessingStage from '../components/ProcessingStage';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -9,6 +9,8 @@ import { toast } from 'sonner';
 import { analyzeChartImage, AnalysisApiError } from '../services/analysisApi';
 import { mapApiResponseToAnalysisResult } from '../utils/mapApiResponse';
 import { useAnalyzeChart } from '../hooks/useQueries';
+import { useActor } from '../hooks/useActor';
+import { validateApiKey } from '../config/apiConfig';
 
 const stages = [
   { id: 1, label: 'Carregando imagem', duration: 800 },
@@ -19,11 +21,13 @@ const stages = [
 
 export default function ProcessingScreen() {
   const navigate = useNavigate();
+  const { actor } = useActor();
   const [currentStage, setCurrentStage] = useState(0);
   const [imageBlob, setImageBlob] = useState<ExternalBlob | null>(null);
   const [imageFile, setImageFile] = useState<Blob | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [apiKeyError, setApiKeyError] = useState(false);
   const analyzeChart = useAnalyzeChart();
 
   useEffect(() => {
@@ -58,17 +62,42 @@ export default function ProcessingScreen() {
   }, [navigate]);
 
   useEffect(() => {
-    if (!imageBlob || !imageFile || isProcessing) return;
+    if (!imageBlob || !imageFile || isProcessing || !actor) return;
 
-    // Start processing animation and API call
-    startAnalysis();
-  }, [imageBlob, imageFile]);
+    // Validate API key before starting analysis
+    validateApiKeyAndStart();
+  }, [imageBlob, imageFile, actor]);
+
+  const validateApiKeyAndStart = async () => {
+    if (!actor) return;
+
+    try {
+      console.log('[API Key] Validating API key configuration...');
+      const validation = await validateApiKey(actor);
+      
+      if (!validation.isValid) {
+        console.error('[API Key] Validation failed:', validation.errorMessage);
+        setError(validation.errorMessage || 'CHAVE DE API NÃO CONFIGURADA');
+        setApiKeyError(true);
+        return;
+      }
+
+      console.log('[API Key] Validation successful');
+      // Start processing animation and API call
+      startAnalysis();
+    } catch (err) {
+      console.error('[API Key] Validation error:', err);
+      setError('Erro ao validar chave da API');
+      setApiKeyError(true);
+    }
+  };
 
   const startAnalysis = async () => {
-    if (!imageBlob || !imageFile || isProcessing) return;
+    if (!imageBlob || !imageFile || isProcessing || !actor) return;
 
     setIsProcessing(true);
     setError(null);
+    setApiKeyError(false);
 
     // Start stage animation
     let stageIndex = 0;
@@ -80,13 +109,17 @@ export default function ProcessingScreen() {
     }, 1000);
 
     try {
+      // Get API key from backend
+      const apiKey = await actor.getGeminiApiKey();
+      console.log('[Analysis] API key retrieved from backend');
+
       // Call external API for analysis
-      console.log('Starting chart analysis...');
-      const apiResponse = await analyzeChartImage(imageFile, (progress) => {
-        console.log(`Upload progress: ${progress}%`);
+      console.log('[Analysis] Starting chart analysis...');
+      const apiResponse = await analyzeChartImage(imageFile, apiKey, (progress) => {
+        console.log(`[Analysis] Upload progress: ${progress}%`);
       });
 
-      console.log('Analysis complete:', apiResponse);
+      console.log('[Analysis] Analysis complete:', apiResponse);
 
       // Clear stage animation
       clearInterval(stageInterval);
@@ -111,20 +144,24 @@ export default function ProcessingScreen() {
       });
     } catch (err) {
       clearInterval(stageInterval);
-      console.error('Analysis error:', err);
+      console.error('[Analysis] Analysis error:', err);
 
       let errorMessage = 'Erro ao analisar o gráfico';
+      let isApiKeyIssue = false;
       
       if (err instanceof AnalysisApiError) {
         switch (err.code) {
           case 'API_KEY_MISSING':
-            errorMessage = 'Chave de API não configurada. Configure a chave no arquivo .env';
+            errorMessage = 'CHAVE DE API NÃO CONFIGURADA - Configure a chave da API nas configurações';
+            isApiKeyIssue = true;
             break;
           case 'API_AUTH_ERROR':
-            errorMessage = 'Erro de autenticação da API. Verifique sua chave de API no arquivo .env';
+            errorMessage = 'Erro de autenticação da API. Verifique sua chave de API nas configurações';
+            isApiKeyIssue = true;
             break;
           case 'INVALID_API_KEY':
-            errorMessage = 'Chave de API inválida. Verifique sua chave no arquivo .env';
+            errorMessage = 'Chave de API inválida. Configure uma chave válida nas configurações';
+            isApiKeyIssue = true;
             break;
           case 'HEIC_NOT_SUPPORTED':
             errorMessage = 'Arquivos HEIC não são suportados. Por favor, use a câmera ou converta para JPEG';
@@ -144,6 +181,7 @@ export default function ProcessingScreen() {
       }
 
       setError(errorMessage);
+      setApiKeyError(isApiKeyIssue);
       toast.error(errorMessage);
     } finally {
       setIsProcessing(false);
@@ -152,12 +190,22 @@ export default function ProcessingScreen() {
 
   const handleRetry = () => {
     setError(null);
+    setApiKeyError(false);
     setCurrentStage(0);
-    startAnalysis();
+    if (apiKeyError) {
+      // Re-validate API key before retrying
+      validateApiKeyAndStart();
+    } else {
+      startAnalysis();
+    }
   };
 
   const handleBack = () => {
     navigate({ to: '/analyze' });
+  };
+
+  const handleGoToSettings = () => {
+    navigate({ to: '/settings' });
   };
 
   return (
@@ -171,24 +219,47 @@ export default function ProcessingScreen() {
               </div>
             </div>
             <div>
-              <h2 className="text-2xl font-bold mb-2">Erro na Análise</h2>
-              <p className="text-muted-foreground">{error}</p>
+              <h2 className="text-2xl font-bold mb-2">
+                {apiKeyError ? 'Configuração Necessária' : 'Erro na Análise'}
+              </h2>
+              <p className="text-muted-foreground whitespace-pre-line">{error}</p>
             </div>
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={handleBack}
-              >
-                Voltar
-              </Button>
-              <Button
-                className="flex-1 gap-2"
-                onClick={handleRetry}
-              >
-                <RefreshCw className="w-4 h-4" />
-                Tentar Novamente
-              </Button>
+            <div className="flex flex-col gap-3">
+              {apiKeyError ? (
+                <>
+                  <Button
+                    className="w-full gap-2"
+                    onClick={handleGoToSettings}
+                  >
+                    <Settings className="w-4 h-4" />
+                    Ir para Configurações
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={handleBack}
+                  >
+                    Voltar
+                  </Button>
+                </>
+              ) : (
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={handleBack}
+                  >
+                    Voltar
+                  </Button>
+                  <Button
+                    className="flex-1 gap-2"
+                    onClick={handleRetry}
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Tentar Novamente
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         ) : (

@@ -1,94 +1,100 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix 403 error when analyzing mobile screenshots",
+  "title": "Fix API key configuration error for mobile Pocket Option screenshots",
   "requirements": [
     {
-      "id": "REQ-38",
-      "summary": "Fix HTTP 403 error for mobile screenshot uploads by reviewing API request format, ensuring proper image encoding, headers, and authentication",
+      "id": "REQ-42",
+      "summary": "Add API key validation to frontend/src/config/apiConfig.ts with Portuguese error message when key is missing",
       "acceptanceCriteria": [
-        "Mobile screenshots can be analyzed without returning 403 errors",
-        "Error handling provides clear Portuguese feedback when API authentication fails",
-        "API requests include all required headers and authentication tokens for the Google Gemini Vision endpoint"
+        "API key validation function exists in apiConfig.ts",
+        "Validation runs before any API request is sent",
+        "Portuguese error message 'CHAVE DE API NÃO CONFIGURADA' displays when key is missing",
+        "Error message includes instruction to configure key in settings"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/services/analysisApi.ts",
-          "operation": "modify",
-          "description": "Review and fix the analyzeChart function to ensure mobile screenshots are properly encoded as base64 data URIs with correct MIME types. Verify that the Google Gemini Vision API request includes all required headers (Content-Type: application/json) and properly formatted authentication in the URL query parameter. Ensure the image data is sent in the correct format expected by Gemini's REST API (inline data with mime_type and data fields). Add validation to check that base64 encoding is complete and valid before sending the request."
-        },
-        {
           "path": "frontend/src/config/apiConfig.ts",
           "operation": "modify",
-          "description": "Review the GEMINI endpoint configuration to ensure the API key placeholder and URL format match Google's current Gemini Vision API requirements. Verify that the endpoint URL structure supports the generateContent method with proper versioning. Add comments documenting the required API key format and any specific Google Cloud project permissions needed for the Gemini Vision API."
+          "description": "Add validateApiKey() function that checks if Gemini API key is configured by calling backend.getGeminiApiKey(). Return validation result with error message 'CHAVE DE API NÃO CONFIGURADA - Configure a chave da API nas configurações' when key is null or empty. Export this function for use by analysisApi.ts and ProcessingScreen.tsx."
         }
       ]
     },
     {
-      "id": "REQ-39",
-      "summary": "Add diagnostic logging to capture request details when API calls fail with 403 status",
+      "id": "REQ-43",
+      "summary": "Enhance frontend/src/services/analysisApi.ts to handle mobile Pocket Option screenshots with broker UI detection and preprocessing",
       "acceptanceCriteria": [
-        "Console logs display request metadata when 403 errors occur",
-        "Error messages distinguish between authentication failures and other API errors",
-        "Logs help identify differences between desktop and mobile image upload requests"
+        "Mobile screenshots from Pocket Option are correctly identified",
+        "Image preprocessing handles dark-themed Pocket Option charts",
+        "Broker UI elements (balance display, buttons, menus) are filtered or ignored during preprocessing",
+        "Chart candlestick data remains intact and readable after preprocessing",
+        "Analysis request successfully sends Pocket Option screenshots to Gemini API"
       ],
       "file_operations": [
         {
           "path": "frontend/src/services/analysisApi.ts",
           "operation": "modify",
-          "description": "Add comprehensive console logging before fetch requests to capture: request URL (with API key redacted), request headers, payload size in bytes, image MIME type, and base64 data length. When a 403 error occurs, log the full error response body, response headers, and request metadata to help diagnose authentication issues. Add a helper function to safely log request details without exposing sensitive API keys. Include device/platform detection (mobile vs desktop) in error logs to identify mobile-specific issues."
-        },
+          "description": "Add detectPocketOption() function that analyzes image metadata and visual characteristics (dark theme presence, specific UI element patterns visible in broker screenshots). Update preprocessImage() to detect Pocket Option interface elements and apply specialized preprocessing that preserves candlestick chart data while handling broker UI artifacts. Ensure the existing resize and format conversion logic remains compatible with mobile screenshots. Add comments documenting Pocket Option-specific handling steps."
+        }
+      ]
+    },
+    {
+      "id": "REQ-44",
+      "summary": "Add diagnostic logging to frontend/src/services/analysisApi.ts for mobile screenshot analysis requests",
+      "acceptanceCriteria": [
+        "Logging captures mobile screenshot metadata (dimensions, size, format)",
+        "Logging identifies if uploaded image is a Pocket Option screenshot",
+        "Preprocessing steps are logged in sequence",
+        "API request payload details are logged before sending to Gemini",
+        "Error logs include enough context to diagnose API key configuration issues"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/services/analysisApi.ts",
+          "operation": "modify",
+          "description": "Add console.log statements throughout analyzeChart() function to log: 1) Image source metadata (dimensions, file size, format, aspect ratio) at upload, 2) Pocket Option detection result (true/false with confidence indicators), 3) Each preprocessing step applied (resize dimensions, format conversions, quality settings), 4) API request payload summary (endpoint, headers present, body size) before sending to Gemini, 5) API key validation status and any configuration errors. Include timestamp prefixes and structured log format for easier debugging."
+        }
+      ]
+    },
+    {
+      "id": "REQ-45",
+      "summary": "Update frontend/src/pages/ProcessingScreen.tsx to validate API key before starting analysis stages",
+      "acceptanceCriteria": [
+        "API key validation occurs before 'Carregando imagem' stage",
+        "Processing stops immediately if key is missing",
+        "Error screen shows 'CHAVE DE API NÃO CONFIGURADA' message",
+        "Navigation button to Settings page is provided",
+        "User can configure API key and retry analysis without losing uploaded image"
+      ],
+      "file_operations": [
         {
           "path": "frontend/src/pages/ProcessingScreen.tsx",
           "operation": "modify",
-          "description": "Update error handling in the handleAnalysis function to display more specific Portuguese error messages when a 403 status is received. Distinguish between 'Erro de autenticação da API' (authentication error), 'Chave de API inválida' (invalid API key), and 'Permissões insuficientes' (insufficient permissions). Log the image source (camera, upload, or clipboard) along with device type when analysis fails to help correlate 403 errors with mobile uploads."
+          "description": "Add API key validation check at the start of the analysis flow, before the 'Carregando imagem' stage begins. Import validateApiKey from apiConfig.ts and call it in useEffect. If validation fails, set error state with message 'CHAVE DE API NÃO CONFIGURADA - Configure a chave da API nas configurações', display error UI with a button labeled 'Ir para Configurações' that navigates to /settings using TanStack Router's useNavigate hook. Ensure the uploaded image remains in sessionStorage so user can retry after configuring the key. Do not proceed with any processing stages if validation fails."
         }
       ]
     },
     {
-      "id": "REQ-40",
-      "summary": "Validate Google Gemini Vision API key configuration and permissions before sending requests",
+      "id": "REQ-46",
+      "summary": "Add Gemini API key configuration field to Settings page with secure storage",
       "acceptanceCriteria": [
-        "API key validation prevents requests when credentials are missing or invalid",
-        "User receives clear Portuguese error message ('Chave de API não configurada') if API key is missing",
-        "Configuration documentation includes steps to verify API key permissions"
+        "Settings page displays 'Chave da API Gemini' input field",
+        "Input field uses password-type masking for security",
+        "Save button stores API key in backend or secure local storage",
+        "API key format validation prevents invalid keys from being saved",
+        "analysisApi.ts reads API key from saved configuration",
+        "Settings screen shows confirmation message after successful save"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/services/analysisApi.ts",
+          "path": "frontend/src/pages/Settings.tsx",
           "operation": "modify",
-          "description": "Add validateApiKey helper function that checks if the Gemini API key is present, non-empty, and not a placeholder value (like 'YOUR_API_KEY_HERE'). Call this validation at the start of analyzeChart before making the HTTP request. Throw a descriptive error with Portuguese message 'Chave de API não configurada. Configure a chave no arquivo apiConfig.ts' when validation fails. Add comments documenting required Google Cloud API permissions (Generative Language API enabled, unrestricted API key or proper HTTP referrer restrictions)."
+          "description": "Add a new settings section labeled 'Configuração da API' with a SettingRow component containing a password-type input field labeled 'Chave da API Gemini'. Add state management for the API key value. Include a 'Salvar' button that calls backend.setGeminiApiKey() (from the backend interface) to store the key securely. Add client-side validation to check API key format (non-empty, minimum length, starts with expected prefix if applicable). Display a success toast notification with Portuguese message 'Chave da API salva com sucesso' after successful save. Add useEffect to load current API key from backend.getGeminiApiKey() on component mount and populate the input field (masked). Handle loading and error states appropriately."
         },
-        {
-          "path": "frontend/src/config/apiConfig.ts",
-          "operation": "modify",
-          "description": "Add inline documentation comments above the GEMINI configuration explaining: 1) How to obtain a Gemini API key from Google AI Studio, 2) Required API enablement in Google Cloud Console (Generative Language API), 3) Recommended API key restrictions (HTTP referrers for production), 4) How to verify the API key has proper permissions by testing with curl, 5) Common 403 error causes (quota exceeded, API not enabled, referrer restrictions). Add a TODO comment reminding developers to replace the placeholder API key."
-        }
-      ]
-    },
-    {
-      "id": "REQ-41",
-      "summary": "Ensure mobile screenshots are properly preprocessed (format conversion, resizing) before sending to Google Gemini Vision API",
-      "acceptanceCriteria": [
-        "Images larger than API limits are automatically resized while preserving aspect ratio",
-        "HEIC/HEIF formats from iOS devices are converted to JPEG before upload",
-        "Image preprocessing maintains sufficient quality for chart analysis"
-      ],
-      "file_operations": [
         {
           "path": "frontend/src/services/analysisApi.ts",
           "operation": "modify",
-          "description": "Add preprocessImage async helper function that: 1) Creates an Image object from the file/blob, 2) Checks dimensions against Gemini Vision limits (max 4096x4096 pixels), 3) If oversized, creates a canvas and draws the image scaled down proportionally to fit within limits, 4) Converts canvas to JPEG blob with 0.9 quality using canvas.toBlob, 5) Returns the processed File object. Call preprocessImage on the input file before converting to base64 in analyzeChart. Add comments documenting Gemini's image size limits and supported formats (JPEG, PNG, WebP, but not HEIC). For HEIC detection, check file.type === 'image/heic' or file.name.endsWith('.heic') and show a Portuguese error message instructing users to convert or use camera to capture as JPEG instead."
-        },
-        {
-          "path": "frontend/src/components/FileUpload.tsx",
-          "operation": "modify",
-          "description": "Update the file validation logic to detect HEIC/HEIF formats and show a warning message in Portuguese: 'Arquivos HEIC não são suportados. Por favor, converta para JPEG ou use a câmera.' Add accept attribute to the file input restricting to 'image/jpeg,image/png,image/webp' to guide users toward supported formats. Update MAX_FILE_SIZE comment to mention that images will be automatically resized if they exceed Gemini's limits."
-        },
-        {
-          "path": "frontend/src/pages/AnalyzeChart.tsx",
-          "operation": "modify",
-          "description": "Add a useEffect hook that detects the image source (file upload, camera, clipboard) and logs it to sessionStorage alongside the imageData. This metadata will help correlate preprocessing with different input methods. When storing imageData from camera or clipboard, add a comment noting that these sources typically provide JPEG format which is already compatible, while file uploads may need preprocessing."
+          "description": "Update analyzeChart() function to retrieve the Gemini API key by calling backend.getGeminiApiKey() before making the external API request. Replace any hardcoded API key references with the dynamically retrieved key. Ensure the API key is included in the authorization headers when calling the Gemini Vision API. If getGeminiApiKey() returns null, throw an error with the Portuguese message 'CHAVE DE API NÃO CONFIGURADA' to trigger proper error handling upstream."
         }
       ]
     }

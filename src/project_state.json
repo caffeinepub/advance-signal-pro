@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 13,
+  "projectStateVersion": 15,
   "summary": "Advance Signal Pro: Mobile app (Android/iOS) for automated financial chart analysis using external AI via REST API, focused on Price Action, candle patterns, and trend identification (bullish/bearish/sideways). Optimized for Pocket Option charts and binary options trading with fast scalping analysis (<3s). Features dark/light themes, professional trading interface, chart upload (camera/gallery/clipboard/drag-drop), and displays AI-powered results (buy/sell signals with confidence levels, trend analysis, detected patterns, and explanations) received from external API. Supports integration with OpenAI ChatGPT Vision, Google Gemini Vision, or custom Python backend. Analysis history and customizable settings included. Exclusively supports short timeframes: M1 (1 minute - default), M5 (5 minutes), and M10 (10 minutes). Full Portuguese (Brazil) interface.",
   "architectural_notes": [
     "Mobile-first architecture for Android and iOS platforms",
@@ -15,7 +15,7 @@
     "Frontend displays results from external API only (no local AI processing)"
   ],
   "known_issues": [
-    "Error occurs during analysis when uploading screenshots from mobile device"
+    "API key not configured error (CHAVE DE API NÃO CONFIGURADA) when analyzing mobile screenshots from Pocket Option"
   ],
   "isFixRequest": true,
   "existing_features": [
@@ -322,6 +322,46 @@
         "REQ-41"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-config-apiconfig-ts-to-add-proper-api-key-configuration-validation-that-checks-if-the-gemini-api-key-is-set-before-allowing-analysis-requests-display-a-clear-portuguese-error-message-chave-de-api-n-o-configurada-configure-a-chave-da-api-nas-configura-es-when-the-key-is-missing-or-invalid",
+      "title": "Update frontend/src/config/apiConfig.ts to add proper API key configuration validation that checks if the Gemini API key is set before allowing analysis requests. Display a clear Portuguese error message 'CHAVE DE API NÃO CONFIGURADA - Configure a chave da API nas configurações' when the key is missing or invalid.",
+      "reqIds": [
+        "REQ-42"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-services-analysisapi-ts-to-handle-mobile-screenshot-uploads-from-pocket-option-broker-specifically-add-detection-for-pocket-option-chart-characteristics-dark-theme-candlestick-layout-broker-ui-elements-visible-in-screenshot-and-ensure-the-image-preprocessing-pipeline-preserves-chart-data-quality-while-removing-broker-interface-artifacts",
+      "title": "Update frontend/src/services/analysisApi.ts to handle mobile screenshot uploads from Pocket Option broker specifically. Add detection for Pocket Option chart characteristics (dark theme, candlestick layout, broker UI elements visible in screenshot) and ensure the image preprocessing pipeline preserves chart data quality while removing broker interface artifacts.",
+      "reqIds": [
+        "REQ-43"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-services-analysisapi-ts-to-include-enhanced-logging-for-mobile-screenshot-analysis-requests-log-the-image-source-type-mobile-camera-screenshot-image-dimensions-file-size-detected-broker-interface-if-pocket-option-and-preprocessing-steps-applied-this-diagnostic-information-should-help-identify-why-mobile-screenshots-trigger-api-key-errors",
+      "title": "Update frontend/src/services/analysisApi.ts to include enhanced logging for mobile screenshot analysis requests. Log the image source type (mobile camera/screenshot), image dimensions, file size, detected broker interface (if Pocket Option), and preprocessing steps applied. This diagnostic information should help identify why mobile screenshots trigger API key errors.",
+      "reqIds": [
+        "REQ-44"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-pages-processingscreen-tsx-to-validate-api-key-configuration-immediately-when-analysis-begins-before-starting-the-image-upload-process-if-the-api-key-is-not-configured-display-the-error-message-chave-de-api-n-o-configurada-with-a-button-to-navigate-to-settings-and-do-not-proceed-with-the-analysis-stages",
+      "title": "Update frontend/src/pages/ProcessingScreen.tsx to validate API key configuration immediately when analysis begins, before starting the image upload process. If the API key is not configured, display the error message 'CHAVE DE API NÃO CONFIGURADA' with a button to navigate to Settings, and do not proceed with the analysis stages.",
+      "reqIds": [
+        "REQ-45"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-gemini-api-key-configuration-field-to-the-settings-page-frontend-src-pages-settings-tsx-include-a-secure-text-input-field-labeled-chave-da-api-gemini-a-save-button-and-validation-to-ensure-the-key-format-is-correct-store-the-api-key-securely-in-the-backend-or-encrypted-local-storage-and-update-the-api-service-to-read-from-this-configuration",
+      "title": "Add a Gemini API key configuration field to the Settings page (frontend/src/pages/Settings.tsx). Include a secure text input field labeled 'Chave da API Gemini', a save button, and validation to ensure the key format is correct. Store the API key securely in the backend or encrypted local storage, and update the API service to read from this configuration.",
+      "reqIds": [
+        "REQ-46"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -432,6 +472,12 @@
     {
       "id": "AR-34",
       "summary": "Update app tagline to 'Análise de Gráficos com IA & Sinais de Trading 1.0'",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-35",
+      "summary": "Configure Google Gemini Vision API key to enable chart analysis for mobile screenshots from Pocket Option broker",
       "reqIds": [],
       "status": "pending"
     }

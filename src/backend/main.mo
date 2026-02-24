@@ -66,6 +66,8 @@ actor {
   let analyses = Map.empty<Principal, [AnalysisResult]>();
   let settings = Map.empty<Principal, UserSettings>();
 
+  var geminiApiKey : ?Text = null;
+
   public shared ({ caller }) func storeExternalAnalysis(result : AnalysisResult) : async () {
     let userAnalyses = switch (analyses.get(caller)) {
       case (null) { [] };
@@ -149,5 +151,16 @@ actor {
 
     let topLevelsIter = allLevels.values();
     topLevelsIter.take(5).toArray();
+  };
+
+  public shared ({ caller }) func setGeminiApiKey(apiKey : Text) : async () {
+    if (not apiKey.startsWith(#text("AIza"))) {
+      Runtime.trap("Invalid Gemini API key format");
+    };
+    geminiApiKey := ?apiKey;
+  };
+
+  public query ({ caller }) func getGeminiApiKey() : async ?Text {
+    geminiApiKey;
   };
 };

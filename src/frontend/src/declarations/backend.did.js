@@ -103,12 +103,14 @@ export const idlService = IDL.Service({
       ],
       ['query'],
     ),
+  'getGeminiApiKey' : IDL.Func([], [IDL.Opt(IDL.Text)], ['query']),
   'getSettings' : IDL.Func([], [UserSettings], ['query']),
   'getTopResistanceLevels' : IDL.Func(
       [],
       [IDL.Vec(ResistanceLevel)],
       ['query'],
     ),
+  'setGeminiApiKey' : IDL.Func([IDL.Text], [], []),
   'storeExternalAnalysis' : IDL.Func([AnalysisResult], [], []),
   'updateSettings' : IDL.Func([UserSettings], [], []),
 });
@@ -211,12 +213,14 @@ export const idlFactory = ({ IDL }) => {
         ],
         ['query'],
       ),
+    'getGeminiApiKey' : IDL.Func([], [IDL.Opt(IDL.Text)], ['query']),
     'getSettings' : IDL.Func([], [UserSettings], ['query']),
     'getTopResistanceLevels' : IDL.Func(
         [],
         [IDL.Vec(ResistanceLevel)],
         ['query'],
       ),
+    'setGeminiApiKey' : IDL.Func([IDL.Text], [], []),
     'storeExternalAnalysis' : IDL.Func([AnalysisResult], [], []),
     'updateSettings' : IDL.Func([UserSettings], [], []),
   });

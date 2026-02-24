@@ -64,8 +64,10 @@ export interface backendInterface {
         trendStrengthMultiplier: number;
         bullishThreshold: number;
     }>;
+    getGeminiApiKey(): Promise<string | null>;
     getSettings(): Promise<UserSettings>;
     getTopResistanceLevels(): Promise<Array<ResistanceLevel>>;
+    setGeminiApiKey(apiKey: string): Promise<void>;
     storeExternalAnalysis(result: AnalysisResult): Promise<void>;
     updateSettings(newSettings: UserSettings): Promise<void>;
 }

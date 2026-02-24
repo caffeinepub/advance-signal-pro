@@ -1,82 +1,121 @@
 {
   "kind": "build_request",
-  "title": "Fix 403 error when analyzing mobile screenshots",
+  "title": "Fix API key configuration error for mobile Pocket Option screenshots",
+  "projectName": "Advance Signal Pro",
   "priority": "high",
   "requirements": [
     {
-      "id": "REQ-38",
-      "text": "Investigate and fix the HTTP 403 error ('Erro na análise: 403') that occurs when users upload chart images from mobile devices. Review the API request format in frontend/src/services/analysisApi.ts to ensure mobile screenshots are properly encoded and sent with correct headers and authentication.",
+      "id": "REQ-42",
+      "text": "Update frontend/src/config/apiConfig.ts to add proper API key configuration validation that checks if the Gemini API key is set before allowing analysis requests. Display a clear Portuguese error message 'CHAVE DE API NÃO CONFIGURADA - Configure a chave da API nas configurações' when the key is missing or invalid.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-latest"
         ],
         "quotes": [
-          "da esse erro na analise, quando mando print do celular",
-          "Erro na análise: 403"
+          "erro no print (CHAVE DE API NÃO CONFIGURADA)"
         ]
       },
       "acceptanceCriteria": [
-        "Mobile screenshots can be analyzed without returning 403 errors",
-        "Error handling provides clear Portuguese feedback when API authentication fails",
-        "API requests include all required headers and authentication tokens for the Google Gemini Vision endpoint"
+        "API key validation function exists in apiConfig.ts",
+        "Validation runs before any API request is sent",
+        "Portuguese error message 'CHAVE DE API NÃO CONFIGURADA' displays when key is missing",
+        "Error message includes instruction to configure key in settings"
       ]
     },
     {
-      "id": "REQ-39",
-      "text": "Add diagnostic logging to frontend/src/services/analysisApi.ts to capture request details (headers, payload size, content type) when API calls fail with 403 status, helping identify authentication or permission issues specific to mobile image uploads.",
+      "id": "REQ-43",
+      "text": "Update frontend/src/services/analysisApi.ts to handle mobile screenshot uploads from Pocket Option broker specifically. Add detection for Pocket Option chart characteristics (dark theme, candlestick layout, broker UI elements visible in screenshot) and ensure the image preprocessing pipeline preserves chart data quality while removing broker interface artifacts.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-latest"
+        ],
+        "quotes": [
+          "deixar print de celular e captura da corretora pocket options ser analisada na analise"
         ]
       },
       "acceptanceCriteria": [
-        "Console logs display request metadata when 403 errors occur",
-        "Error messages distinguish between authentication failures and other API errors",
-        "Logs help identify differences between desktop and mobile image upload requests"
+        "Mobile screenshots from Pocket Option are correctly identified",
+        "Image preprocessing handles dark-themed Pocket Option charts",
+        "Broker UI elements (balance display, buttons, menus) are filtered or ignored during preprocessing",
+        "Chart candlestick data remains intact and readable after preprocessing",
+        "Analysis request successfully sends Pocket Option screenshots to Gemini API"
       ]
     },
     {
-      "id": "REQ-40",
-      "text": "Verify that the Google Gemini Vision API key in frontend/src/config/apiConfig.ts has the necessary permissions and quotas enabled for image analysis requests. Add validation to check if the API key is properly configured before sending requests.",
+      "id": "REQ-44",
+      "text": "Update frontend/src/services/analysisApi.ts to include enhanced logging for mobile screenshot analysis requests. Log the image source type (mobile camera/screenshot), image dimensions, file size, detected broker interface (if Pocket Option), and preprocessing steps applied. This diagnostic information should help identify why mobile screenshots trigger API key errors.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-latest"
+        ],
+        "quotes": [
+          "enviei demostração de como estou enviando print para o aplicativo fazer analise"
         ]
       },
       "acceptanceCriteria": [
-        "API key validation prevents requests when credentials are missing or invalid",
-        "User receives clear Portuguese error message ('Chave de API não configurada') if API key is missing",
-        "Configuration documentation includes steps to verify API key permissions"
+        "Logging captures mobile screenshot metadata (dimensions, size, format)",
+        "Logging identifies if uploaded image is a Pocket Option screenshot",
+        "Preprocessing steps are logged in sequence",
+        "API request payload details are logged before sending to Gemini",
+        "Error logs include enough context to diagnose API key configuration issues"
       ]
     },
     {
-      "id": "REQ-41",
-      "text": "Ensure mobile screenshot images are properly converted to the correct format and size before being sent to the Google Gemini Vision API. Add image preprocessing in frontend/src/services/analysisApi.ts to handle different mobile screenshot formats and dimensions that may trigger 403 errors.",
+      "id": "REQ-45",
+      "text": "Update frontend/src/pages/ProcessingScreen.tsx to validate API key configuration immediately when analysis begins, before starting the image upload process. If the API key is not configured, display the error message 'CHAVE DE API NÃO CONFIGURADA' with a button to navigate to Settings, and do not proceed with the analysis stages.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-latest"
+        ],
+        "quotes": [
+          "erro no print (CHAVE DE API NÃO CONFIGURADA)"
         ]
       },
       "acceptanceCriteria": [
-        "Images larger than API limits are automatically resized while preserving aspect ratio",
-        "HEIC/HEIF formats from iOS devices are converted to JPEG before upload",
-        "Image preprocessing maintains sufficient quality for chart analysis"
+        "API key validation occurs before 'Carregando imagem' stage",
+        "Processing stops immediately if key is missing",
+        "Error screen shows 'CHAVE DE API NÃO CONFIGURADA' message",
+        "Navigation button to Settings page is provided",
+        "User can configure API key and retry analysis without losing uploaded image"
+      ]
+    },
+    {
+      "id": "REQ-46",
+      "text": "Add a Gemini API key configuration field to the Settings page (frontend/src/pages/Settings.tsx). Include a secure text input field labeled 'Chave da API Gemini', a save button, and validation to ensure the key format is correct. Store the API key securely in the backend or encrypted local storage, and update the API service to read from this configuration.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-latest"
+        ],
+        "quotes": [
+          "CHAVE DE API NÃO CONFIGURADA"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Settings page displays 'Chave da API Gemini' input field",
+        "Input field uses password-type masking for security",
+        "Save button stores API key in backend or secure local storage",
+        "API key format validation prevents invalid keys from being saved",
+        "analysisApi.ts reads API key from saved configuration",
+        "Settings screen shows confirmation message after successful save"
       ]
     }
   ],
   "constraints": [
-    "Must maintain compatibility with existing Google Gemini Vision API integration",
-    "Error messages must remain in Portuguese (Brazil)",
-    "Do not modify backend/main.mo or other immutable frontend paths"
+    "Do not modify the 6-step technical analysis requirements already defined in apiConfig.ts",
+    "Maintain compatibility with existing Gemini Vision API request format",
+    "Keep all Portuguese (Brazil) UI text and error messages",
+    "Do not change the existing ProcessingScreen stage progression logic"
   ],
   "nonGoals": [
-    "Switching to a different AI provider",
-    "Changing the overall API integration architecture",
-    "Modifying the UI/UX of error display screens"
+    "Implementing alternative AI providers beyond Google Gemini Vision",
+    "Adding support for other broker platforms besides Pocket Option",
+    "Changing the existing analysis result display format",
+    "Modifying the chart upload methods (camera, gallery, clipboard, drag-drop)"
   ],
   "imageRequirements": {
     "required": [],

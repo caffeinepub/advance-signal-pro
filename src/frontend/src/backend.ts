@@ -156,8 +156,10 @@ export interface backendInterface {
         trendStrengthMultiplier: number;
         bullishThreshold: number;
     }>;
+    getGeminiApiKey(): Promise<string | null>;
     getSettings(): Promise<UserSettings>;
     getTopResistanceLevels(): Promise<Array<ResistanceLevel>>;
+    setGeminiApiKey(apiKey: string): Promise<void>;
     storeExternalAnalysis(result: AnalysisResult): Promise<void>;
     updateSettings(newSettings: UserSettings): Promise<void>;
 }
@@ -297,18 +299,32 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async getGeminiApiKey(): Promise<string | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getGeminiApiKey();
+                return from_candid_opt_n17(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getGeminiApiKey();
+            return from_candid_opt_n17(this._uploadFile, this._downloadFile, result);
+        }
+    }
     async getSettings(): Promise<UserSettings> {
         if (this.processError) {
             try {
                 const result = await this.actor.getSettings();
-                return from_candid_UserSettings_n17(this._uploadFile, this._downloadFile, result);
+                return from_candid_UserSettings_n18(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getSettings();
-            return from_candid_UserSettings_n17(this._uploadFile, this._downloadFile, result);
+            return from_candid_UserSettings_n18(this._uploadFile, this._downloadFile, result);
         }
     }
     async getTopResistanceLevels(): Promise<Array<ResistanceLevel>> {
@@ -325,31 +341,45 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async storeExternalAnalysis(arg0: AnalysisResult): Promise<void> {
+    async setGeminiApiKey(arg0: string): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.storeExternalAnalysis(await to_candid_AnalysisResult_n21(this._uploadFile, this._downloadFile, arg0));
+                const result = await this.actor.setGeminiApiKey(arg0);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.storeExternalAnalysis(await to_candid_AnalysisResult_n21(this._uploadFile, this._downloadFile, arg0));
+            const result = await this.actor.setGeminiApiKey(arg0);
+            return result;
+        }
+    }
+    async storeExternalAnalysis(arg0: AnalysisResult): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.storeExternalAnalysis(await to_candid_AnalysisResult_n22(this._uploadFile, this._downloadFile, arg0));
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.storeExternalAnalysis(await to_candid_AnalysisResult_n22(this._uploadFile, this._downloadFile, arg0));
             return result;
         }
     }
     async updateSettings(arg0: UserSettings): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.updateSettings(to_candid_UserSettings_n29(this._uploadFile, this._downloadFile, arg0));
+                const result = await this.actor.updateSettings(to_candid_UserSettings_n30(this._uploadFile, this._downloadFile, arg0));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.updateSettings(to_candid_UserSettings_n29(this._uploadFile, this._downloadFile, arg0));
+            const result = await this.actor.updateSettings(to_candid_UserSettings_n30(this._uploadFile, this._downloadFile, arg0));
             return result;
         }
     }
@@ -366,14 +396,17 @@ function from_candid_CandlestickPattern_n14(_uploadFile: (file: ExternalBlob) =>
 async function from_candid_ExternalBlob_n16(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ExternalBlob): Promise<ExternalBlob> {
     return await _downloadFile(value);
 }
-function from_candid_Timeframe_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Timeframe): Timeframe {
-    return from_candid_variant_n20(_uploadFile, _downloadFile, value);
+function from_candid_Timeframe_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Timeframe): Timeframe {
+    return from_candid_variant_n21(_uploadFile, _downloadFile, value);
 }
-function from_candid_UserSettings_n17(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserSettings): UserSettings {
-    return from_candid_record_n18(_uploadFile, _downloadFile, value);
+function from_candid_UserSettings_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserSettings): UserSettings {
+    return from_candid_record_n19(_uploadFile, _downloadFile, value);
 }
 function from_candid__CaffeineStorageRefillResult_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: __CaffeineStorageRefillResult): _CaffeineStorageRefillResult {
     return from_candid_record_n5(_uploadFile, _downloadFile, value);
+}
+function from_candid_opt_n17(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [string]): string | null {
+    return value.length === 0 ? null : value[0];
 }
 function from_candid_opt_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [boolean]): boolean | null {
     return value.length === 0 ? null : value[0];
@@ -414,7 +447,7 @@ async function from_candid_record_n10(_uploadFile: (file: ExternalBlob) => Promi
         pullbacks: value.pullbacks
     };
 }
-function from_candid_record_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     theme: string;
     signalNotifications: boolean;
     language: string;
@@ -432,7 +465,7 @@ function from_candid_record_n18(_uploadFile: (file: ExternalBlob) => Promise<Uin
         signalNotifications: value.signalNotifications,
         language: value.language,
         aiSensitivity: value.aiSensitivity,
-        defaultTimeframe: from_candid_Timeframe_n19(_uploadFile, _downloadFile, value.defaultTimeframe)
+        defaultTimeframe: from_candid_Timeframe_n20(_uploadFile, _downloadFile, value.defaultTimeframe)
     };
 }
 function from_candid_record_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
@@ -469,7 +502,7 @@ function from_candid_variant_n15(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): CandlestickPattern {
     return "shootingStar" in value ? CandlestickPattern.shootingStar : "doji" in value ? CandlestickPattern.doji : "none" in value ? CandlestickPattern.none : "hammer" in value ? CandlestickPattern.hammer : "engulfing" in value ? CandlestickPattern.engulfing : value;
 }
-function from_candid_variant_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     M1: null;
 } | {
     M5: null;
@@ -484,23 +517,23 @@ function from_candid_vec_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8A
 async function from_candid_vec_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_AnalysisResult>): Promise<Array<AnalysisResult>> {
     return await Promise.all(value.map(async (x)=>await from_candid_AnalysisResult_n9(_uploadFile, _downloadFile, x)));
 }
-function to_candid_AnalysisDirection_n23(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: AnalysisDirection): _AnalysisDirection {
-    return to_candid_variant_n24(_uploadFile, _downloadFile, value);
+function to_candid_AnalysisDirection_n24(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: AnalysisDirection): _AnalysisDirection {
+    return to_candid_variant_n25(_uploadFile, _downloadFile, value);
 }
-async function to_candid_AnalysisResult_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: AnalysisResult): Promise<_AnalysisResult> {
-    return await to_candid_record_n22(_uploadFile, _downloadFile, value);
+async function to_candid_AnalysisResult_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: AnalysisResult): Promise<_AnalysisResult> {
+    return await to_candid_record_n23(_uploadFile, _downloadFile, value);
 }
-function to_candid_CandlestickPattern_n26(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: CandlestickPattern): _CandlestickPattern {
-    return to_candid_variant_n27(_uploadFile, _downloadFile, value);
+function to_candid_CandlestickPattern_n27(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: CandlestickPattern): _CandlestickPattern {
+    return to_candid_variant_n28(_uploadFile, _downloadFile, value);
 }
-async function to_candid_ExternalBlob_n28(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ExternalBlob): Promise<_ExternalBlob> {
+async function to_candid_ExternalBlob_n29(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ExternalBlob): Promise<_ExternalBlob> {
     return await _uploadFile(value);
 }
-function to_candid_Timeframe_n31(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Timeframe): _Timeframe {
-    return to_candid_variant_n32(_uploadFile, _downloadFile, value);
+function to_candid_Timeframe_n32(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Timeframe): _Timeframe {
+    return to_candid_variant_n33(_uploadFile, _downloadFile, value);
 }
-function to_candid_UserSettings_n29(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserSettings): _UserSettings {
-    return to_candid_record_n30(_uploadFile, _downloadFile, value);
+function to_candid_UserSettings_n30(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserSettings): _UserSettings {
+    return to_candid_record_n31(_uploadFile, _downloadFile, value);
 }
 function to_candid__CaffeineStorageRefillInformation_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _CaffeineStorageRefillInformation): __CaffeineStorageRefillInformation {
     return to_candid_record_n3(_uploadFile, _downloadFile, value);
@@ -508,7 +541,7 @@ function to_candid__CaffeineStorageRefillInformation_n2(_uploadFile: (file: Exte
 function to_candid_opt_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _CaffeineStorageRefillInformation | null): [] | [__CaffeineStorageRefillInformation] {
     return value === null ? candid_none() : candid_some(to_candid__CaffeineStorageRefillInformation_n2(_uploadFile, _downloadFile, value));
 }
-async function to_candid_record_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+async function to_candid_record_n23(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     direction: AnalysisDirection;
     trendStrength: bigint;
     candlestickPatterns: Array<CandlestickPattern>;
@@ -530,14 +563,14 @@ async function to_candid_record_n22(_uploadFile: (file: ExternalBlob) => Promise
     pullbacks: boolean;
 }> {
     return {
-        direction: to_candid_AnalysisDirection_n23(_uploadFile, _downloadFile, value.direction),
+        direction: to_candid_AnalysisDirection_n24(_uploadFile, _downloadFile, value.direction),
         trendStrength: value.trendStrength,
-        candlestickPatterns: to_candid_vec_n25(_uploadFile, _downloadFile, value.candlestickPatterns),
+        candlestickPatterns: to_candid_vec_n26(_uploadFile, _downloadFile, value.candlestickPatterns),
         breakouts: value.breakouts,
         resistanceLevels: value.resistanceLevels,
         timestamp: value.timestamp,
         confidencePercentage: value.confidencePercentage,
-        image: await to_candid_ExternalBlob_n28(_uploadFile, _downloadFile, value.image),
+        image: await to_candid_ExternalBlob_n29(_uploadFile, _downloadFile, value.image),
         pullbacks: value.pullbacks
     };
 }
@@ -550,7 +583,7 @@ function to_candid_record_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8A
         proposed_top_up_amount: value.proposed_top_up_amount ? candid_some(value.proposed_top_up_amount) : candid_none()
     };
 }
-function to_candid_record_n30(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function to_candid_record_n31(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     theme: string;
     signalNotifications: boolean;
     language: string;
@@ -568,10 +601,10 @@ function to_candid_record_n30(_uploadFile: (file: ExternalBlob) => Promise<Uint8
         signalNotifications: value.signalNotifications,
         language: value.language,
         aiSensitivity: value.aiSensitivity,
-        defaultTimeframe: to_candid_Timeframe_n31(_uploadFile, _downloadFile, value.defaultTimeframe)
+        defaultTimeframe: to_candid_Timeframe_n32(_uploadFile, _downloadFile, value.defaultTimeframe)
     };
 }
-function to_candid_variant_n24(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: AnalysisDirection): {
+function to_candid_variant_n25(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: AnalysisDirection): {
     bullish: null;
 } | {
     sideways: null;
@@ -586,7 +619,7 @@ function to_candid_variant_n24(_uploadFile: (file: ExternalBlob) => Promise<Uint
         bearish: null
     } : value;
 }
-function to_candid_variant_n27(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: CandlestickPattern): {
+function to_candid_variant_n28(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: CandlestickPattern): {
     shootingStar: null;
 } | {
     doji: null;
@@ -609,7 +642,7 @@ function to_candid_variant_n27(_uploadFile: (file: ExternalBlob) => Promise<Uint
         engulfing: null
     } : value;
 }
-function to_candid_variant_n32(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Timeframe): {
+function to_candid_variant_n33(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Timeframe): {
     M1: null;
 } | {
     M5: null;
@@ -624,8 +657,8 @@ function to_candid_variant_n32(_uploadFile: (file: ExternalBlob) => Promise<Uint
         M10: null
     } : value;
 }
-function to_candid_vec_n25(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<CandlestickPattern>): Array<_CandlestickPattern> {
-    return value.map((x)=>to_candid_CandlestickPattern_n26(_uploadFile, _downloadFile, x));
+function to_candid_vec_n26(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<CandlestickPattern>): Array<_CandlestickPattern> {
+    return value.map((x)=>to_candid_CandlestickPattern_n27(_uploadFile, _downloadFile, x));
 }
 export interface CreateActorOptions {
     agent?: Agent;

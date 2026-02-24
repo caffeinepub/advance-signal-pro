@@ -81,8 +81,10 @@ export interface _SERVICE {
       'bullishThreshold' : number,
     }
   >,
+  'getGeminiApiKey' : ActorMethod<[], [] | [string]>,
   'getSettings' : ActorMethod<[], UserSettings>,
   'getTopResistanceLevels' : ActorMethod<[], Array<ResistanceLevel>>,
+  'setGeminiApiKey' : ActorMethod<[string], undefined>,
   'storeExternalAnalysis' : ActorMethod<[AnalysisResult], undefined>,
   'updateSettings' : ActorMethod<[UserSettings], undefined>,
 }

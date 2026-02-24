@@ -1,12 +1,14 @@
 # Specification
 
 ## Summary
-**Goal:** Fix the HTTP 403 error that occurs when users upload chart screenshots from mobile devices for AI analysis.
+**Goal:** Fix API key configuration error preventing mobile Pocket Option screenshot analysis and add proper API key management in Settings.
 
 **Planned changes:**
-- Investigate and fix the API request format in `frontend/src/services/analysisApi.ts` to ensure mobile screenshots are properly encoded with correct headers and authentication
-- Add diagnostic logging to capture request details (headers, payload size, content type) when 403 errors occur
-- Verify Google Gemini Vision API key permissions and add validation before sending requests
-- Implement image preprocessing to handle mobile screenshot formats (HEIC/HEIF conversion, resizing for API limits) before uploading
+- Add API key validation in frontend/src/config/apiConfig.ts that checks if Gemini API key is configured before allowing analysis
+- Display Portuguese error message "CHAVE DE API NÃO CONFIGURADA - Configure a chave da API nas configurações" when key is missing
+- Update frontend/src/services/analysisApi.ts to handle mobile Pocket Option screenshots with dark theme and candlestick charts
+- Add enhanced logging for mobile screenshot analysis (dimensions, file size, broker detection, preprocessing steps)
+- Update frontend/src/pages/ProcessingScreen.tsx to validate API key before starting analysis stages
+- Add Gemini API key configuration field to frontend/src/pages/Settings.tsx with secure storage
 
-**User-visible outcome:** Users can successfully analyze chart screenshots captured from mobile devices without encountering 403 errors, with clear Portuguese error messages when issues occur.
+**User-visible outcome:** Users can configure their Gemini API key in Settings and successfully analyze mobile screenshots from Pocket Option broker. Clear Portuguese error messages guide users to configure the API key when missing, preventing analysis failures.

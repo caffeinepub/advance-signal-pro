@@ -11,7 +11,7 @@ const ERROR_MESSAGES = {
   ANALYSIS_ERROR: 'Erro na análise',
   INVALID_RESPONSE: 'Resposta inválida do servidor',
   UNKNOWN: 'Erro desconhecido',
-  API_KEY_MISSING: 'Chave de API não configurada. Configure a chave no arquivo .env',
+  API_KEY_MISSING: 'CHAVE DE API NÃO CONFIGURADA - Configure a chave da API nas configurações',
   API_AUTH_ERROR: 'Erro de autenticação da API. Verifique sua chave de API',
   HEIC_NOT_SUPPORTED: 'Arquivos HEIC não são suportados. Por favor, use a câmera ou converta para JPEG',
 };
@@ -29,17 +29,85 @@ export class AnalysisApiError extends Error {
 /**
  * Validate API key configuration
  */
-function validateApiKey(apiKey: string | undefined): void {
+function validateApiKey(apiKey: string | null | undefined): void {
   if (!apiKey || apiKey.trim() === '' || apiKey === 'YOUR_API_KEY_HERE') {
     throw new AnalysisApiError(ERROR_MESSAGES.API_KEY_MISSING, 'API_KEY_MISSING');
   }
 }
 
 /**
+ * Detect if image is from Pocket Option broker
+ * Analyzes image characteristics to identify Pocket Option interface
+ */
+async function detectPocketOption(file: File | Blob): Promise<{ isPocketOption: boolean; confidence: number }> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve({ isPocketOption: false, confidence: 0 });
+        return;
+      }
+      
+      ctx.drawImage(img, 0, 0);
+      
+      // Sample pixels from typical Pocket Option UI areas
+      // Top area (balance display, typically dark background)
+      const topSample = ctx.getImageData(img.width / 2, 20, 1, 1).data;
+      
+      // Bottom area (buttons, typically green/red)
+      const bottomSample = ctx.getImageData(img.width / 2, img.height - 50, 1, 1).data;
+      
+      // Check for dark theme (common in Pocket Option)
+      const isDarkTheme = topSample[0] < 50 && topSample[1] < 50 && topSample[2] < 50;
+      
+      // Check aspect ratio (mobile screenshots are typically portrait)
+      const aspectRatio = img.height / img.width;
+      const isMobileAspect = aspectRatio > 1.5 && aspectRatio < 2.5;
+      
+      // Calculate confidence based on characteristics
+      let confidence = 0;
+      if (isDarkTheme) confidence += 0.4;
+      if (isMobileAspect) confidence += 0.3;
+      
+      // Check for typical Pocket Option color scheme
+      const hasGreenRed = (bottomSample[1] > 150 && bottomSample[0] < 100) || 
+                          (bottomSample[0] > 150 && bottomSample[1] < 100);
+      if (hasGreenRed) confidence += 0.3;
+      
+      const isPocketOption = confidence >= 0.5;
+      
+      console.log(`[Pocket Option Detection] Dark theme: ${isDarkTheme}, Mobile aspect: ${isMobileAspect}, Confidence: ${(confidence * 100).toFixed(0)}%`);
+      
+      resolve({ isPocketOption, confidence });
+    };
+    
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve({ isPocketOption: false, confidence: 0 });
+    };
+    
+    img.src = url;
+  });
+}
+
+/**
  * Preprocess image: resize if needed and convert format
+ * Enhanced for Pocket Option mobile screenshots
  * Gemini limits: 20MB inline request, max 4096x4096 pixels recommended
  */
 async function preprocessImage(file: File | Blob): Promise<Blob> {
+  console.log('[Preprocessing] Starting image preprocessing...');
+  console.log(`[Preprocessing] Original size: ${(file.size / 1024).toFixed(2)}KB, type: ${file.type}`);
+  
   // Check for HEIC format
   const fileName = (file as File).name || '';
   const fileType = file.type || '';
@@ -49,12 +117,19 @@ async function preprocessImage(file: File | Blob): Promise<Blob> {
     throw new AnalysisApiError(ERROR_MESSAGES.HEIC_NOT_SUPPORTED, 'HEIC_NOT_SUPPORTED');
   }
 
+  // Detect Pocket Option interface
+  const pocketOptionDetection = await detectPocketOption(file);
+  console.log(`[Preprocessing] Pocket Option detected: ${pocketOptionDetection.isPocketOption} (confidence: ${(pocketOptionDetection.confidence * 100).toFixed(0)}%)`);
+
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
     
     img.onload = () => {
       URL.revokeObjectURL(url);
+      
+      console.log(`[Preprocessing] Image dimensions: ${img.width}x${img.height}`);
+      console.log(`[Preprocessing] Aspect ratio: ${(img.height / img.width).toFixed(2)}`);
       
       // Check if resizing is needed (max 4096x4096)
       const maxDimension = 4096;
@@ -63,6 +138,7 @@ async function preprocessImage(file: File | Blob): Promise<Blob> {
       
       if (width <= maxDimension && height <= maxDimension && file.size <= 10 * 1024 * 1024) {
         // Image is within limits, return as-is
+        console.log('[Preprocessing] Image within limits, no resize needed');
         resolve(file);
         return;
       }
@@ -76,6 +152,7 @@ async function preprocessImage(file: File | Blob): Promise<Blob> {
           width = Math.round((width * maxDimension) / height);
           height = maxDimension;
         }
+        console.log(`[Preprocessing] Resizing to: ${width}x${height}`);
       }
       
       // Create canvas and resize
@@ -89,13 +166,34 @@ async function preprocessImage(file: File | Blob): Promise<Blob> {
         return;
       }
       
+      // Draw image
       ctx.drawImage(img, 0, 0, width, height);
+      
+      // Apply preprocessing for Pocket Option if detected
+      if (pocketOptionDetection.isPocketOption) {
+        console.log('[Preprocessing] Applying Pocket Option specific preprocessing...');
+        
+        // Enhance contrast for better candlestick detection
+        const imageData = ctx.getImageData(0, 0, width, height);
+        const data = imageData.data;
+        
+        // Simple contrast enhancement
+        const factor = 1.2;
+        for (let i = 0; i < data.length; i += 4) {
+          data[i] = Math.min(255, data[i] * factor);     // R
+          data[i + 1] = Math.min(255, data[i + 1] * factor); // G
+          data[i + 2] = Math.min(255, data[i + 2] * factor); // B
+        }
+        
+        ctx.putImageData(imageData, 0, 0);
+        console.log('[Preprocessing] Contrast enhancement applied');
+      }
       
       // Convert to JPEG blob with 0.9 quality
       canvas.toBlob(
         (blob) => {
           if (blob) {
-            console.log(`Image preprocessed: ${img.width}x${img.height} -> ${width}x${height}, ${(file.size / 1024).toFixed(2)}KB -> ${(blob.size / 1024).toFixed(2)}KB`);
+            console.log(`[Preprocessing] Complete: ${img.width}x${img.height} -> ${width}x${height}, ${(file.size / 1024).toFixed(2)}KB -> ${(blob.size / 1024).toFixed(2)}KB`);
             resolve(blob);
           } else {
             reject(new Error('Failed to create blob'));
@@ -134,17 +232,22 @@ async function fileToBase64(file: File | Blob): Promise<string> {
 
 /**
  * Get the technical analysis prompt in Portuguese
+ * Enhanced for Pocket Option mobile screenshots
  */
 function getTechnicalAnalysisPrompt(): string {
   return `Você é um especialista em análise técnica de gráficos de trading. Analise esta imagem de gráfico seguindo EXATAMENTE estas 6 etapas objetivas:
 
+IMPORTANTE: Esta imagem pode ser uma captura de tela de celular da corretora Pocket Option. Ignore TODOS os elementos da interface da corretora (saldo, botões, menus, timer, etc.) e foque APENAS no gráfico de candles.
+
 1) PREPROCESSAMENTO DA IMAGEM:
-   - Identifique os candles individuais
+   - Identifique os candles individuais no gráfico
    - Detecte corpo, pavio superior e inferior de cada candle
-   - Ignore elementos visuais da corretora
+   - IGNORE completamente: saldo da conta, botões COMPRAR/VENDER, timer, menus, barras de navegação
+   - Foque APENAS na área do gráfico com os candles
 
 2) LEITURA DOS CANDLES:
    - Extraia: direção (alta/baixa), tamanho do corpo, tamanho dos pavios, sequência de cores
+   - Identifique candles verdes (alta) e vermelhos (baixa)
 
 3) IDENTIFICAÇÃO DE TENDÊNCIA:
    - Topos e fundos ascendentes = ALTA
@@ -195,12 +298,17 @@ function logRequestDetails(url: string, payload: any, imageSize: number, mimeTyp
   // Redact API key from URL
   const redactedUrl = url.replace(/key=[^&]+/, 'key=***REDACTED***');
   
+  const timestamp = new Date().toISOString();
+  const device = /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent) ? 'Mobile' : 'Desktop';
+  
   console.log('=== API Request Details ===');
-  console.log('URL:', redactedUrl);
-  console.log('Image MIME type:', mimeType);
-  console.log('Image size:', (imageSize / 1024).toFixed(2), 'KB');
-  console.log('Base64 data length:', payload.contents?.[0]?.parts?.[1]?.inline_data?.data?.length || 0, 'chars');
-  console.log('Device:', /Mobile|Android|iPhone|iPad/i.test(navigator.userAgent) ? 'Mobile' : 'Desktop');
+  console.log(`[${timestamp}] Timestamp:`, timestamp);
+  console.log(`[${timestamp}] URL:`, redactedUrl);
+  console.log(`[${timestamp}] Device:`, device);
+  console.log(`[${timestamp}] Image MIME type:`, mimeType);
+  console.log(`[${timestamp}] Image size:`, (imageSize / 1024).toFixed(2), 'KB');
+  console.log(`[${timestamp}] Base64 data length:`, payload.contents?.[0]?.parts?.[1]?.inline_data?.data?.length || 0, 'chars');
+  console.log(`[${timestamp}] User agent:`, navigator.userAgent);
   console.log('===========================');
 }
 
@@ -219,11 +327,13 @@ function logRequestDetails(url: string, payload: any, imageSize: number, mimeTyp
  * - Return 'SEM ENTRADA' when no clear signal is detected
  * 
  * @param imageFile - Image file or blob to analyze
+ * @param apiKey - Gemini API key from backend
  * @param onProgress - Optional callback for upload progress
  * @returns Promise resolving to API analysis response
  */
 export async function analyzeChartImage(
   imageFile: File | Blob,
+  apiKey: string | null,
   onProgress?: (percentage: number) => void
 ): Promise<ApiAnalysisResponse> {
   let lastError: Error | null = null;
@@ -236,7 +346,7 @@ export async function analyzeChartImage(
         await sleep(RETRY_DELAY * Math.pow(2, attempt - 1));
       }
       
-      const result = await sendAnalysisRequest(imageFile, onProgress);
+      const result = await sendAnalysisRequest(imageFile, apiKey, onProgress);
       return result;
     } catch (error) {
       lastError = error as Error;
@@ -264,6 +374,7 @@ export async function analyzeChartImage(
  */
 async function sendAnalysisRequest(
   imageFile: File | Blob,
+  apiKey: string | null,
   onProgress?: (percentage: number) => void
 ): Promise<ApiAnalysisResponse> {
   const config = getProviderConfig();
@@ -271,11 +382,10 @@ async function sendAnalysisRequest(
   
   // Validate API key for Gemini and OpenAI
   if (provider === AI_PROVIDERS.GEMINI) {
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     validateApiKey(apiKey);
   } else if (provider === AI_PROVIDERS.OPENAI) {
-    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-    validateApiKey(apiKey);
+    const openaiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    validateApiKey(openaiKey);
   }
   
   // Create abort controller for timeout
@@ -288,10 +398,16 @@ async function sendAnalysisRequest(
       onProgress(0);
     }
     
-    // Preprocess image (resize, format conversion)
-    console.log('Preprocessing image...');
+    // Log image metadata
+    const fileName = (imageFile as File).name || 'unknown';
+    const fileSize = imageFile.size;
+    const fileType = imageFile.type;
+    console.log(`[Image Upload] File: ${fileName}, Size: ${(fileSize / 1024).toFixed(2)}KB, Type: ${fileType}`);
+    
+    // Preprocess image (resize, format conversion, Pocket Option detection)
+    console.log('[Processing] Starting image preprocessing...');
     const processedImage = await preprocessImage(imageFile);
-    console.log('Image preprocessing complete');
+    console.log('[Processing] Image preprocessing complete');
     
     let requestBody: any;
     let requestHeaders: Record<string, string> = {
@@ -306,7 +422,6 @@ async function sendAnalysisRequest(
       const mimeType = processedImage.type || 'image/jpeg';
       
       // CRITICAL: Gemini API requires API key in URL query parameter, not in headers
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
       requestUrl = `${config.endpoint}?key=${apiKey}`;
       
       requestBody = {
@@ -369,188 +484,114 @@ async function sendAnalysisRequest(
       const response = await fetch(requestUrl, {
         method: 'POST',
         body: formData,
-        headers: requestHeaders,
         signal: controller.signal,
       });
       
       clearTimeout(timeoutId);
       
-      if (onProgress) {
-        onProgress(100);
+      if (!response.ok) {
+        throw new AnalysisApiError(
+          `HTTP ${response.status}: ${response.statusText}`,
+          'API_ERROR'
+        );
       }
       
-      return await handleResponse(response);
+      const data = await response.json();
+      return data as ApiAnalysisResponse;
     }
     
-    // For JSON-based providers (Gemini, OpenAI)
-    if (onProgress) {
-      onProgress(50);
-    }
-    
+    // Send request for Gemini/OpenAI
+    console.log('[API Request] Sending request to', provider);
     const response = await fetch(requestUrl, {
       method: 'POST',
-      body: JSON.stringify(requestBody),
       headers: requestHeaders,
+      body: JSON.stringify(requestBody),
       signal: controller.signal,
     });
     
     clearTimeout(timeoutId);
     
-    if (onProgress) {
-      onProgress(100);
+    console.log('[API Response] Status:', response.status, response.statusText);
+    
+    // Handle errors
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[API Error] Response:', errorText);
+      
+      if (response.status === 403) {
+        throw new AnalysisApiError(
+          'Erro de autenticação da API (403). Verifique sua chave de API nas configurações',
+          'API_AUTH_ERROR'
+        );
+      } else if (response.status === 401) {
+        throw new AnalysisApiError(
+          'Chave de API inválida (401). Configure uma chave válida nas configurações',
+          'INVALID_API_KEY'
+        );
+      } else if (response.status === 429) {
+        throw new AnalysisApiError(
+          'Limite de requisições excedido (429). Tente novamente mais tarde',
+          'RATE_LIMIT'
+        );
+      }
+      
+      throw new AnalysisApiError(
+        `Erro HTTP ${response.status}: ${response.statusText}`,
+        'API_ERROR'
+      );
     }
     
-    return await handleResponse(response, provider);
+    const data = await response.json();
+    console.log('[API Response] Data received:', JSON.stringify(data).substring(0, 200) + '...');
+    
+    // Parse response based on provider
+    if (provider === AI_PROVIDERS.GEMINI) {
+      // Extract text from Gemini response
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text) {
+        throw new AnalysisApiError(ERROR_MESSAGES.INVALID_RESPONSE, 'INVALID_RESPONSE');
+      }
+      
+      // Parse JSON from text
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new AnalysisApiError(ERROR_MESSAGES.INVALID_RESPONSE, 'INVALID_RESPONSE');
+      }
+      
+      const analysisData = JSON.parse(jsonMatch[0]);
+      console.log('[API Response] Parsed analysis:', analysisData);
+      return analysisData as ApiAnalysisResponse;
+      
+    } else if (provider === AI_PROVIDERS.OPENAI) {
+      // Extract text from OpenAI response
+      const text = data.choices?.[0]?.message?.content;
+      if (!text) {
+        throw new AnalysisApiError(ERROR_MESSAGES.INVALID_RESPONSE, 'INVALID_RESPONSE');
+      }
+      
+      // Parse JSON from text
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new AnalysisApiError(ERROR_MESSAGES.INVALID_RESPONSE, 'INVALID_RESPONSE');
+      }
+      
+      const analysisData = JSON.parse(jsonMatch[0]);
+      return analysisData as ApiAnalysisResponse;
+    }
+    
+    return data as ApiAnalysisResponse;
+    
   } catch (error) {
     clearTimeout(timeoutId);
     
-    // Handle abort (timeout)
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new AnalysisApiError(ERROR_MESSAGES.TIMEOUT, 'TIMEOUT');
-    }
-    
-    // Handle network errors
-    if (error instanceof TypeError) {
-      throw new AnalysisApiError(ERROR_MESSAGES.NETWORK_ERROR, 'NETWORK_ERROR');
-    }
-    
-    // Re-throw AnalysisApiError
     if (error instanceof AnalysisApiError) {
       throw error;
     }
     
-    // Unknown error
-    throw new AnalysisApiError(
-      ERROR_MESSAGES.UNKNOWN,
-      'UNKNOWN'
-    );
-  }
-}
-
-/**
- * Handle API response and extract analysis data
- */
-async function handleResponse(
-  response: Response,
-  provider?: string
-): Promise<ApiAnalysisResponse> {
-  // Handle non-200 responses
-  if (!response.ok) {
-    let errorText = '';
-    let errorDetails = '';
-    
-    try {
-      const errorData = await response.json();
-      errorText = errorData.error?.message || JSON.stringify(errorData);
-      errorDetails = JSON.stringify(errorData, null, 2);
-    } catch {
-      errorText = await response.text().catch(() => 'Unknown error');
+    if ((error as Error).name === 'AbortError') {
+      throw new AnalysisApiError(ERROR_MESSAGES.TIMEOUT, 'TIMEOUT');
     }
     
-    // Log detailed error information
-    console.error('=== API Error Response ===');
-    console.error('Status:', response.status, response.statusText);
-    console.error('Error details:', errorDetails || errorText);
-    console.error('Response headers:', Object.fromEntries(response.headers.entries()));
-    console.error('========================');
-    
-    // Provide specific error messages based on status code
-    if (response.status === 403) {
-      throw new AnalysisApiError(
-        ERROR_MESSAGES.API_AUTH_ERROR,
-        'API_AUTH_ERROR'
-      );
-    } else if (response.status === 401) {
-      throw new AnalysisApiError(
-        'Chave de API inválida',
-        'INVALID_API_KEY'
-      );
-    } else if (response.status === 429) {
-      throw new AnalysisApiError(
-        'Limite de requisições excedido. Tente novamente mais tarde',
-        'RATE_LIMIT'
-      );
-    }
-    
-    throw new AnalysisApiError(
-      `${ERROR_MESSAGES.ANALYSIS_ERROR}: ${response.status}`,
-      'HTTP_ERROR'
-    );
+    throw new AnalysisApiError(ERROR_MESSAGES.NETWORK_ERROR, 'NETWORK_ERROR');
   }
-  
-  // Parse JSON response
-  const data = await response.json();
-  
-  // Extract analysis from provider-specific format
-  let analysisData: any;
-  
-  if (provider === AI_PROVIDERS.GEMINI) {
-    // Gemini response format: { candidates: [{ content: { parts: [{ text: "..." }] } }] }
-    if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
-      const textResponse = data.candidates[0].content.parts[0].text;
-      // Extract JSON from text (may have markdown code blocks)
-      const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        analysisData = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new AnalysisApiError(
-          ERROR_MESSAGES.INVALID_RESPONSE,
-          'INVALID_RESPONSE'
-        );
-      }
-    } else {
-      throw new AnalysisApiError(
-        ERROR_MESSAGES.INVALID_RESPONSE,
-        'INVALID_RESPONSE'
-      );
-    }
-  } else if (provider === AI_PROVIDERS.OPENAI) {
-    // OpenAI response format: { choices: [{ message: { content: "..." } }] }
-    if (data.choices && data.choices[0]?.message?.content) {
-      const textResponse = data.choices[0].message.content;
-      const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        analysisData = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new AnalysisApiError(
-          ERROR_MESSAGES.INVALID_RESPONSE,
-          'INVALID_RESPONSE'
-        );
-      }
-    } else {
-      throw new AnalysisApiError(
-        ERROR_MESSAGES.INVALID_RESPONSE,
-        'INVALID_RESPONSE'
-      );
-    }
-  } else {
-    // Custom/Python backend - direct JSON response
-    analysisData = data;
-  }
-  
-  // Validate response structure
-  if (!isValidApiResponse(analysisData)) {
-    throw new AnalysisApiError(
-      ERROR_MESSAGES.INVALID_RESPONSE,
-      'INVALID_RESPONSE'
-    );
-  }
-  
-  return analysisData as ApiAnalysisResponse;
-}
-
-/**
- * Validate API response structure
- * Updated to accept all four signal types: COMPRA, VENDA, NEUTRO, SEM ENTRADA
- */
-function isValidApiResponse(data: any): data is ApiAnalysisResponse {
-  return (
-    data &&
-    typeof data === 'object' &&
-    (data.sinal === 'COMPRA' || data.sinal === 'VENDA' || data.sinal === 'NEUTRO' || data.sinal === 'SEM ENTRADA') &&
-    typeof data.tendencia === 'string' &&
-    typeof data.confianca === 'number' &&
-    Array.isArray(data.padroes) &&
-    typeof data.explicacao === 'string'
-  );
 }

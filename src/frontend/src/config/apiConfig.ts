@@ -77,10 +77,10 @@ export type AIProvider = typeof AI_PROVIDERS[keyof typeof AI_PROVIDERS];
  * Visit: https://aistudio.google.com/app/apikey
  * Click "Create API Key" and copy the key
  * 
- * STEP 2: Set the API key in your environment
- * --------------------------------------------
- * Create a .env file in the frontend directory with:
- * VITE_GEMINI_API_KEY=your_api_key_here
+ * STEP 2: Configure the API key in the app
+ * -----------------------------------------
+ * Go to Settings page in the app and enter your Gemini API key
+ * The key will be stored securely in the backend
  * 
  * STEP 3: Verify API permissions
  * -------------------------------
@@ -130,7 +130,7 @@ export type AIProvider = typeof AI_PROVIDERS[keyof typeof AI_PROVIDERS];
  * - Free tier has rate limits (check AI Studio for current limits)
  * - For production, consider Google Cloud Console for higher quotas
  * 
- * TODO: Replace the placeholder API key in your .env file
+ * Configure your API key in the Settings page of the app
  * ============================================================================
  */
 
@@ -178,3 +178,40 @@ export const MAX_RETRIES = 2;
 
 // Retry delay in milliseconds (exponential backoff)
 export const RETRY_DELAY = 1000;
+
+/**
+ * Validate API key configuration
+ * Returns validation result with error message if key is missing
+ */
+export interface ApiKeyValidation {
+  isValid: boolean;
+  errorMessage?: string;
+}
+
+export async function validateApiKey(actor: any): Promise<ApiKeyValidation> {
+  try {
+    if (!actor) {
+      return {
+        isValid: false,
+        errorMessage: 'CHAVE DE API NÃO CONFIGURADA - Configure a chave da API nas configurações',
+      };
+    }
+
+    const apiKey = await actor.getGeminiApiKey();
+    
+    if (!apiKey || apiKey.trim() === '') {
+      return {
+        isValid: false,
+        errorMessage: 'CHAVE DE API NÃO CONFIGURADA - Configure a chave da API nas configurações',
+      };
+    }
+
+    return { isValid: true };
+  } catch (error) {
+    console.error('Error validating API key:', error);
+    return {
+      isValid: false,
+      errorMessage: 'Erro ao validar chave da API',
+    };
+  }
+}

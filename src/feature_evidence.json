@@ -2,11 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-investigate-and-fix-the-http-403-error-erro-na-an-lise-403-that-occurs-when-users-upload-chart-images-from-mobile-devices-review-the-api-request-format-in-frontend-src-services-analysisapi-ts-to-ensure-mobile-screenshots-are-properly-encoded-and-sent-with-correct-headers-and-authentication",
-      "featureTitle": "Investigate and fix the HTTP 403 error ('Erro na análise: 403') that occurs when users upload chart images from mobile devices. Review the API request format in frontend/src/services/analysisApi.ts to ensure mobile screenshots are properly encoded and sent with correct headers and authentication.",
+      "featureId": "feature-update-frontend-src-config-apiconfig-ts-to-add-proper-api-key-configuration-validation-that-checks-if-the-gemini-api-key-is-set-before-allowing-analysis-requests-display-a-clear-portuguese-error-message-chave-de-api-n-o-configurada-configure-a-chave-da-api-nas-configura-es-when-the-key-is-missing-or-invalid",
+      "featureTitle": "Update frontend/src/config/apiConfig.ts to add proper API key configuration validation that checks if the Gemini API key is set before allowing analysis requests. Display a clear Portuguese error message 'CHAVE DE API NÃO CONFIGURADA - Configure a chave da API nas configurações' when the key is missing or invalid.",
       "files": [
-        "frontend/src/config/apiConfig.ts",
-        "frontend/src/services/analysisApi.ts"
+        "frontend/src/config/apiConfig.ts"
       ],
       "components": [
         "blob-storage@4.0.0",
@@ -19,15 +18,14 @@
         "http-outcalls@3.0.0"
       ],
       "testIds": [
-        "REQ-38"
+        "REQ-42"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-add-diagnostic-logging-to-frontend-src-services-analysisapi-ts-to-capture-request-details-headers-payload-size-content-type-when-api-calls-fail-with-403-status-helping-identify-authentication-or-permission-issues-specific-to-mobile-image-uploads",
-      "featureTitle": "Add diagnostic logging to frontend/src/services/analysisApi.ts to capture request details (headers, payload size, content type) when API calls fail with 403 status, helping identify authentication or permission issues specific to mobile image uploads.",
+      "featureId": "feature-update-frontend-src-services-analysisapi-ts-to-handle-mobile-screenshot-uploads-from-pocket-option-broker-specifically-add-detection-for-pocket-option-chart-characteristics-dark-theme-candlestick-layout-broker-ui-elements-visible-in-screenshot-and-ensure-the-image-preprocessing-pipeline-preserves-chart-data-quality-while-removing-broker-interface-artifacts",
+      "featureTitle": "Update frontend/src/services/analysisApi.ts to handle mobile screenshot uploads from Pocket Option broker specifically. Add detection for Pocket Option chart characteristics (dark theme, candlestick layout, broker UI elements visible in screenshot) and ensure the image preprocessing pipeline preserves chart data quality while removing broker interface artifacts.",
       "files": [
-        "frontend/src/pages/ProcessingScreen.tsx",
         "frontend/src/services/analysisApi.ts"
       ],
       "components": [
@@ -41,15 +39,14 @@
         "http-outcalls@3.0.0"
       ],
       "testIds": [
-        "REQ-39"
+        "REQ-43"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-verify-that-the-google-gemini-vision-api-key-in-frontend-src-config-apiconfig-ts-has-the-necessary-permissions-and-quotas-enabled-for-image-analysis-requests-add-validation-to-check-if-the-api-key-is-properly-configured-before-sending-requests",
-      "featureTitle": "Verify that the Google Gemini Vision API key in frontend/src/config/apiConfig.ts has the necessary permissions and quotas enabled for image analysis requests. Add validation to check if the API key is properly configured before sending requests.",
+      "featureId": "feature-update-frontend-src-services-analysisapi-ts-to-include-enhanced-logging-for-mobile-screenshot-analysis-requests-log-the-image-source-type-mobile-camera-screenshot-image-dimensions-file-size-detected-broker-interface-if-pocket-option-and-preprocessing-steps-applied-this-diagnostic-information-should-help-identify-why-mobile-screenshots-trigger-api-key-errors",
+      "featureTitle": "Update frontend/src/services/analysisApi.ts to include enhanced logging for mobile screenshot analysis requests. Log the image source type (mobile camera/screenshot), image dimensions, file size, detected broker interface (if Pocket Option), and preprocessing steps applied. This diagnostic information should help identify why mobile screenshots trigger API key errors.",
       "files": [
-        "frontend/src/config/apiConfig.ts",
         "frontend/src/services/analysisApi.ts"
       ],
       "components": [
@@ -63,16 +60,36 @@
         "http-outcalls@3.0.0"
       ],
       "testIds": [
-        "REQ-40"
+        "REQ-44"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-ensure-mobile-screenshot-images-are-properly-converted-to-the-correct-format-and-size-before-being-sent-to-the-google-gemini-vision-api-add-image-preprocessing-in-frontend-src-services-analysisapi-ts-to-handle-different-mobile-screenshot-formats-and-dimensions-that-may-trigger-403-errors",
-      "featureTitle": "Ensure mobile screenshot images are properly converted to the correct format and size before being sent to the Google Gemini Vision API. Add image preprocessing in frontend/src/services/analysisApi.ts to handle different mobile screenshot formats and dimensions that may trigger 403 errors.",
+      "featureId": "feature-update-frontend-src-pages-processingscreen-tsx-to-validate-api-key-configuration-immediately-when-analysis-begins-before-starting-the-image-upload-process-if-the-api-key-is-not-configured-display-the-error-message-chave-de-api-n-o-configurada-with-a-button-to-navigate-to-settings-and-do-not-proceed-with-the-analysis-stages",
+      "featureTitle": "Update frontend/src/pages/ProcessingScreen.tsx to validate API key configuration immediately when analysis begins, before starting the image upload process. If the API key is not configured, display the error message 'CHAVE DE API NÃO CONFIGURADA' with a button to navigate to Settings, and do not proceed with the analysis stages.",
       "files": [
-        "frontend/src/components/FileUpload.tsx",
-        "frontend/src/pages/AnalyzeChart.tsx",
+        "frontend/src/pages/ProcessingScreen.tsx"
+      ],
+      "components": [
+        "blob-storage@4.0.0",
+        "camera@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "http-outcalls@3.0.0"
+      ],
+      "testIds": [
+        "REQ-45"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-a-gemini-api-key-configuration-field-to-the-settings-page-frontend-src-pages-settings-tsx-include-a-secure-text-input-field-labeled-chave-da-api-gemini-a-save-button-and-validation-to-ensure-the-key-format-is-correct-store-the-api-key-securely-in-the-backend-or-encrypted-local-storage-and-update-the-api-service-to-read-from-this-configuration",
+      "featureTitle": "Add a Gemini API key configuration field to the Settings page (frontend/src/pages/Settings.tsx). Include a secure text input field labeled 'Chave da API Gemini', a save button, and validation to ensure the key format is correct. Store the API key securely in the backend or encrypted local storage, and update the API service to read from this configuration.",
+      "files": [
+        "frontend/src/pages/Settings.tsx",
         "frontend/src/services/analysisApi.ts"
       ],
       "components": [
@@ -86,7 +103,7 @@
         "http-outcalls@3.0.0"
       ],
       "testIds": [
-        "REQ-41"
+        "REQ-46"
       ],
       "confidence": "high"
     }
