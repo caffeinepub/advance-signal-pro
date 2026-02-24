@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
-import { Upload, FileImage, X } from 'lucide-react';
+import { Upload, FileImage, X, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 
 interface FileUploadProps {
@@ -8,21 +9,38 @@ interface FileUploadProps {
   selectedFile: File | null;
 }
 
-const ACCEPTED_FORMATS = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf'];
+const ACCEPTED_FORMATS = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB (images will be auto-resized if needed)
 
 export default function FileUpload({ onFileSelect, selectedFile }: FileUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [heicWarning, setHeicWarning] = useState(false);
 
   const validateFile = (file: File): boolean => {
-    if (!ACCEPTED_FORMATS.includes(file.type)) {
-      toast.error('Por favor, envie um arquivo PNG, JPG, JPEG ou PDF');
+    // Check for HEIC format
+    const fileName = file.name.toLowerCase();
+    const fileType = file.type.toLowerCase();
+    
+    if (fileType === 'image/heic' || fileType === 'image/heif' || 
+        fileName.endsWith('.heic') || fileName.endsWith('.heif')) {
+      setHeicWarning(true);
+      toast.error('Arquivos HEIC não são suportados. Por favor, converta para JPEG ou use a câmera.');
       return false;
     }
-    if (file.size > 10 * 1024 * 1024) {
+    
+    setHeicWarning(false);
+    
+    if (!ACCEPTED_FORMATS.includes(fileType)) {
+      toast.error('Por favor, envie um arquivo PNG, JPG, JPEG ou WebP');
+      return false;
+    }
+    
+    if (file.size > MAX_FILE_SIZE) {
       toast.error('O tamanho do arquivo deve ser menor que 10MB');
       return false;
     }
+    
     return true;
   };
 
@@ -54,6 +72,7 @@ export default function FileUpload({ onFileSelect, selectedFile }: FileUploadPro
 
   const handleClear = () => {
     onFileSelect(null as any);
+    setHeicWarning(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -61,6 +80,15 @@ export default function FileUpload({ onFileSelect, selectedFile }: FileUploadPro
 
   return (
     <div className="space-y-4">
+      {heicWarning && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Arquivos HEIC não são suportados. Por favor, converta para JPEG ou use a câmera para capturar diretamente.
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <div
         onDrop={handleDrop}
         onDragOver={handleDragOver}
@@ -92,12 +120,15 @@ export default function FileUpload({ onFileSelect, selectedFile }: FileUploadPro
         <input
           ref={fileInputRef}
           type="file"
-          accept=".png,.jpg,.jpeg,.pdf"
+          accept="image/jpeg,image/png,image/jpg,image/webp"
           onChange={handleFileChange}
           className="hidden"
         />
         <p className="text-xs text-muted-foreground mt-4">
-          Formatos suportados: PNG, JPG, JPEG, PDF (máx 10MB)
+          Formatos suportados: PNG, JPG, JPEG, WebP (máx 10MB)
+        </p>
+        <p className="text-xs text-muted-foreground mt-1">
+          Imagens grandes serão automaticamente redimensionadas
         </p>
       </div>
 

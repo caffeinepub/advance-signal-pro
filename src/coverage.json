@@ -1,91 +1,67 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-24T01:00:01.355Z",
+  "generatedAt": "2026-02-24T01:39:59.976Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 7,
-    "implemented": 7,
+    "total": 4,
+    "implemented": 4,
     "items": [
       {
-        "id": "REQ-27",
-        "summary": "Update the external API integration documentation in frontend/src/config/apiConfig.ts to specify that the API endpoint must implement a 6-step rule-based technical analysis process: 1) image preprocessing (increase contrast, convert to high sharpness, detect individual candles, identify wick/body/high/low, ignore broker UI elements), 2) candle reading (extract direction up/down, body size, wick size, color sequence, movement strength), 3) trend identification (ascending tops/bottoms = ALTA, descending = BAIXA, sideways = LATERAL), 4) price action pattern detection (engulfing high/low, hammer, shooting star, doji, pullback, breakout, support/resistance - only when rules are confirmed), 5) signal scoring system (+2 points strong trend, +1 favorable pattern, -1 resistance against, -2 contrary pattern; result >= 2 = COMPRA, <= -2 = VENDA, between -1 and 1 = NEUTRO), 6) mandatory return showing trend, detected patterns, total score, confidence percentage, final signal, and brief technical explanation. Add comments describing these requirements for API provider implementation.",
+        "id": "REQ-38",
+        "summary": "Investigate and fix the HTTP 403 error ('Erro na análise: 403') that occurs when users upload chart images from mobile devices. Review the API request format in frontend/src/services/analysisApi.ts to ensure mobile screenshots are properly encoded and sent with correct headers and authentication.",
         "status": "implemented",
         "plannedFiles": [
+          "frontend/src/services/analysisApi.ts",
           "frontend/src/config/apiConfig.ts"
         ],
         "matchedFiles": [
+          "frontend/src/services/analysisApi.ts",
           "frontend/src/config/apiConfig.ts"
         ]
       },
       {
-        "id": "REQ-28",
-        "summary": "Update the TypeScript interface definitions in frontend/src/types/apiTypes.ts to extend ApiAnalysisResponse with an optional 'pontuacao' (number) field for the total score, ensure 'sinal' accepts 'COMPRA', 'VENDA', 'NEUTRO', and 'SEM ENTRADA' as valid values, and add JSDoc comments explaining the scoring system (+2/-2 point scale) and that 'SEM ENTRADA' indicates no clear trading signal was detected.",
+        "id": "REQ-39",
+        "summary": "Add diagnostic logging to frontend/src/services/analysisApi.ts to capture request details (headers, payload size, content type) when API calls fail with 403 status, helping identify authentication or permission issues specific to mobile image uploads.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/types/apiTypes.ts"
+          "frontend/src/services/analysisApi.ts",
+          "frontend/src/pages/ProcessingScreen.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/types/apiTypes.ts"
+          "frontend/src/services/analysisApi.ts",
+          "frontend/src/pages/ProcessingScreen.tsx"
         ]
       },
       {
-        "id": "REQ-29",
-        "summary": "Update frontend/src/utils/mapApiResponse.ts to handle the new 'NEUTRO' and 'SEM ENTRADA' signal values from the API response. Map 'NEUTRO' to a neutral state in the internal AnalysisResult format, map 'SEM ENTRADA' to indicate no entry signal, and ensure the mapping logic preserves the 'pontuacao' field if present in the API response. Add appropriate handling for these cases in the UI mapping logic.",
+        "id": "REQ-40",
+        "summary": "Verify that the Google Gemini Vision API key in frontend/src/config/apiConfig.ts has the necessary permissions and quotas enabled for image analysis requests. Add validation to check if the API key is properly configured before sending requests.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/utils/mapApiResponse.ts"
+          "frontend/src/services/analysisApi.ts",
+          "frontend/src/config/apiConfig.ts"
         ],
         "matchedFiles": [
-          "frontend/src/utils/mapApiResponse.ts"
+          "frontend/src/services/analysisApi.ts",
+          "frontend/src/config/apiConfig.ts"
         ]
       },
       {
-        "id": "REQ-30",
-        "summary": "Update frontend/src/components/SignalCard.tsx to display 'NEUTRO' signals with a neutral visual style (gray or yellow indicator), display 'SEM ENTRADA' signals with a warning style and appropriate Portuguese text ('Sem sinal de entrada detectado'), show the total score (pontuacao) if available in the analysis result with a label 'Pontuação:', and ensure all signal types (COMPRA, VENDA, NEUTRO, SEM ENTRADA) have distinct visual indicators and Portuguese labels.",
+        "id": "REQ-41",
+        "summary": "Ensure mobile screenshot images are properly converted to the correct format and size before being sent to the Google Gemini Vision API. Add image preprocessing in frontend/src/services/analysisApi.ts to handle different mobile screenshot formats and dimensions that may trigger 403 errors.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/SignalCard.tsx"
+          "frontend/src/services/analysisApi.ts",
+          "frontend/src/components/FileUpload.tsx",
+          "frontend/src/pages/AnalyzeChart.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/SignalCard.tsx"
-        ]
-      },
-      {
-        "id": "REQ-31",
-        "summary": "Update frontend/src/pages/Results.tsx to handle and display NEUTRO and SEM ENTRADA signal types. For NEUTRO signals, display appropriate messaging in Portuguese ('Mercado em consolidação - aguarde confirmação'). For SEM ENTRADA signals, display clear messaging in Portuguese ('Nenhum sinal claro detectado - aguarde melhor oportunidade') and consider hiding or disabling the 'Save Analysis' button for SEM ENTRADA results. Ensure the score (pontuacao) is prominently displayed if present.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/Results.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/Results.tsx"
-        ]
-      },
-      {
-        "id": "REQ-32",
-        "summary": "Update frontend/src/services/analysisApi.ts to include in the request payload or headers an instruction field specifying the requirement for objective rule-based analysis without subjective interpretation. Add a comment or configuration note explaining that the API must follow the 6-step technical process and never fabricate signals when confirmation is unclear.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/services/analysisApi.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/services/analysisApi.ts"
-        ]
-      },
-      {
-        "id": "REQ-33",
-        "summary": "Update frontend/src/pages/History.tsx and frontend/src/components/HistoryListItem.tsx to display NEUTRO and SEM ENTRADA signals in the analysis history list with appropriate visual indicators and Portuguese labels. Ensure that NEUTRO signals show as 'Neutro' and SEM ENTRADA signals show as 'Sem entrada' with distinct styling to differentiate them from COMPRA/VENDA signals.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/History.tsx",
-          "frontend/src/components/HistoryListItem.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/HistoryListItem.tsx"
+          "frontend/src/services/analysisApi.ts",
+          "frontend/src/components/FileUpload.tsx",
+          "frontend/src/pages/AnalyzeChart.tsx"
         ]
       }
     ]
@@ -95,13 +71,11 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/HistoryListItem.tsx",
-    "frontend/src/components/SignalCard.tsx",
+    "frontend/src/components/FileUpload.tsx",
     "frontend/src/config/apiConfig.ts",
-    "frontend/src/pages/Results.tsx",
+    "frontend/src/pages/AnalyzeChart.tsx",
+    "frontend/src/pages/ProcessingScreen.tsx",
     "frontend/src/services/analysisApi.ts",
-    "frontend/src/types/apiTypes.ts",
-    "frontend/src/utils/mapApiResponse.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

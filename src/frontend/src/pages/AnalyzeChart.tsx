@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -40,6 +40,7 @@ export default function AnalyzeChart() {
       const reader = new FileReader();
       reader.onload = () => {
         sessionStorage.setItem('chartImage', reader.result as string);
+        sessionStorage.setItem('imageSource', uploadMethod);
         navigate({ to: '/processing' });
       };
       reader.readAsDataURL(fileToUse);

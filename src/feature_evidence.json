@@ -2,114 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-external-api-integration-documentation-in-frontend-src-config-apiconfig-ts-to-specify-that-the-api-endpoint-must-implement-a-6-step-rule-based-technical-analysis-process-1-image-preprocessing-increase-contrast-convert-to-high-sharpness-detect-individual-candles-identify-wick-body-high-low-ignore-broker-ui-elements-2-candle-reading-extract-direction-up-down-body-size-wick-size-color-sequence-movement-strength-3-trend-identification-ascending-tops-bottoms-alta-descending-baixa-sideways-lateral-4-price-action-pattern-detection-engulfing-high-low-hammer-shooting-star-doji-pullback-breakout-support-resistance-only-when-rules-are-confirmed-5-signal-scoring-system-2-points-strong-trend-1-favorable-pattern-1-resistance-against-2-contrary-pattern-result-2-compra-2-venda-between-1-and-1-neutro-6-mandatory-return-showing-trend-detected-patterns-total-score-confidence-percentage-final-signal-and-brief-technical-explanation-add-comments-describing-these-requirements-for-api-provider-implementation",
-      "featureTitle": "Update the external API integration documentation in frontend/src/config/apiConfig.ts to specify that the API endpoint must implement a 6-step rule-based technical analysis process: 1) image preprocessing (increase contrast, convert to high sharpness, detect individual candles, identify wick/body/high/low, ignore broker UI elements), 2) candle reading (extract direction up/down, body size, wick size, color sequence, movement strength), 3) trend identification (ascending tops/bottoms = ALTA, descending = BAIXA, sideways = LATERAL), 4) price action pattern detection (engulfing high/low, hammer, shooting star, doji, pullback, breakout, support/resistance - only when rules are confirmed), 5) signal scoring system (+2 points strong trend, +1 favorable pattern, -1 resistance against, -2 contrary pattern; result >= 2 = COMPRA, <= -2 = VENDA, between -1 and 1 = NEUTRO), 6) mandatory return showing trend, detected patterns, total score, confidence percentage, final signal, and brief technical explanation. Add comments describing these requirements for API provider implementation.",
+      "featureId": "feature-investigate-and-fix-the-http-403-error-erro-na-an-lise-403-that-occurs-when-users-upload-chart-images-from-mobile-devices-review-the-api-request-format-in-frontend-src-services-analysisapi-ts-to-ensure-mobile-screenshots-are-properly-encoded-and-sent-with-correct-headers-and-authentication",
+      "featureTitle": "Investigate and fix the HTTP 403 error ('Erro na análise: 403') that occurs when users upload chart images from mobile devices. Review the API request format in frontend/src/services/analysisApi.ts to ensure mobile screenshots are properly encoded and sent with correct headers and authentication.",
       "files": [
-        "frontend/src/config/apiConfig.ts"
-      ],
-      "components": [
-        "blob-storage@4.0.0",
-        "camera@1.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "http-outcalls@3.0.0"
-      ],
-      "testIds": [
-        "REQ-27"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-update-the-typescript-interface-definitions-in-frontend-src-types-apitypes-ts-to-extend-apianalysisresponse-with-an-optional-pontuacao-number-field-for-the-total-score-ensure-sinal-accepts-compra-venda-neutro-and-sem-entrada-as-valid-values-and-add-jsdoc-comments-explaining-the-scoring-system-2-2-point-scale-and-that-sem-entrada-indicates-no-clear-trading-signal-was-detected",
-      "featureTitle": "Update the TypeScript interface definitions in frontend/src/types/apiTypes.ts to extend ApiAnalysisResponse with an optional 'pontuacao' (number) field for the total score, ensure 'sinal' accepts 'COMPRA', 'VENDA', 'NEUTRO', and 'SEM ENTRADA' as valid values, and add JSDoc comments explaining the scoring system (+2/-2 point scale) and that 'SEM ENTRADA' indicates no clear trading signal was detected.",
-      "files": [
-        "frontend/src/types/apiTypes.ts"
-      ],
-      "components": [
-        "blob-storage@4.0.0",
-        "camera@1.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "http-outcalls@3.0.0"
-      ],
-      "testIds": [
-        "REQ-28"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-update-frontend-src-utils-mapapiresponse-ts-to-handle-the-new-neutro-and-sem-entrada-signal-values-from-the-api-response-map-neutro-to-a-neutral-state-in-the-internal-analysisresult-format-map-sem-entrada-to-indicate-no-entry-signal-and-ensure-the-mapping-logic-preserves-the-pontuacao-field-if-present-in-the-api-response-add-appropriate-handling-for-these-cases-in-the-ui-mapping-logic",
-      "featureTitle": "Update frontend/src/utils/mapApiResponse.ts to handle the new 'NEUTRO' and 'SEM ENTRADA' signal values from the API response. Map 'NEUTRO' to a neutral state in the internal AnalysisResult format, map 'SEM ENTRADA' to indicate no entry signal, and ensure the mapping logic preserves the 'pontuacao' field if present in the API response. Add appropriate handling for these cases in the UI mapping logic.",
-      "files": [
-        "frontend/src/utils/mapApiResponse.ts"
-      ],
-      "components": [
-        "blob-storage@4.0.0",
-        "camera@1.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "http-outcalls@3.0.0"
-      ],
-      "testIds": [
-        "REQ-29"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-update-frontend-src-components-signalcard-tsx-to-display-neutro-signals-with-a-neutral-visual-style-gray-or-yellow-indicator-display-sem-entrada-signals-with-a-warning-style-and-appropriate-portuguese-text-sem-sinal-de-entrada-detectado-show-the-total-score-pontuacao-if-available-in-the-analysis-result-with-a-label-pontua-o-and-ensure-all-signal-types-compra-venda-neutro-sem-entrada-have-distinct-visual-indicators-and-portuguese-labels",
-      "featureTitle": "Update frontend/src/components/SignalCard.tsx to display 'NEUTRO' signals with a neutral visual style (gray or yellow indicator), display 'SEM ENTRADA' signals with a warning style and appropriate Portuguese text ('Sem sinal de entrada detectado'), show the total score (pontuacao) if available in the analysis result with a label 'Pontuação:', and ensure all signal types (COMPRA, VENDA, NEUTRO, SEM ENTRADA) have distinct visual indicators and Portuguese labels.",
-      "files": [
-        "frontend/src/components/SignalCard.tsx"
-      ],
-      "components": [
-        "blob-storage@4.0.0",
-        "camera@1.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "http-outcalls@3.0.0"
-      ],
-      "testIds": [
-        "REQ-30"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-update-frontend-src-pages-results-tsx-to-handle-and-display-neutro-and-sem-entrada-signal-types-for-neutro-signals-display-appropriate-messaging-in-portuguese-mercado-em-consolida-o-aguarde-confirma-o-for-sem-entrada-signals-display-clear-messaging-in-portuguese-nenhum-sinal-claro-detectado-aguarde-melhor-oportunidade-and-consider-hiding-or-disabling-the-save-analysis-button-for-sem-entrada-results-ensure-the-score-pontuacao-is-prominently-displayed-if-present",
-      "featureTitle": "Update frontend/src/pages/Results.tsx to handle and display NEUTRO and SEM ENTRADA signal types. For NEUTRO signals, display appropriate messaging in Portuguese ('Mercado em consolidação - aguarde confirmação'). For SEM ENTRADA signals, display clear messaging in Portuguese ('Nenhum sinal claro detectado - aguarde melhor oportunidade') and consider hiding or disabling the 'Save Analysis' button for SEM ENTRADA results. Ensure the score (pontuacao) is prominently displayed if present.",
-      "files": [
-        "frontend/src/pages/Results.tsx"
-      ],
-      "components": [
-        "blob-storage@4.0.0",
-        "camera@1.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "http-outcalls@3.0.0"
-      ],
-      "testIds": [
-        "REQ-31"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-update-frontend-src-services-analysisapi-ts-to-include-in-the-request-payload-or-headers-an-instruction-field-specifying-the-requirement-for-objective-rule-based-analysis-without-subjective-interpretation-add-a-comment-or-configuration-note-explaining-that-the-api-must-follow-the-6-step-technical-process-and-never-fabricate-signals-when-confirmation-is-unclear",
-      "featureTitle": "Update frontend/src/services/analysisApi.ts to include in the request payload or headers an instruction field specifying the requirement for objective rule-based analysis without subjective interpretation. Add a comment or configuration note explaining that the API must follow the 6-step technical process and never fabricate signals when confirmation is unclear.",
-      "files": [
+        "frontend/src/config/apiConfig.ts",
         "frontend/src/services/analysisApi.ts"
       ],
       "components": [
@@ -123,15 +19,16 @@
         "http-outcalls@3.0.0"
       ],
       "testIds": [
-        "REQ-32"
+        "REQ-38"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-update-frontend-src-pages-history-tsx-and-frontend-src-components-historylistitem-tsx-to-display-neutro-and-sem-entrada-signals-in-the-analysis-history-list-with-appropriate-visual-indicators-and-portuguese-labels-ensure-that-neutro-signals-show-as-neutro-and-sem-entrada-signals-show-as-sem-entrada-with-distinct-styling-to-differentiate-them-from-compra-venda-signals",
-      "featureTitle": "Update frontend/src/pages/History.tsx and frontend/src/components/HistoryListItem.tsx to display NEUTRO and SEM ENTRADA signals in the analysis history list with appropriate visual indicators and Portuguese labels. Ensure that NEUTRO signals show as 'Neutro' and SEM ENTRADA signals show as 'Sem entrada' with distinct styling to differentiate them from COMPRA/VENDA signals.",
+      "featureId": "feature-add-diagnostic-logging-to-frontend-src-services-analysisapi-ts-to-capture-request-details-headers-payload-size-content-type-when-api-calls-fail-with-403-status-helping-identify-authentication-or-permission-issues-specific-to-mobile-image-uploads",
+      "featureTitle": "Add diagnostic logging to frontend/src/services/analysisApi.ts to capture request details (headers, payload size, content type) when API calls fail with 403 status, helping identify authentication or permission issues specific to mobile image uploads.",
       "files": [
-        "frontend/src/components/HistoryListItem.tsx"
+        "frontend/src/pages/ProcessingScreen.tsx",
+        "frontend/src/services/analysisApi.ts"
       ],
       "components": [
         "blob-storage@4.0.0",
@@ -144,7 +41,52 @@
         "http-outcalls@3.0.0"
       ],
       "testIds": [
-        "REQ-33"
+        "REQ-39"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-verify-that-the-google-gemini-vision-api-key-in-frontend-src-config-apiconfig-ts-has-the-necessary-permissions-and-quotas-enabled-for-image-analysis-requests-add-validation-to-check-if-the-api-key-is-properly-configured-before-sending-requests",
+      "featureTitle": "Verify that the Google Gemini Vision API key in frontend/src/config/apiConfig.ts has the necessary permissions and quotas enabled for image analysis requests. Add validation to check if the API key is properly configured before sending requests.",
+      "files": [
+        "frontend/src/config/apiConfig.ts",
+        "frontend/src/services/analysisApi.ts"
+      ],
+      "components": [
+        "blob-storage@4.0.0",
+        "camera@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "http-outcalls@3.0.0"
+      ],
+      "testIds": [
+        "REQ-40"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-ensure-mobile-screenshot-images-are-properly-converted-to-the-correct-format-and-size-before-being-sent-to-the-google-gemini-vision-api-add-image-preprocessing-in-frontend-src-services-analysisapi-ts-to-handle-different-mobile-screenshot-formats-and-dimensions-that-may-trigger-403-errors",
+      "featureTitle": "Ensure mobile screenshot images are properly converted to the correct format and size before being sent to the Google Gemini Vision API. Add image preprocessing in frontend/src/services/analysisApi.ts to handle different mobile screenshot formats and dimensions that may trigger 403 errors.",
+      "files": [
+        "frontend/src/components/FileUpload.tsx",
+        "frontend/src/pages/AnalyzeChart.tsx",
+        "frontend/src/services/analysisApi.ts"
+      ],
+      "components": [
+        "blob-storage@4.0.0",
+        "camera@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "http-outcalls@3.0.0"
+      ],
+      "testIds": [
+        "REQ-41"
       ],
       "confidence": "high"
     }

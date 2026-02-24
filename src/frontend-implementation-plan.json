@@ -1,129 +1,94 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Implement rule-based technical analysis system with 6-step objective process",
+  "title": "Fix 403 error when analyzing mobile screenshots",
   "requirements": [
     {
-      "id": "REQ-27",
-      "summary": "Document 6-step rule-based technical analysis process requirements in API configuration",
+      "id": "REQ-38",
+      "summary": "Fix HTTP 403 error for mobile screenshot uploads by reviewing API request format, ensuring proper image encoding, headers, and authentication",
       "acceptanceCriteria": [
-        "apiConfig.ts includes detailed comments documenting the 6-step technical analysis process requirements",
-        "Comments specify objective rule-based approach with no subjective interpretation",
-        "Documentation includes scoring system rules and signal thresholds",
-        "Comments note that unclear cases should return 'SEM ENTRADA' instead of fabricated signals"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/config/apiConfig.ts",
-          "operation": "modify",
-          "description": "Add comprehensive JSDoc comments above API endpoint configurations documenting the mandatory 6-step technical analysis process: 1) image preprocessing (contrast enhancement, high sharpness conversion, candle detection, wick/body/high/low identification, broker UI element filtering), 2) candle reading (extract direction, body size, wick size, color sequence, movement strength), 3) trend identification (ascending tops/bottoms = ALTA, descending = BAIXA, sideways = LATERAL), 4) price action pattern detection with rule confirmation (engulfing, hammer, shooting star, doji, pullback, breakout, support/resistance), 5) signal scoring system (+2 strong trend, +1 favorable pattern, -1 resistance, -2 contrary pattern; >= 2 = COMPRA, <= -2 = VENDA, -1 to 1 = NEUTRO), 6) mandatory return structure (trend, patterns, score, confidence %, signal, technical explanation). Include explicit note that unclear cases must return 'SEM ENTRADA' rather than fabricated signals. Emphasize objective rule-based approach without subjective interpretation."
-        }
-      ]
-    },
-    {
-      "id": "REQ-28",
-      "summary": "Extend API type definitions to support score field and additional signal values",
-      "acceptanceCriteria": [
-        "ApiAnalysisResponse interface includes optional 'pontuacao?: number' field",
-        "The 'sinal' field type accepts 'COMPRA' | 'VENDA' | 'NEUTRO' | 'SEM ENTRADA'",
-        "JSDoc comments document the scoring system and signal thresholds",
-        "Type definitions align with the 6-step analysis requirements"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/types/apiTypes.ts",
-          "operation": "modify",
-          "description": "Add optional 'pontuacao?: number' field to ApiAnalysisResponse interface to store the total score from the 6-step analysis. Update the 'sinal' field type from its current definition to accept 'COMPRA' | 'VENDA' | 'NEUTRO' | 'SEM ENTRADA' as valid string literal values. Add comprehensive JSDoc comments above the interface explaining the scoring system (+2/-2 point scale), signal thresholds (>= 2 for COMPRA, <= -2 for VENDA, -1 to 1 for NEUTRO), and that 'SEM ENTRADA' indicates no clear trading signal was detected by the rule-based analysis."
-        }
-      ]
-    },
-    {
-      "id": "REQ-29",
-      "summary": "Update API response mapper to handle NEUTRO and SEM ENTRADA signals",
-      "acceptanceCriteria": [
-        "mapApiResponse function handles 'NEUTRO' signal mapping to internal format",
-        "mapApiResponse function handles 'SEM ENTRADA' signal mapping to internal format",
-        "Score field (pontuacao) is preserved if present in API response",
-        "Mapping logic does not break existing COMPRA/VENDA handling"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/utils/mapApiResponse.ts",
-          "operation": "modify",
-          "description": "Extend the signal mapping logic to handle 'NEUTRO' by mapping it to AnalysisDirection.sideways in the internal AnalysisResult format. Add handling for 'SEM ENTRADA' signal value, mapping it to a recognizable internal state (consider using sideways with a flag or special confidence value). Preserve the 'pontuacao' field from ApiAnalysisResponse if present, storing it in an appropriate location in the AnalysisResult structure (may need to add field or store in metadata). Ensure existing COMPRA/VENDA signal mappings continue to work correctly. Update any signal validation or switch statements to include all four signal types."
-        }
-      ]
-    },
-    {
-      "id": "REQ-30",
-      "summary": "Update SignalCard component to display NEUTRO, SEM ENTRADA signals and score",
-      "acceptanceCriteria": [
-        "SignalCard renders NEUTRO signals with neutral styling",
-        "SignalCard renders SEM ENTRADA signals with warning styling and Portuguese text",
-        "Total score (pontuacao) is displayed when available with 'Pontuação:' label",
-        "All four signal types have distinct visual appearances"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/SignalCard.tsx",
-          "operation": "modify",
-          "description": "Add visual styling and rendering logic for NEUTRO signals using neutral colors (gray or yellow indicator) with appropriate Portuguese label ('Neutro' or 'Mercado Neutro'). Add visual styling for SEM ENTRADA signals using warning/info style with Portuguese text 'Sem sinal de entrada detectado'. Add conditional rendering to display the total score (pontuacao) when available in the analysis result, with label 'Pontuação:' followed by the numeric value. Ensure all four signal types (COMPRA, VENDA, NEUTRO, SEM ENTRADA) have distinct visual indicators using different colors, icons, or styling. Update any existing signal type conditionals or switch statements to handle all cases."
-        }
-      ]
-    },
-    {
-      "id": "REQ-31",
-      "summary": "Update Results page to handle NEUTRO and SEM ENTRADA signals with appropriate messaging",
-      "acceptanceCriteria": [
-        "Results page displays appropriate Portuguese messaging for NEUTRO signals",
-        "Results page displays appropriate Portuguese messaging for SEM ENTRADA signals",
-        "SEM ENTRADA results have modified UI indicating no actionable signal",
-        "Score (pontuacao) is displayed prominently when available"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/Results.tsx",
-          "operation": "modify",
-          "description": "Add conditional rendering logic to detect NEUTRO signal type and display appropriate Portuguese messaging ('Mercado em consolidação - aguarde confirmação') in a prominent location on the results page. Add conditional rendering for SEM ENTRADA signal type displaying clear Portuguese messaging ('Nenhum sinal claro detectado - aguarde melhor oportunidade') and consider hiding or disabling the 'Save Analysis' button for SEM ENTRADA results to indicate no actionable signal. Add prominent display of the score (pontuacao) field when present in the analysis result, positioned near the main signal indicator. Update any existing signal-specific UI sections to handle all four signal types appropriately."
-        }
-      ]
-    },
-    {
-      "id": "REQ-32",
-      "summary": "Update analysis API service to communicate objective analysis requirements",
-      "acceptanceCriteria": [
-        "analysisApi.ts includes configuration or comments documenting objective analysis requirement",
-        "Request payload or headers can convey analysis methodology requirements to API",
-        "Code includes notes that API should return 'SEM ENTRADA' for unclear cases",
-        "Implementation does not break existing API call functionality"
+        "Mobile screenshots can be analyzed without returning 403 errors",
+        "Error handling provides clear Portuguese feedback when API authentication fails",
+        "API requests include all required headers and authentication tokens for the Google Gemini Vision endpoint"
       ],
       "file_operations": [
         {
           "path": "frontend/src/services/analysisApi.ts",
           "operation": "modify",
-          "description": "Add configuration comments or JSDoc above the API call function documenting that the external API must follow objective rule-based analysis without subjective interpretation and must implement the 6-step technical process. Consider adding an instruction field to the request payload or custom header (e.g., 'X-Analysis-Mode: objective-rules') to communicate analysis methodology requirements to the API provider. Include code comments noting that the API must return 'SEM ENTRADA' for unclear cases rather than fabricating signals. Ensure changes do not break existing API call functionality, retry logic, or timeout handling."
+          "description": "Review and fix the analyzeChart function to ensure mobile screenshots are properly encoded as base64 data URIs with correct MIME types. Verify that the Google Gemini Vision API request includes all required headers (Content-Type: application/json) and properly formatted authentication in the URL query parameter. Ensure the image data is sent in the correct format expected by Gemini's REST API (inline data with mime_type and data fields). Add validation to check that base64 encoding is complete and valid before sending the request."
+        },
+        {
+          "path": "frontend/src/config/apiConfig.ts",
+          "operation": "modify",
+          "description": "Review the GEMINI endpoint configuration to ensure the API key placeholder and URL format match Google's current Gemini Vision API requirements. Verify that the endpoint URL structure supports the generateContent method with proper versioning. Add comments documenting the required API key format and any specific Google Cloud project permissions needed for the Gemini Vision API."
         }
       ]
     },
     {
-      "id": "REQ-33",
-      "summary": "Update History components to display NEUTRO and SEM ENTRADA signals",
+      "id": "REQ-39",
+      "summary": "Add diagnostic logging to capture request details when API calls fail with 403 status",
       "acceptanceCriteria": [
-        "History list displays NEUTRO signals with 'Neutro' label and neutral styling",
-        "History list displays SEM ENTRADA signals with 'Sem entrada' label and distinct styling",
-        "Historical entries for all signal types are clearly distinguishable",
-        "List item component handles all four signal types without errors"
+        "Console logs display request metadata when 403 errors occur",
+        "Error messages distinguish between authentication failures and other API errors",
+        "Logs help identify differences between desktop and mobile image upload requests"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/History.tsx",
+          "path": "frontend/src/services/analysisApi.ts",
           "operation": "modify",
-          "description": "Review the history list rendering logic to ensure it properly passes all signal types including NEUTRO and SEM ENTRADA to the HistoryListItem component. Add any necessary filtering or display logic specific to handling these new signal types in the history view. Ensure the component properly renders items with all four signal types without errors."
+          "description": "Add comprehensive console logging before fetch requests to capture: request URL (with API key redacted), request headers, payload size in bytes, image MIME type, and base64 data length. When a 403 error occurs, log the full error response body, response headers, and request metadata to help diagnose authentication issues. Add a helper function to safely log request details without exposing sensitive API keys. Include device/platform detection (mobile vs desktop) in error logs to identify mobile-specific issues."
         },
         {
-          "path": "frontend/src/components/HistoryListItem.tsx",
+          "path": "frontend/src/pages/ProcessingScreen.tsx",
           "operation": "modify",
-          "description": "Add rendering logic and visual styling to display NEUTRO signals with Portuguese label 'Neutro' and neutral styling (gray or similar neutral color scheme) to differentiate from buy/sell signals. Add rendering logic for SEM ENTRADA signals with Portuguese label 'Sem entrada' and distinct styling (e.g., warning/info color scheme) to indicate no actionable signal was generated. Update any signal type conditionals, switch statements, or icon selections to handle all four signal types (COMPRA, VENDA, NEUTRO, SEM ENTRADA). Ensure each signal type is clearly distinguishable in the history list view through color, icon, or styling differences."
+          "description": "Update error handling in the handleAnalysis function to display more specific Portuguese error messages when a 403 status is received. Distinguish between 'Erro de autenticação da API' (authentication error), 'Chave de API inválida' (invalid API key), and 'Permissões insuficientes' (insufficient permissions). Log the image source (camera, upload, or clipboard) along with device type when analysis fails to help correlate 403 errors with mobile uploads."
+        }
+      ]
+    },
+    {
+      "id": "REQ-40",
+      "summary": "Validate Google Gemini Vision API key configuration and permissions before sending requests",
+      "acceptanceCriteria": [
+        "API key validation prevents requests when credentials are missing or invalid",
+        "User receives clear Portuguese error message ('Chave de API não configurada') if API key is missing",
+        "Configuration documentation includes steps to verify API key permissions"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/services/analysisApi.ts",
+          "operation": "modify",
+          "description": "Add validateApiKey helper function that checks if the Gemini API key is present, non-empty, and not a placeholder value (like 'YOUR_API_KEY_HERE'). Call this validation at the start of analyzeChart before making the HTTP request. Throw a descriptive error with Portuguese message 'Chave de API não configurada. Configure a chave no arquivo apiConfig.ts' when validation fails. Add comments documenting required Google Cloud API permissions (Generative Language API enabled, unrestricted API key or proper HTTP referrer restrictions)."
+        },
+        {
+          "path": "frontend/src/config/apiConfig.ts",
+          "operation": "modify",
+          "description": "Add inline documentation comments above the GEMINI configuration explaining: 1) How to obtain a Gemini API key from Google AI Studio, 2) Required API enablement in Google Cloud Console (Generative Language API), 3) Recommended API key restrictions (HTTP referrers for production), 4) How to verify the API key has proper permissions by testing with curl, 5) Common 403 error causes (quota exceeded, API not enabled, referrer restrictions). Add a TODO comment reminding developers to replace the placeholder API key."
+        }
+      ]
+    },
+    {
+      "id": "REQ-41",
+      "summary": "Ensure mobile screenshots are properly preprocessed (format conversion, resizing) before sending to Google Gemini Vision API",
+      "acceptanceCriteria": [
+        "Images larger than API limits are automatically resized while preserving aspect ratio",
+        "HEIC/HEIF formats from iOS devices are converted to JPEG before upload",
+        "Image preprocessing maintains sufficient quality for chart analysis"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/services/analysisApi.ts",
+          "operation": "modify",
+          "description": "Add preprocessImage async helper function that: 1) Creates an Image object from the file/blob, 2) Checks dimensions against Gemini Vision limits (max 4096x4096 pixels), 3) If oversized, creates a canvas and draws the image scaled down proportionally to fit within limits, 4) Converts canvas to JPEG blob with 0.9 quality using canvas.toBlob, 5) Returns the processed File object. Call preprocessImage on the input file before converting to base64 in analyzeChart. Add comments documenting Gemini's image size limits and supported formats (JPEG, PNG, WebP, but not HEIC). For HEIC detection, check file.type === 'image/heic' or file.name.endsWith('.heic') and show a Portuguese error message instructing users to convert or use camera to capture as JPEG instead."
+        },
+        {
+          "path": "frontend/src/components/FileUpload.tsx",
+          "operation": "modify",
+          "description": "Update the file validation logic to detect HEIC/HEIF formats and show a warning message in Portuguese: 'Arquivos HEIC não são suportados. Por favor, converta para JPEG ou use a câmera.' Add accept attribute to the file input restricting to 'image/jpeg,image/png,image/webp' to guide users toward supported formats. Update MAX_FILE_SIZE comment to mention that images will be automatically resized if they exceed Gemini's limits."
+        },
+        {
+          "path": "frontend/src/pages/AnalyzeChart.tsx",
+          "operation": "modify",
+          "description": "Add a useEffect hook that detects the image source (file upload, camera, clipboard) and logs it to sessionStorage alongside the imageData. This metadata will help correlate preprocessing with different input methods. When storing imageData from camera or clipboard, add a comment noting that these sources typically provide JPEG format which is already compatible, while file uploads may need preprocessing."
         }
       ]
     }

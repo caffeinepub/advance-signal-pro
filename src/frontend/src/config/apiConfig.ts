@@ -67,6 +67,73 @@ export const AI_PROVIDERS = {
 
 export type AIProvider = typeof AI_PROVIDERS[keyof typeof AI_PROVIDERS];
 
+/**
+ * ============================================================================
+ * HOW TO CONFIGURE GOOGLE GEMINI VISION API
+ * ============================================================================
+ * 
+ * STEP 1: Get your API key from Google AI Studio
+ * -----------------------------------------------
+ * Visit: https://aistudio.google.com/app/apikey
+ * Click "Create API Key" and copy the key
+ * 
+ * STEP 2: Set the API key in your environment
+ * --------------------------------------------
+ * Create a .env file in the frontend directory with:
+ * VITE_GEMINI_API_KEY=your_api_key_here
+ * 
+ * STEP 3: Verify API permissions
+ * -------------------------------
+ * The Gemini API should work immediately with the free tier.
+ * If you get 403 errors, check:
+ * 
+ * a) API key is valid and not expired
+ * b) Generative Language API is enabled in Google Cloud Console
+ *    Visit: https://console.cloud.google.com/apis/library/generativelanguage.googleapis.com
+ * c) If using API restrictions, ensure your domain/IP is allowed
+ * d) Check quota limits at: https://aistudio.google.com/app/apikey
+ * 
+ * STEP 4: Test your API key
+ * --------------------------
+ * You can test with curl:
+ * 
+ * curl -H 'Content-Type: application/json' \
+ *   -d '{"contents":[{"parts":[{"text":"Hello"}]}]}' \
+ *   "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=YOUR_API_KEY"
+ * 
+ * COMMON 403 ERROR CAUSES:
+ * ------------------------
+ * 1. Missing or invalid API key
+ * 2. API key in wrong location (must be in URL query parameter, not header)
+ * 3. Generative Language API not enabled in Google Cloud Console
+ * 4. API key restrictions (HTTP referrers, IP restrictions)
+ * 5. Quota exceeded (check usage at AI Studio)
+ * 6. Billing not enabled (required for some models, but gemini-1.5-flash is free)
+ * 
+ * SUPPORTED IMAGE FORMATS:
+ * ------------------------
+ * - JPEG (recommended for photos)
+ * - PNG (recommended for graphics)
+ * - WebP
+ * - HEIC/HEIF (supported but may have compatibility issues)
+ * 
+ * IMAGE SIZE LIMITS:
+ * ------------------
+ * - Maximum inline request size: 20MB (total including text + image)
+ * - Recommended max dimensions: 4096x4096 pixels
+ * - Images are automatically resized if they exceed limits
+ * 
+ * IMPORTANT NOTES:
+ * ----------------
+ * - The API key must be in the URL query parameter (?key=YOUR_KEY)
+ * - Do NOT use x-goog-api-key header (this is for different Google APIs)
+ * - Free tier has rate limits (check AI Studio for current limits)
+ * - For production, consider Google Cloud Console for higher quotas
+ * 
+ * TODO: Replace the placeholder API key in your .env file
+ * ============================================================================
+ */
+
 // Provider configurations with placeholder endpoints
 const PROVIDER_CONFIGS: Record<AIProvider, ProviderConfig> = {
   openai: {
@@ -78,10 +145,8 @@ const PROVIDER_CONFIGS: Record<AIProvider, ProviderConfig> = {
   },
   gemini: {
     name: 'Google Gemini Vision',
-    endpoint: import.meta.env.VITE_GEMINI_ENDPOINT || 'https://generativelanguage.googleapis.com/v1/models/gemini-pro-vision:generateContent',
-    headers: {
-      'x-goog-api-key': import.meta.env.VITE_GEMINI_API_KEY || '',
-    },
+    // Note: API key is added to URL query parameter in analysisApi.ts, not in headers
+    endpoint: import.meta.env.VITE_GEMINI_ENDPOINT || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
   },
   python: {
     name: 'Python Backend',
@@ -93,10 +158,10 @@ const PROVIDER_CONFIGS: Record<AIProvider, ProviderConfig> = {
   },
 };
 
-// Get active provider from environment or default to custom
+// Get active provider from environment or default to Gemini
 export function getActiveProvider(): AIProvider {
   const provider = import.meta.env.VITE_AI_PROVIDER as AIProvider;
-  return provider && provider in PROVIDER_CONFIGS ? provider : AI_PROVIDERS.CUSTOM;
+  return provider && provider in PROVIDER_CONFIGS ? provider : AI_PROVIDERS.GEMINI;
 }
 
 // Get configuration for active provider

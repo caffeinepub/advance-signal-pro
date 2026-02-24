@@ -1,15 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Implement rule-based technical analysis system with 6-step objective process for chart analysis.
+**Goal:** Fix the HTTP 403 error that occurs when users upload chart screenshots from mobile devices for AI analysis.
 
 **Planned changes:**
-- Update API integration documentation to specify 6-step technical analysis process (image preprocessing, candle reading, trend identification, pattern detection, signal scoring, mandatory return format)
-- Extend TypeScript interfaces to support new signal types (NEUTRO, SEM ENTRADA) and scoring field (pontuacao)
-- Update response mapping logic to handle NEUTRO and SEM ENTRADA signals
-- Modify SignalCard component to display all four signal types with distinct visual styles and show total score
-- Update Results page to handle NEUTRO and SEM ENTRADA signals with appropriate Portuguese messaging
-- Update analysisApi service to include objective analysis requirements in API communication
-- Modify History page and list items to display NEUTRO and SEM ENTRADA signals with proper labels and styling
+- Investigate and fix the API request format in `frontend/src/services/analysisApi.ts` to ensure mobile screenshots are properly encoded with correct headers and authentication
+- Add diagnostic logging to capture request details (headers, payload size, content type) when 403 errors occur
+- Verify Google Gemini Vision API key permissions and add validation before sending requests
+- Implement image preprocessing to handle mobile screenshot formats (HEIC/HEIF conversion, resizing for API limits) before uploading
 
-**User-visible outcome:** Users will see more precise trading signals (COMPRA, VENDA, NEUTRO, SEM ENTRADA) based on objective technical rules, with a scoring system that shows confidence level. When the system cannot detect a clear signal, it will explicitly state "Sem entrada" instead of forcing a recommendation.
+**User-visible outcome:** Users can successfully analyze chart screenshots captured from mobile devices without encountering 403 errors, with clear Portuguese error messages when issues occur.

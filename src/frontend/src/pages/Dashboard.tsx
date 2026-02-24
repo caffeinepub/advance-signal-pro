@@ -27,7 +27,7 @@ export default function Dashboard() {
           </div>
           <h1 className="text-4xl font-bold mb-3 tracking-tight">Advance Signal Pro</h1>
           <p className="text-muted-foreground text-lg">
-            Análise de Gráficos com IA & Sinais de Trading
+            Análise de Gráficos com IA & Sinais de Trading 1.0
           </p>
         </div>
 

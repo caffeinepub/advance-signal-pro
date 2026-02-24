@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 9,
+  "projectStateVersion": 13,
   "summary": "Advance Signal Pro: Mobile app (Android/iOS) for automated financial chart analysis using external AI via REST API, focused on Price Action, candle patterns, and trend identification (bullish/bearish/sideways). Optimized for Pocket Option charts and binary options trading with fast scalping analysis (<3s). Features dark/light themes, professional trading interface, chart upload (camera/gallery/clipboard/drag-drop), and displays AI-powered results (buy/sell signals with confidence levels, trend analysis, detected patterns, and explanations) received from external API. Supports integration with OpenAI ChatGPT Vision, Google Gemini Vision, or custom Python backend. Analysis history and customizable settings included. Exclusively supports short timeframes: M1 (1 minute - default), M5 (5 minutes), and M10 (10 minutes). Full Portuguese (Brazil) interface.",
   "architectural_notes": [
     "Mobile-first architecture for Android and iOS platforms",
@@ -14,8 +14,10 @@
     "External AI analysis via REST API (POST /analisar-grafico)",
     "Frontend displays results from external API only (no local AI processing)"
   ],
-  "known_issues": [],
-  "isFixRequest": false,
+  "known_issues": [
+    "Error occurs during analysis when uploading screenshots from mobile device"
+  ],
+  "isFixRequest": true,
   "existing_features": [
     {
       "id": "feature-create-a-dashboard-home-screen-with-four-primary-action-buttons-analyze-chart-analysis-history-settings-and-an-ai-status-indicator-showing-system-readiness-use-a-minimalist-black-white-and-gray-color-scheme-with-large-prominent-buttons-and-simple-iconography-in-a-professional-trading-app-style",
@@ -256,6 +258,70 @@
         "REQ-33"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-config-apiconfig-ts-to-set-google-gemini-vision-as-the-active-ai-provider-configure-the-gemini-api-endpoint-url-required-headers-structure-api-key-authentication-and-ensure-the-provider-configuration-is-marked-as-active",
+      "title": "Update frontend/src/config/apiConfig.ts to set Google Gemini Vision as the active AI provider. Configure the Gemini API endpoint URL, required headers structure (API key authentication), and ensure the provider configuration is marked as active.",
+      "reqIds": [
+        "REQ-34"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-services-analysisapi-ts-to-format-requests-specifically-for-google-gemini-vision-api-ensure-the-multipart-form-data-image-upload-and-request-payload-structure-comply-with-gemini-vision-s-expected-format-while-maintaining-the-existing-6-step-technical-analysis-instruction-requirements",
+      "title": "Update frontend/src/services/analysisApi.ts to format requests specifically for Google Gemini Vision API. Ensure the multipart/form-data image upload and request payload structure comply with Gemini Vision's expected format, while maintaining the existing 6-step technical analysis instruction requirements.",
+      "reqIds": [
+        "REQ-35"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-app-tagline-in-frontend-src-pages-dashboard-tsx-from-an-lise-de-gr-ficos-com-ia-sinais-de-trading-to-an-lise-de-gr-ficos-com-ia-sinais-de-trading-1-0-ensure-the-version-number-1-0-appears-as-part-of-the-main-heading-or-tagline",
+      "title": "Update the app tagline in frontend/src/pages/Dashboard.tsx from 'Análise de Gráficos com IA & Sinais de Trading' to 'Análise de Gráficos com IA & Sinais de Trading 1.0'. Ensure the version number '1.0' appears as part of the main heading or tagline.",
+      "reqIds": [
+        "REQ-36"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-inline-documentation-comments-in-frontend-src-config-apiconfig-ts-explaining-how-to-configure-google-gemini-vision-api-credentials-include-instructions-for-obtaining-a-gemini-api-key-setting-the-endpoint-url-and-configuring-authentication-headers",
+      "title": "Add inline documentation comments in frontend/src/config/apiConfig.ts explaining how to configure Google Gemini Vision API credentials. Include instructions for obtaining a Gemini API key, setting the endpoint URL, and configuring authentication headers.",
+      "reqIds": [
+        "REQ-37"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-investigate-and-fix-the-http-403-error-erro-na-an-lise-403-that-occurs-when-users-upload-chart-images-from-mobile-devices-review-the-api-request-format-in-frontend-src-services-analysisapi-ts-to-ensure-mobile-screenshots-are-properly-encoded-and-sent-with-correct-headers-and-authentication",
+      "title": "Investigate and fix the HTTP 403 error ('Erro na análise: 403') that occurs when users upload chart images from mobile devices. Review the API request format in frontend/src/services/analysisApi.ts to ensure mobile screenshots are properly encoded and sent with correct headers and authentication.",
+      "reqIds": [
+        "REQ-38"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-diagnostic-logging-to-frontend-src-services-analysisapi-ts-to-capture-request-details-headers-payload-size-content-type-when-api-calls-fail-with-403-status-helping-identify-authentication-or-permission-issues-specific-to-mobile-image-uploads",
+      "title": "Add diagnostic logging to frontend/src/services/analysisApi.ts to capture request details (headers, payload size, content type) when API calls fail with 403 status, helping identify authentication or permission issues specific to mobile image uploads.",
+      "reqIds": [
+        "REQ-39"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-verify-that-the-google-gemini-vision-api-key-in-frontend-src-config-apiconfig-ts-has-the-necessary-permissions-and-quotas-enabled-for-image-analysis-requests-add-validation-to-check-if-the-api-key-is-properly-configured-before-sending-requests",
+      "title": "Verify that the Google Gemini Vision API key in frontend/src/config/apiConfig.ts has the necessary permissions and quotas enabled for image analysis requests. Add validation to check if the API key is properly configured before sending requests.",
+      "reqIds": [
+        "REQ-40"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-mobile-screenshot-images-are-properly-converted-to-the-correct-format-and-size-before-being-sent-to-the-google-gemini-vision-api-add-image-preprocessing-in-frontend-src-services-analysisapi-ts-to-handle-different-mobile-screenshot-formats-and-dimensions-that-may-trigger-403-errors",
+      "title": "Ensure mobile screenshot images are properly converted to the correct format and size before being sent to the Google Gemini Vision API. Add image preprocessing in frontend/src/services/analysisApi.ts to handle different mobile screenshot formats and dimensions that may trigger 403 errors.",
+      "reqIds": [
+        "REQ-41"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -354,6 +420,18 @@
     {
       "id": "AR-32",
       "summary": "Implement rule-based technical analysis system with 6-step objective process: 1) image preprocessing (contrast, sharpness, candle detection), 2) candle reading (direction, body/wick size, color sequence, momentum), 3) trend identification (ascending/descending tops/bottoms), 4) price action pattern detection (engulfing, hammer, shooting star, doji, pullback, breakout, support/resistance), 5) signal scoring system (+2/-2 points based on trend/patterns, >=2 BUY, <=-2 SELL, -1 to 1 NEUTRAL), 6) return trend, detected patterns, score, confidence %, final signal, and brief technical explanation. Return 'SEM ENTRADA' when no clear confirmation exists.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-33",
+      "summary": "Integrate Google Gemini Vision API for chart image analysis",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-34",
+      "summary": "Update app tagline to 'Análise de Gráficos com IA & Sinais de Trading 1.0'",
       "reqIds": [],
       "status": "pending"
     }
