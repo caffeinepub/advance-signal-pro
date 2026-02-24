@@ -3,17 +3,25 @@ import { AnalysisDirection, CandlestickPattern, ExternalBlob } from '../backend'
 
 /**
  * Map external API response to internal AnalysisResult format
+ * Updated to handle NEUTRO and SEM ENTRADA signals
  */
 export function mapApiResponseToAnalysisResult(
   apiResponse: ApiAnalysisResponse,
   imageBlob: ExternalBlob
 ): any {
   // Map signal to direction
-  const direction = apiResponse.sinal === 'COMPRA' 
-    ? AnalysisDirection.bullish 
-    : AnalysisDirection.bearish;
+  let direction: AnalysisDirection;
   
-  // Map trend string to direction if needed
+  if (apiResponse.sinal === 'COMPRA') {
+    direction = AnalysisDirection.bullish;
+  } else if (apiResponse.sinal === 'VENDA') {
+    direction = AnalysisDirection.bearish;
+  } else {
+    // Both NEUTRO and SEM ENTRADA map to sideways
+    direction = AnalysisDirection.sideways;
+  }
+  
+  // Map trend string to direction if needed (overrides signal mapping)
   const trendDirection = mapTrendToDirection(apiResponse.tendencia);
   
   // Map pattern strings to CandlestickPattern enum
@@ -41,6 +49,8 @@ export function mapApiResponseToAnalysisResult(
     timestamp: BigInt(Date.now() * 1000000),
     image: imageBlob,
     explicacao: apiResponse.explicacao,
+    pontuacao: apiResponse.pontuacao, // Preserve score if present
+    sinalOriginal: apiResponse.sinal, // Store original signal for UI display
   };
 }
 

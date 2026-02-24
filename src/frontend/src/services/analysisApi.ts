@@ -25,6 +25,18 @@ export class AnalysisApiError extends Error {
 
 /**
  * Send chart image to external AI API for analysis
+ * 
+ * IMPORTANT: The external API must follow objective rule-based analysis without subjective interpretation.
+ * It must implement the 6-step technical process documented in apiConfig.ts.
+ * 
+ * The API MUST return 'SEM ENTRADA' for unclear cases rather than fabricating signals.
+ * 
+ * Analysis methodology requirements:
+ * - Objective rule-based approach only
+ * - No subjective interpretation
+ * - Clear scoring system (+2/-2 scale)
+ * - Return 'SEM ENTRADA' when no clear signal is detected
+ * 
  * @param imageFile - Image file or blob to analyze
  * @param onProgress - Optional callback for upload progress
  * @returns Promise resolving to API analysis response
@@ -64,6 +76,9 @@ export async function analyzeChartImage(
 
 /**
  * Internal function to send the actual API request
+ * 
+ * Note: The request includes the image and expects the API to follow
+ * the objective rule-based analysis methodology documented in apiConfig.ts.
  */
 async function sendAnalysisRequest(
   imageFile: File | Blob,
@@ -88,7 +103,11 @@ async function sendAnalysisRequest(
     const response = await fetch(config.endpoint, {
       method: 'POST',
       body: formData,
-      headers: config.headers || {},
+      headers: {
+        ...config.headers,
+        // Optional: Add custom header to communicate analysis mode requirements
+        'X-Analysis-Mode': 'objective-rules',
+      },
       signal: controller.signal,
     });
     
@@ -147,12 +166,13 @@ async function sendAnalysisRequest(
 
 /**
  * Validate API response structure
+ * Updated to accept all four signal types: COMPRA, VENDA, NEUTRO, SEM ENTRADA
  */
 function isValidApiResponse(data: any): data is ApiAnalysisResponse {
   return (
     data &&
     typeof data === 'object' &&
-    (data.sinal === 'COMPRA' || data.sinal === 'VENDA') &&
+    (data.sinal === 'COMPRA' || data.sinal === 'VENDA' || data.sinal === 'NEUTRO' || data.sinal === 'SEM ENTRADA') &&
     typeof data.tendencia === 'string' &&
     typeof data.confianca === 'number' &&
     Array.isArray(data.padroes) &&

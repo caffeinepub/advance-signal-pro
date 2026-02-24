@@ -1,183 +1,170 @@
 {
   "kind": "build_request",
-  "title": "Replace local AI analysis with external REST API integration",
+  "title": "Implement rule-based technical analysis system with 6-step objective process",
   "projectName": "Advance Signal Pro",
   "priority": "high",
   "requirements": [
     {
-      "id": "REQ-19",
-      "text": "Remove all local AI analysis logic from the frontend. Delete or disable mock analysis generation code in ProcessingScreen.tsx that creates simulated results.",
+      "id": "REQ-27",
+      "text": "Update the external API integration documentation in frontend/src/config/apiConfig.ts to specify that the API endpoint must implement a 6-step rule-based technical analysis process: 1) image preprocessing (increase contrast, convert to high sharpness, detect individual candles, identify wick/body/high/low, ignore broker UI elements), 2) candle reading (extract direction up/down, body size, wick size, color sequence, movement strength), 3) trend identification (ascending tops/bottoms = ALTA, descending = BAIXA, sideways = LATERAL), 4) price action pattern detection (engulfing high/low, hammer, shooting star, doji, pullback, breakout, support/resistance - only when rules are confirmed), 5) signal scoring system (+2 points strong trend, +1 favorable pattern, -1 resistance against, -2 contrary pattern; result >= 2 = COMPRA, <= -2 = VENDA, between -1 and 1 = NEUTRO), 6) mandatory return showing trend, detected patterns, total score, confidence percentage, final signal, and brief technical explanation. Add comments describing these requirements for API provider implementation.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-5"
         ],
         "quotes": [
-          "Modificar o app para NÃO fazer a análise local",
-          "Separar frontend da lógica de IA"
+          "PROCESSO OBRIGATÓRIO: 1) Pré-processamento da imagem: - aumentar contraste - converter para alta nitidez - detectar velas individualmente - identificar pavio, corpo, máxima e mínima - ignorar elementos visuais da corretora",
+          "2) Leitura dos candles: Extrair: - direção (alta/baixa) - tamanho do corpo - tamanho do pavio - sequência de cores - força do movimento",
+          "3) Identificação da tendência: Regras: - topos e fundos ascendentes = ALTA - topos e fundos descendentes = BAIXA - laterais = LATERAL",
+          "4) Detectar padrões de price action: Somente se regras forem confirmadas: - Engolfo de alta/baixa - Martelo - Shooting star - Doji - Pullback - Breakout - Suporte e resistência",
+          "5) Cálculo do sinal: Criar pontuação: +2 pontos = tendência forte +1 ponto = padrão favorável -1 ponto = resistência contra -2 pontos = padrão contrário Resultado: >= 2 → COMPRA <= -2 → VENDA entre -1 e 1 → NEUTRO",
+          "6) Retorno obrigatório: Mostrar: - Tendência - Padrões detectados - Pontuação total - Confiança (%) - Sinal final - Explicação técnica curta"
         ]
       },
       "acceptanceCriteria": [
-        "ProcessingScreen.tsx no longer generates mock analysis data locally",
-        "All simulated delay logic for fake AI processing is removed",
-        "Frontend depends entirely on external API responses for analysis results"
+        "apiConfig.ts includes detailed comments documenting the 6-step technical analysis process requirements",
+        "Comments specify objective rule-based approach with no subjective interpretation",
+        "Documentation includes scoring system rules and signal thresholds",
+        "Comments note that unclear cases should return 'SEM ENTRADA' instead of fabricated signals"
       ]
     },
     {
-      "id": "REQ-20",
-      "text": "Create a new API service module (frontend/src/services/analysisApi.ts) that handles HTTP requests to an external REST API endpoint. Implement a function to POST chart images as multipart/form-data to '/analisar-grafico' endpoint, with the image file in a field named 'imagem'.",
+      "id": "REQ-28",
+      "text": "Update the TypeScript interface definitions in frontend/src/types/apiTypes.ts to extend ApiAnalysisResponse with an optional 'pontuacao' (number) field for the total score, ensure 'sinal' accepts 'COMPRA', 'VENDA', 'NEUTRO', and 'SEM ENTRADA' as valid values, and add JSDoc comments explaining the scoring system (+2/-2 point scale) and that 'SEM ENTRADA' indicates no clear trading signal was detected.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-5"
         ],
         "quotes": [
-          "POST /analisar-grafico\nmultipart/form-data\ncampo: imagem"
+          "Pontuação total",
+          "Sinal final",
+          "Nunca inventar sinais se não houver confirmação. Se não houver clareza → retornar 'SEM ENTRADA'."
         ]
       },
       "acceptanceCriteria": [
-        "API service module exports a function that accepts an image file (File or Blob)",
-        "Function constructs multipart/form-data request with 'imagem' field containing the image",
-        "Function sends POST request to '/analisar-grafico' endpoint",
-        "Function returns a Promise that resolves to the parsed JSON response"
+        "ApiAnalysisResponse interface includes optional 'pontuacao?: number' field",
+        "The 'sinal' field type accepts 'COMPRA' | 'VENDA' | 'NEUTRO' | 'SEM ENTRADA'",
+        "JSDoc comments document the scoring system and signal thresholds",
+        "Type definitions align with the 6-step analysis requirements"
       ]
     },
     {
-      "id": "REQ-21",
-      "text": "Define TypeScript interfaces for the external API response schema. The response JSON must include: sinal (string: 'COMPRA' or 'VENDA'), tendencia (string: trend description), confianca (number: confidence percentage), padroes (array of strings: detected pattern names), and explicacao (string: textual explanation).",
+      "id": "REQ-29",
+      "text": "Update frontend/src/utils/mapApiResponse.ts to handle the new 'NEUTRO' and 'SEM ENTRADA' signal values from the API response. Map 'NEUTRO' to a neutral state in the internal AnalysisResult format, map 'SEM ENTRADA' to indicate no entry signal, and ensure the mapping logic preserves the 'pontuacao' field if present in the API response. Add appropriate handling for these cases in the UI mapping logic.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-5"
         ],
         "quotes": [
-          "API retorna JSON com:\n   - sinal (COMPRA ou VENDA)\n   - tendência\n   - confiança\n   - padrões detectados\n   - explicação textual"
+          "entre -1 e 1 → NEUTRO",
+          "Se não houver clareza → retornar 'SEM ENTRADA'"
         ]
       },
       "acceptanceCriteria": [
-        "TypeScript interface ApiAnalysisResponse defines all required fields with correct types",
-        "Interface includes sinal as 'COMPRA' | 'VENDA' literal type",
-        "Interface includes tendencia, confianca, padroes array, and explicacao fields",
-        "Interface is exported and used for type safety in API service module"
+        "mapApiResponse function handles 'NEUTRO' signal mapping to internal format",
+        "mapApiResponse function handles 'SEM ENTRADA' signal mapping to internal format",
+        "Score field (pontuacao) is preserved if present in API response",
+        "Mapping logic does not break existing COMPRA/VENDA handling"
       ]
     },
     {
-      "id": "REQ-22",
-      "text": "Update ProcessingScreen.tsx to call the external API service when analysis starts. Send the uploaded chart image to the API, display the four processing stages ('Carregando imagem', 'Processando dados', 'Detectando padrões', 'Gerando resultado') while waiting for the response, handle API errors gracefully with Portuguese error messages, and navigate to the Results page with the API response data upon success.",
+      "id": "REQ-30",
+      "text": "Update frontend/src/components/SignalCard.tsx to display 'NEUTRO' signals with a neutral visual style (gray or yellow indicator), display 'SEM ENTRADA' signals with a warning style and appropriate Portuguese text ('Sem sinal de entrada detectado'), show the total score (pontuacao) if available in the analysis result with a label 'Pontuação:', and ensure all signal types (COMPRA, VENDA, NEUTRO, SEM ENTRADA) have distinct visual indicators and Portuguese labels.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-5"
         ],
         "quotes": [
-          "1. Usuário envia imagem do gráfico\n2. App envia imagem para API REST\n3. API retorna JSON",
-          "4. App apenas exibe o resultado"
+          "Pontuação total",
+          "Sinal final",
+          "Se não houver clareza → retornar 'SEM ENTRADA'"
         ]
       },
       "acceptanceCriteria": [
-        "ProcessingScreen imports and calls the external API service function",
-        "Image data from route state is passed to API service",
-        "Processing stages animate during actual API request",
-        "API errors display user-friendly Portuguese messages",
-        "Success response navigates to Results page with API data",
-        "Loading states reflect real API request timing"
+        "SignalCard renders NEUTRO signals with neutral styling",
+        "SignalCard renders SEM ENTRADA signals with warning styling and Portuguese text",
+        "Total score (pontuacao) is displayed when available with 'Pontuação:' label",
+        "All four signal types have distinct visual appearances"
       ]
     },
     {
-      "id": "REQ-23",
-      "text": "Update Results.tsx to render analysis results received from the external API response. Map API response fields (sinal, tendencia, confianca, padroes, explicacao) to the existing UI components and display format, ensuring all Portuguese labels and formatting remain consistent.",
+      "id": "REQ-31",
+      "text": "Update frontend/src/pages/Results.tsx to handle and display NEUTRO and SEM ENTRADA signal types. For NEUTRO signals, display appropriate messaging in Portuguese ('Mercado em consolidação - aguarde confirmação'). For SEM ENTRADA signals, display clear messaging in Portuguese ('Nenhum sinal claro detectado - aguarde melhor oportunidade') and consider hiding or disabling the 'Save Analysis' button for SEM ENTRADA results. Ensure the score (pontuacao) is prominently displayed if present.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-5"
         ],
         "quotes": [
-          "4. App apenas exibe o resultado"
+          "entre -1 e 1 → NEUTRO",
+          "Nunca inventar sinais se não houver confirmação. Se não houver clareza → retornar 'SEM ENTRADA'"
         ]
       },
       "acceptanceCriteria": [
-        "Results page accepts and displays API response data structure",
-        "Signal (sinal) displays as COMPRA or VENDA with appropriate directional arrows",
-        "Confidence (confianca) displays as percentage",
-        "Trend (tendencia) displays with existing Portuguese formatting",
-        "Patterns (padroes) list displays detected pattern names",
-        "Explanation (explicacao) displays as descriptive text",
-        "All existing Portuguese labels and styling are preserved"
+        "Results page displays appropriate Portuguese messaging for NEUTRO signals",
+        "Results page displays appropriate Portuguese messaging for SEM ENTRADA signals",
+        "SEM ENTRADA results have modified UI indicating no actionable signal",
+        "Score (pontuacao) is displayed prominently when available"
       ]
     },
     {
-      "id": "REQ-24",
-      "text": "Add configuration support for multiple external AI providers in the API service module. Create a configuration object or environment variable structure that allows switching between OpenAI ChatGPT Vision, Google Gemini Vision, or a custom Python backend endpoint without changing application code. Include placeholder endpoint URLs and prepare the API service to adapt request formats for different providers if needed.",
+      "id": "REQ-32",
+      "text": "Update frontend/src/services/analysisApi.ts to include in the request payload or headers an instruction field specifying the requirement for objective rule-based analysis without subjective interpretation. Add a comment or configuration note explaining that the API must follow the 6-step technical process and never fabricate signals when confirmation is unclear.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-5"
         ],
         "quotes": [
-          "Deixar o app pronto para conectar com:\n- OpenAI (ChatGPT Vision)\n- Google Gemini Vision\n- ou backend Python"
+          "IMPORTANTE: Não fazer interpretação subjetiva da imagem. A análise deve seguir REGRAS TÉCNICAS OBJETIVAS passo a passo.",
+          "Nunca inventar sinais se não houver confirmação."
         ]
       },
       "acceptanceCriteria": [
-        "API service module includes configuration for multiple AI provider endpoints",
-        "Configuration supports OpenAI, Google Gemini, and custom Python backend URLs",
-        "Provider selection mechanism allows easy switching (e.g., via environment variable or config file)",
-        "Code structure is prepared to handle provider-specific request formatting if needed",
-        "Default configuration points to a placeholder endpoint that can be replaced"
+        "analysisApi.ts includes configuration or comments documenting objective analysis requirement",
+        "Request payload or headers can convey analysis methodology requirements to API",
+        "Code includes notes that API should return 'SEM ENTRADA' for unclear cases",
+        "Implementation does not break existing API call functionality"
       ]
     },
     {
-      "id": "REQ-25",
-      "text": "Update the backend to remove or deprecate local analysis storage if it conflicts with the new external API flow. Ensure that analysis results returned by the external API can still be saved to the backend's history (backend/main.mo) by adapting the storage functions to accept externally-generated analysis data.",
-      "target": "backend",
+      "id": "REQ-33",
+      "text": "Update frontend/src/pages/History.tsx and frontend/src/components/HistoryListItem.tsx to display NEUTRO and SEM ENTRADA signals in the analysis history list with appropriate visual indicators and Portuguese labels. Ensure that NEUTRO signals show as 'Neutro' and SEM ENTRADA signals show as 'Sem entrada' with distinct styling to differentiate them from COMPRA/VENDA signals.",
+      "target": "frontend",
       "source": {
         "messageIds": [
           "msg-5"
         ],
         "quotes": [
-          "Separar frontend da lógica de IA"
+          "entre -1 e 1 → NEUTRO",
+          "Se não houver clareza → retornar 'SEM ENTRADA'"
         ]
       },
       "acceptanceCriteria": [
-        "Backend analysis storage functions accept analysis data from external sources",
-        "No backend logic generates or processes analysis locally",
-        "History storage remains functional for externally-analyzed results",
-        "Backend serves as data persistence layer only, not analysis engine"
-      ]
-    },
-    {
-      "id": "REQ-26",
-      "text": "Add error handling and retry logic to the API service for network failures, timeouts, and non-200 HTTP responses. Display Portuguese error messages to users when API requests fail (e.g., 'Erro ao conectar com o servidor', 'Tempo esgotado', 'Erro na análise').",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-5"
-        ]
-      },
-      "acceptanceCriteria": [
-        "API service catches network errors and HTTP error responses",
-        "User-friendly Portuguese error messages display for common failure scenarios",
-        "Retry logic attempts failed requests up to a reasonable limit",
-        "Timeout handling prevents indefinite waiting",
-        "ProcessingScreen shows error state with option to retry or go back"
+        "History list displays NEUTRO signals with 'Neutro' label and neutral styling",
+        "History list displays SEM ENTRADA signals with 'Sem entrada' label and distinct styling",
+        "Historical entries for all signal types are clearly distinguishable",
+        "List item component handles all four signal types without errors"
       ]
     }
   ],
   "constraints": [
-    "Do not modify files in frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui",
-    "Maintain single-actor architecture for backend (backend/main.mo)",
-    "All user-facing text must remain in Portuguese (Brazil)",
-    "Preserve existing M1/M5/M10 timeframe restrictions",
-    "Maintain existing dark/light theme and minimalist visual design",
-    "Do not implement actual AI analysis logic in the frontend or backend"
+    "Do not modify backend/main.mo analysis storage logic; it should continue storing externally-generated analysis results",
+    "Do not edit immutable paths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui",
+    "Maintain single-actor architecture in backend; all Motoko logic must remain in backend/main.mo",
+    "All UI text must remain in Portuguese (Brazil)",
+    "Do not implement the actual AI analysis logic in the frontend; only update API integration documentation and response handling"
   ],
   "nonGoals": [
-    "Implementing the actual external AI API server or endpoint",
-    "Providing API keys or credentials for OpenAI or Google Gemini",
-    "Creating Python backend for AI processing",
-    "Modifying the chart upload functionality or image capture mechanisms",
-    "Changing the Portuguese translations or UI language",
-    "Altering the timeframe options or settings screen structure",
-    "Implementing authentication or authorization for the external API"
+    "Implementing the actual 6-step image processing and candle analysis algorithm (this is the API provider's responsibility)",
+    "Creating a new backend analysis service or Motoko-based analysis logic",
+    "Modifying the chart upload or camera capture functionality",
+    "Changing the processing animation stages or timing",
+    "Adding new settings or configuration options beyond API documentation",
+    "Modifying the external API endpoint URLs or provider selection logic"
   ],
   "imageRequirements": {
     "required": [],

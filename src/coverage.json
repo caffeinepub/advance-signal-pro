@@ -1,40 +1,29 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-24T00:12:10.253Z",
+  "generatedAt": "2026-02-24T01:00:01.355Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 8,
+    "total": 7,
     "implemented": 7,
     "items": [
       {
-        "id": "REQ-19",
-        "summary": "Remove all local AI analysis logic from the frontend. Delete or disable mock analysis generation code in ProcessingScreen.tsx that creates simulated results.",
+        "id": "REQ-27",
+        "summary": "Update the external API integration documentation in frontend/src/config/apiConfig.ts to specify that the API endpoint must implement a 6-step rule-based technical analysis process: 1) image preprocessing (increase contrast, convert to high sharpness, detect individual candles, identify wick/body/high/low, ignore broker UI elements), 2) candle reading (extract direction up/down, body size, wick size, color sequence, movement strength), 3) trend identification (ascending tops/bottoms = ALTA, descending = BAIXA, sideways = LATERAL), 4) price action pattern detection (engulfing high/low, hammer, shooting star, doji, pullback, breakout, support/resistance - only when rules are confirmed), 5) signal scoring system (+2 points strong trend, +1 favorable pattern, -1 resistance against, -2 contrary pattern; result >= 2 = COMPRA, <= -2 = VENDA, between -1 and 1 = NEUTRO), 6) mandatory return showing trend, detected patterns, total score, confidence percentage, final signal, and brief technical explanation. Add comments describing these requirements for API provider implementation.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/ProcessingScreen.tsx"
+          "frontend/src/config/apiConfig.ts"
         ],
         "matchedFiles": [
-          "frontend/src/pages/ProcessingScreen.tsx"
+          "frontend/src/config/apiConfig.ts"
         ]
       },
       {
-        "id": "REQ-20",
-        "summary": "Create a new API service module (frontend/src/services/analysisApi.ts) that handles HTTP requests to an external REST API endpoint. Implement a function to POST chart images as multipart/form-data to '/analisar-grafico' endpoint, with the image file in a field named 'imagem'.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/services/analysisApi.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/services/analysisApi.ts"
-        ]
-      },
-      {
-        "id": "REQ-21",
-        "summary": "Define TypeScript interfaces for the external API response schema. The response JSON must include: sinal (string: 'COMPRA' or 'VENDA'), tendencia (string: trend description), confianca (number: confidence percentage), padroes (array of strings: detected pattern names), and explicacao (string: textual explanation).",
+        "id": "REQ-28",
+        "summary": "Update the TypeScript interface definitions in frontend/src/types/apiTypes.ts to extend ApiAnalysisResponse with an optional 'pontuacao' (number) field for the total score, ensure 'sinal' accepts 'COMPRA', 'VENDA', 'NEUTRO', and 'SEM ENTRADA' as valid values, and add JSDoc comments explaining the scoring system (+2/-2 point scale) and that 'SEM ENTRADA' indicates no clear trading signal was detected.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/types/apiTypes.ts"
@@ -44,80 +33,71 @@
         ]
       },
       {
-        "id": "REQ-22",
-        "summary": "Update ProcessingScreen.tsx to call the external API service when analysis starts. Send the uploaded chart image to the API, display the four processing stages ('Carregando imagem', 'Processando dados', 'Detectando padrões', 'Gerando resultado') while waiting for the response, handle API errors gracefully with Portuguese error messages, and navigate to the Results page with the API response data upon success.",
+        "id": "REQ-29",
+        "summary": "Update frontend/src/utils/mapApiResponse.ts to handle the new 'NEUTRO' and 'SEM ENTRADA' signal values from the API response. Map 'NEUTRO' to a neutral state in the internal AnalysisResult format, map 'SEM ENTRADA' to indicate no entry signal, and ensure the mapping logic preserves the 'pontuacao' field if present in the API response. Add appropriate handling for these cases in the UI mapping logic.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/ProcessingScreen.tsx",
           "frontend/src/utils/mapApiResponse.ts"
         ],
         "matchedFiles": [
-          "frontend/src/pages/ProcessingScreen.tsx",
           "frontend/src/utils/mapApiResponse.ts"
         ]
       },
       {
-        "id": "REQ-23",
-        "summary": "Update Results.tsx to render analysis results received from the external API response. Map API response fields (sinal, tendencia, confianca, padroes, explicacao) to the existing UI components and display format, ensuring all Portuguese labels and formatting remain consistent.",
+        "id": "REQ-30",
+        "summary": "Update frontend/src/components/SignalCard.tsx to display 'NEUTRO' signals with a neutral visual style (gray or yellow indicator), display 'SEM ENTRADA' signals with a warning style and appropriate Portuguese text ('Sem sinal de entrada detectado'), show the total score (pontuacao) if available in the analysis result with a label 'Pontuação:', and ensure all signal types (COMPRA, VENDA, NEUTRO, SEM ENTRADA) have distinct visual indicators and Portuguese labels.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/Results.tsx",
           "frontend/src/components/SignalCard.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/SignalCard.tsx"
+        ]
+      },
+      {
+        "id": "REQ-31",
+        "summary": "Update frontend/src/pages/Results.tsx to handle and display NEUTRO and SEM ENTRADA signal types. For NEUTRO signals, display appropriate messaging in Portuguese ('Mercado em consolidação - aguarde confirmação'). For SEM ENTRADA signals, display clear messaging in Portuguese ('Nenhum sinal claro detectado - aguarde melhor oportunidade') and consider hiding or disabling the 'Save Analysis' button for SEM ENTRADA results. Ensure the score (pontuacao) is prominently displayed if present.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/Results.tsx"
         ],
         "matchedFiles": [
           "frontend/src/pages/Results.tsx"
         ]
       },
       {
-        "id": "REQ-24",
-        "summary": "Add configuration support for multiple external AI providers in the API service module. Create a configuration object or environment variable structure that allows switching between OpenAI ChatGPT Vision, Google Gemini Vision, or a custom Python backend endpoint without changing application code. Include placeholder endpoint URLs and prepare the API service to adapt request formats for different providers if needed.",
+        "id": "REQ-32",
+        "summary": "Update frontend/src/services/analysisApi.ts to include in the request payload or headers an instruction field specifying the requirement for objective rule-based analysis without subjective interpretation. Add a comment or configuration note explaining that the API must follow the 6-step technical process and never fabricate signals when confirmation is unclear.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/services/analysisApi.ts",
-          "frontend/src/config/apiConfig.ts"
+          "frontend/src/services/analysisApi.ts"
         ],
         "matchedFiles": [
-          "frontend/src/services/analysisApi.ts",
-          "frontend/src/config/apiConfig.ts"
+          "frontend/src/services/analysisApi.ts"
         ]
       },
       {
-        "id": "REQ-25",
-        "summary": "Update the backend to remove or deprecate local analysis storage if it conflicts with the new external API flow. Ensure that analysis results returned by the external API can still be saved to the backend's history (backend/main.mo) by adapting the storage functions to accept externally-generated analysis data.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-26",
-        "summary": "Add error handling and retry logic to the API service for network failures, timeouts, and non-200 HTTP responses. Display Portuguese error messages to users when API requests fail (e.g., 'Erro ao conectar com o servidor', 'Tempo esgotado', 'Erro na análise').",
+        "id": "REQ-33",
+        "summary": "Update frontend/src/pages/History.tsx and frontend/src/components/HistoryListItem.tsx to display NEUTRO and SEM ENTRADA signals in the analysis history list with appropriate visual indicators and Portuguese labels. Ensure that NEUTRO signals show as 'Neutro' and SEM ENTRADA signals show as 'Sem entrada' with distinct styling to differentiate them from COMPRA/VENDA signals.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/services/analysisApi.ts",
-          "frontend/src/pages/ProcessingScreen.tsx"
+          "frontend/src/pages/History.tsx",
+          "frontend/src/components/HistoryListItem.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/services/analysisApi.ts",
-          "frontend/src/pages/ProcessingScreen.tsx"
+          "frontend/src/components/HistoryListItem.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
-    "backend/http-outcalls/outcall.mo",
-    "backend/main.mo",
     "build-request.json",
-    "caffeine.lock.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/backend.d.ts",
-    "frontend/src/backend.ts",
+    "frontend/src/components/HistoryListItem.tsx",
+    "frontend/src/components/SignalCard.tsx",
     "frontend/src/config/apiConfig.ts",
-    "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/useQueries.ts",
-    "frontend/src/pages/ProcessingScreen.tsx",
     "frontend/src/pages/Results.tsx",
     "frontend/src/services/analysisApi.ts",
     "frontend/src/types/apiTypes.ts",

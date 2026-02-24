@@ -1,12 +1,12 @@
 import { useNavigate } from '@tanstack/react-router';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, AlertCircle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatTimestamp } from '../utils/formatTimestamp';
 import { AnalysisDirection, type AnalysisResult } from '../backend';
 
 interface HistoryListItemProps {
-  analysis: AnalysisResult;
+  analysis: AnalysisResult & { sinalOriginal?: string };
 }
 
 export default function HistoryListItem({ analysis }: HistoryListItemProps) {
@@ -14,7 +14,23 @@ export default function HistoryListItem({ analysis }: HistoryListItemProps) {
 
   const isBullish = analysis.direction === AnalysisDirection.bullish;
   const isBearish = analysis.direction === AnalysisDirection.bearish;
-  const signal = isBullish ? 'COMPRA' : isBearish ? 'VENDA' : 'MANTER';
+  const isSideways = analysis.direction === AnalysisDirection.sideways;
+  
+  // Check for special signal types
+  const isSemEntrada = analysis.sinalOriginal === 'SEM ENTRADA';
+  const isNeutro = analysis.sinalOriginal === 'NEUTRO';
+  
+  // Determine signal label
+  let signal = 'MANTER';
+  if (isSemEntrada) {
+    signal = 'Sem entrada';
+  } else if (isNeutro) {
+    signal = 'Neutro';
+  } else if (isBullish) {
+    signal = 'COMPRA';
+  } else if (isBearish) {
+    signal = 'VENDA';
+  }
 
   const handleClick = () => {
     // Store analysis data for results page
@@ -39,16 +55,33 @@ export default function HistoryListItem({ analysis }: HistoryListItemProps) {
     >
       <div className="flex items-center gap-4">
         <div className="flex-shrink-0">
-          {isBullish && <TrendingUp className="w-8 h-8 text-chart-1" />}
-          {isBearish && <TrendingDown className="w-8 h-8 text-destructive" />}
-          {!isBullish && !isBearish && <Minus className="w-8 h-8 text-muted-foreground" />}
+          {isSemEntrada && <AlertCircle className="w-8 h-8 text-amber-600 dark:text-amber-500" />}
+          {!isSemEntrada && isBullish && <TrendingUp className="w-8 h-8 text-chart-1" />}
+          {!isSemEntrada && isBearish && <TrendingDown className="w-8 h-8 text-destructive" />}
+          {!isSemEntrada && isSideways && <Minus className="w-8 h-8 text-muted-foreground" />}
         </div>
         
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <Badge
-              variant={isBullish ? 'default' : isBearish ? 'destructive' : 'secondary'}
-              className={isBullish ? 'bg-chart-1' : ''}
+              variant={
+                isSemEntrada 
+                  ? 'outline' 
+                  : isNeutro 
+                  ? 'secondary' 
+                  : isBullish 
+                  ? 'default' 
+                  : isBearish 
+                  ? 'destructive' 
+                  : 'secondary'
+              }
+              className={
+                isSemEntrada 
+                  ? 'border-amber-600 text-amber-600 dark:border-amber-500 dark:text-amber-500' 
+                  : isBullish 
+                  ? 'bg-chart-1' 
+                  : ''
+              }
             >
               {signal}
             </Badge>

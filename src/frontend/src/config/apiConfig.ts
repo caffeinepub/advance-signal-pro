@@ -1,4 +1,57 @@
-// API configuration for multiple AI providers
+/**
+ * API configuration for multiple AI providers
+ * 
+ * MANDATORY ANALYSIS REQUIREMENTS:
+ * 
+ * All external APIs must implement a 6-step objective rule-based technical analysis process:
+ * 
+ * 1) Image preprocessing:
+ *    - Increase contrast
+ *    - Convert to high sharpness
+ *    - Detect individual candles
+ *    - Identify wick, body, high, and low
+ *    - Ignore broker visual elements
+ * 
+ * 2) Candle reading:
+ *    Extract: direction (bullish/bearish), body size, wick size, color sequence, movement strength
+ * 
+ * 3) Trend identification:
+ *    Rules:
+ *    - Ascending tops and bottoms = ALTA (bullish)
+ *    - Descending tops and bottoms = BAIXA (bearish)
+ *    - Sideways = LATERAL
+ * 
+ * 4) Price action pattern detection:
+ *    Only if rules are confirmed:
+ *    - Engulfing (bullish/bearish)
+ *    - Hammer
+ *    - Shooting star
+ *    - Doji
+ *    - Pullback
+ *    - Breakout
+ *    - Support and resistance
+ * 
+ * 5) Signal scoring system:
+ *    Create score:
+ *    +2 points = strong trend
+ *    +1 point = favorable pattern
+ *    -1 point = resistance against
+ *    -2 points = contrary pattern
+ *    
+ *    Result:
+ *    >= 2 → COMPRA
+ *    <= -2 → VENDA
+ *    between -1 and 1 → NEUTRO
+ * 
+ * 6) Mandatory return:
+ *    Show: trend, detected patterns, total score, confidence (%), final signal, short technical explanation
+ * 
+ * CRITICAL: Never fabricate signals if there is no confirmation.
+ * If there is no clarity → return "SEM ENTRADA" (no entry signal).
+ * 
+ * NO SUBJECTIVE INTERPRETATION - Follow objective technical rules step by step.
+ */
+
 export interface ProviderConfig {
   name: string;
   endpoint: string;
