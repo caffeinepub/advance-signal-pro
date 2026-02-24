@@ -1,54 +1,58 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-24T17:38:10.539Z",
+  "generatedAt": "2026-02-24T22:54:48.856Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
-    "implemented": 2,
+    "total": 3,
+    "implemented": 3,
     "items": [
       {
-        "id": "REQ-70",
-        "summary": "Audit and fix the Settings page (frontend/src/pages/Settings.tsx) to ensure all settings controls are fully functional: the Gemini API key input field must correctly read the stored key from the backend, save it on submit, and display validation feedback; the default timeframe selector (M1/M5/M10) must load the persisted value and update it via the backend mutation; the AI sensitivity slider must load and save correctly; the theme toggle must apply the selected theme immediately; and the daily operation limit selector must load the current value and trigger the setDailyOperationLimit mutation on change. All save actions must show a Portuguese success or error toast.",
+        "id": "REQ-74",
+        "summary": "Update frontend/src/config/apiConfig.ts to hardcode the correct Gemini Vision API endpoint URL: `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`. The `buildGeminiUrl(apiKey)` helper must append the API key as a query parameter (`?key=<apiKey>`). Remove any dynamic endpoint construction that could produce malformed URLs missing the API version, model name, or `:generateContent` suffix. Add inline comments documenting the required URL structure.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/Settings.tsx"
+          "frontend/src/config/apiConfig.ts"
         ],
         "matchedFiles": [
-          "frontend/src/pages/Settings.tsx"
+          "frontend/src/config/apiConfig.ts"
         ]
       },
       {
-        "id": "REQ-71",
-        "summary": "Audit and fix frontend/src/hooks/useSettings.ts and frontend/src/hooks/useQueries.ts to ensure the backend actor calls for getSettings, updateSettings, getGeminiApiKey, setGeminiApiKey, getDailyOperationProgress, and setDailyOperationLimit are correctly wired. Verify that the Motoko function signatures in backend/main.mo match the frontend call signatures and fix any mismatches that would cause settings to fail silently.",
+        "id": "REQ-75",
+        "summary": "Update frontend/src/services/analysisApi.ts to send Gemini API requests using the correct JSON body format. The request must use `fetch` with `method: 'POST'`, `Content-Type: application/json`, and a JSON-stringified body of the form `{ contents: [{ parts: [{ text: <prompt> }, { inlineData: { mimeType: <mimeType>, data: <base64Data> } }] }] }`. Remove any remaining multipart/form-data or FormData approach for the Gemini provider. The image must be base64-encoded before being placed in the `inlineData.data` field.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/hooks/useSettings.ts"
+          "frontend/src/services/analysisApi.ts"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/hooks/useSettings.ts"
+          "frontend/src/services/analysisApi.ts"
+        ]
+      },
+      {
+        "id": "REQ-76",
+        "summary": "Update frontend/src/pages/ProcessingScreen.tsx error handling to explicitly detect HTTP 404 responses from the Gemini API and display a clear, actionable Portuguese error message: 'Endpoint da API não encontrado (404). Verifique se a URL e o modelo estão configurados corretamente nas Configurações.' Include a button labeled 'Ir para Configurações' that navigates the user to the Settings page.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/ProcessingScreen.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/ProcessingScreen.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
-    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/backend.d.ts",
-    "frontend/src/backend.ts",
-    "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/useQueries.ts",
-    "frontend/src/hooks/useSettings.ts",
-    "frontend/src/pages/Settings.tsx",
+    "frontend/src/config/apiConfig.ts",
+    "frontend/src/pages/ProcessingScreen.tsx",
+    "frontend/src/services/analysisApi.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

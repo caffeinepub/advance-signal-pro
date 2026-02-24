@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 25,
+  "projectStateVersion": 29,
   "summary": "Advance Signal Pro: Mobile app (Android/iOS) for automated financial chart analysis using Google Gemini Vision API, focused on basic chart analysis: support/resistance levels, candlestick patterns of the last candle, and trend identification (bullish/bearish/sideways). Accepts mobile screenshots showing the full phone screen and analyzes only the chart portion. Optimized for Pocket Option charts and binary options trading with fast scalping analysis (<3s). Features dark/light themes, professional trading interface, chart upload (camera/gallery/clipboard/drag-drop), and displays AI-powered results (buy/sell signals with confidence levels, trend analysis, detected patterns, and explanations) received from Gemini API. Analysis history and customizable settings included. Exclusively supports short timeframes: M1 (1 minute - default), M5 (5 minutes), and M10 (10 minutes). Full Portuguese (Brazil) interface. Extended with advanced candle analysis engine: probability calculation for next candle direction (bullish/bearish %), practical action suggestions based on previous candle high/low breakouts, entry/stop-loss/target price examples, daily operation management (user selects 3/4/6/8 ops per day with progressive clock tracking and midnight reset), operation history with confirmation buttons (green=followed, red=not followed), and progress tracking display.",
   "architectural_notes": [
     "Mobile-first architecture for Android and iOS platforms",
@@ -16,7 +16,9 @@
   ],
   "known_issues": [
     "Error occurs after image upload completes loading but before analysis result returns",
-    "User reports persistent error after image upload despite error handling improvements"
+    "User reports persistent error after image upload despite error handling improvements",
+    "Permission error when saving Gemini API key: 'Sem permissão para salvar a chave da API' appears in Settings page",
+    "HTTP 404 error on Gemini API calls: endpoint URL misconfigured (wrong API version, model name, or missing :generateContent suffix)"
   ],
   "isFixRequest": true,
   "existing_features": [
@@ -475,6 +477,38 @@
         "REQ-71"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-audit-the-frontend-hook-responsible-for-calling-setgeminiapikey-in-frontend-src-hooks-usequeries-ts-to-verify-that-the-mutation-passes-the-correct-caller-identity-authenticated-actor-not-anonymous-actor-ensure-that-the-api-key-save-mutation-uses-the-authenticated-actor-instance-from-useactor-with-identity-rather-than-the-anonymous-actor-since-saving-the-key-requires-an-authenticated-principal-on-the-backend",
+      "title": "Audit the frontend hook responsible for calling `setGeminiApiKey` in frontend/src/hooks/useQueries.ts to verify that the mutation passes the correct caller identity (authenticated actor, not anonymous actor). Ensure that the API key save mutation uses the authenticated actor instance (from useActor with identity) rather than the anonymous actor, since saving the key requires an authenticated principal on the backend.",
+      "reqIds": [
+        "REQ-73"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-config-apiconfig-ts-to-hardcode-the-correct-gemini-vision-api-endpoint-url-https-generativelanguage-googleapis-com-v1beta-models-gemini-1-5-flash-generatecontent-the-buildgeminiurl-apikey-helper-must-append-the-api-key-as-a-query-parameter-key-apikey-remove-any-dynamic-endpoint-construction-that-could-produce-malformed-urls-missing-the-api-version-model-name-or-generatecontent-suffix-add-inline-comments-documenting-the-required-url-structure",
+      "title": "Update frontend/src/config/apiConfig.ts to hardcode the correct Gemini Vision API endpoint URL: `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`. The `buildGeminiUrl(apiKey)` helper must append the API key as a query parameter (`?key=<apiKey>`). Remove any dynamic endpoint construction that could produce malformed URLs missing the API version, model name, or `:generateContent` suffix. Add inline comments documenting the required URL structure.",
+      "reqIds": [
+        "REQ-74"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-services-analysisapi-ts-to-send-gemini-api-requests-using-the-correct-json-body-format-the-request-must-use-fetch-with-method-post-content-type-application-json-and-a-json-stringified-body-of-the-form-contents-parts-text-prompt-inlinedata-mimetype-mimetype-data-base64data-remove-any-remaining-multipart-form-data-or-formdata-approach-for-the-gemini-provider-the-image-must-be-base64-encoded-before-being-placed-in-the-inlinedata-data-field",
+      "title": "Update frontend/src/services/analysisApi.ts to send Gemini API requests using the correct JSON body format. The request must use `fetch` with `method: 'POST'`, `Content-Type: application/json`, and a JSON-stringified body of the form `{ contents: [{ parts: [{ text: <prompt> }, { inlineData: { mimeType: <mimeType>, data: <base64Data> } }] }] }`. Remove any remaining multipart/form-data or FormData approach for the Gemini provider. The image must be base64-encoded before being placed in the `inlineData.data` field.",
+      "reqIds": [
+        "REQ-75"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-pages-processingscreen-tsx-error-handling-to-explicitly-detect-http-404-responses-from-the-gemini-api-and-display-a-clear-actionable-portuguese-error-message-endpoint-da-api-n-o-encontrado-404-verifique-se-a-url-e-o-modelo-est-o-configurados-corretamente-nas-configura-es-include-a-button-labeled-ir-para-configura-es-that-navigates-the-user-to-the-settings-page",
+      "title": "Update frontend/src/pages/ProcessingScreen.tsx error handling to explicitly detect HTTP 404 responses from the Gemini API and display a clear, actionable Portuguese error message: 'Endpoint da API não encontrado (404). Verifique se a URL e o modelo estão configurados corretamente nas Configurações.' Include a button labeled 'Ir para Configurações' that navigates the user to the Settings page.",
+      "reqIds": [
+        "REQ-76"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -703,6 +737,14 @@
       "summary": "Update frontend/src/pages/Dashboard.tsx to display a daily operation progress bar or text badge in the AI status area. Show the text 'X/Y operações hoje' using data from 'useGetDailyProgress'. Use a subtle progress bar styled consistently with the dark/light theme. This should update in real time when the user returns to the dashboard after completing an analysis.",
       "reqIds": [
         "REQ-69"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-52",
+      "summary": "Investigate and fix the permission error that prevents saving the Gemini API key in the Settings page. The error message 'Sem permissão para salvar a chave da API' appears when the user attempts to save the key. Audit the backend Motoko actor in backend/main.mo to ensure the `setGeminiApiKey` function does not enforce overly restrictive access control (e.g., caller-based authorization that rejects anonymous or non-admin principals). If the function uses role-based access control via the AccessControl mixin, verify that the authenticated user's principal is granted the necessary role to call this function. Update the access control logic so that any authenticated user can save their own Gemini API key.",
+      "reqIds": [
+        "REQ-72"
       ],
       "status": "pending"
     }

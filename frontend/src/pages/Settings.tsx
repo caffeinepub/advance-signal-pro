@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { ArrowLeft, Moon, Sun, Eye, EyeOff, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Moon, Sun, Eye, EyeOff, Save, Loader2, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -9,8 +9,10 @@ import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useTheme } from '../context/ThemeContext';
 import { useSettings } from '../hooks/useSettings';
+import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import {
   useGetGeminiApiKey,
   useSetGeminiApiKey,
@@ -23,6 +25,8 @@ export default function Settings() {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
   const { settings, isLoading: isLoadingSettings, updateSettings, isUpdating } = useSettings();
+  const { identity, login, loginStatus } = useInternetIdentity();
+  const isAuthenticated = !!identity;
 
   // Gemini API Key
   const { data: storedApiKey, isLoading: isLoadingApiKey } = useGetGeminiApiKey();
@@ -41,6 +45,11 @@ export default function Settings() {
   }, [storedApiKey]);
 
   const handleSaveApiKey = async () => {
+    if (!isAuthenticated) {
+      toast.error('Você precisa fazer login para salvar a chave da API');
+      return;
+    }
+
     if (!apiKey || apiKey.trim() === '') {
       toast.error('Por favor, insira uma chave de API válida');
       return;
@@ -63,8 +72,8 @@ export default function Settings() {
       const msg = error instanceof Error ? error.message : '';
       if (msg.includes('Invalid Gemini API key format')) {
         toast.error('Formato de chave inválido. Verifique sua chave da API');
-      } else if (msg.includes('Unauthorized')) {
-        toast.error('Sem permissão para salvar a chave da API');
+      } else if (msg.includes('Unauthorized') || msg.includes('login')) {
+        toast.error('Você precisa fazer login para salvar a chave da API');
       } else {
         toast.error('Erro ao salvar chave da API. Tente novamente');
       }
@@ -165,6 +174,35 @@ export default function Settings() {
                 </p>
               </div>
 
+              {/* Login required alert */}
+              {!isAuthenticated && (
+                <Alert>
+                  <LogIn className="h-4 w-4" />
+                  <AlertDescription className="flex items-center justify-between gap-2 flex-wrap">
+                    <span>Você precisa fazer login para salvar a chave da API.</span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => login()}
+                      disabled={loginStatus === 'logging-in'}
+                      className="shrink-0"
+                    >
+                      {loginStatus === 'logging-in' ? (
+                        <>
+                          <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                          Entrando...
+                        </>
+                      ) : (
+                        <>
+                          <LogIn className="w-3 h-3 mr-1" />
+                          Fazer Login
+                        </>
+                      )}
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              )}
+
               <div className="space-y-3">
                 <div>
                   <Label htmlFor="apiKey" className="text-sm font-medium">
@@ -192,6 +230,7 @@ export default function Settings() {
                         onChange={(e) => setApiKey(e.target.value)}
                         placeholder="AIza..."
                         className="pr-10"
+                        disabled={!isAuthenticated}
                       />
                       <Button
                         type="button"
@@ -199,6 +238,7 @@ export default function Settings() {
                         size="icon"
                         className="absolute right-0 top-0 h-full"
                         onClick={() => setShowApiKey(!showApiKey)}
+                        disabled={!isAuthenticated}
                       >
                         {showApiKey ? (
                           <EyeOff className="w-4 h-4" />
@@ -212,7 +252,7 @@ export default function Settings() {
 
                 <Button
                   onClick={handleSaveApiKey}
-                  disabled={setGeminiApiKeyMutation.isPending || isLoadingApiKey || !apiKey}
+                  disabled={setGeminiApiKeyMutation.isPending || isLoadingApiKey || !apiKey || !isAuthenticated}
                   className="w-full gap-2"
                 >
                   {setGeminiApiKeyMutation.isPending ? (

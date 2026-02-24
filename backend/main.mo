@@ -9,10 +9,8 @@ import Runtime "mo:core/Runtime";
 import Principal "mo:core/Principal";
 import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
-
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
-
 
 actor {
   include MixinStorage();
@@ -239,8 +237,8 @@ actor {
   };
 
   public shared ({ caller }) func setGeminiApiKey(apiKey : Text) : async Text {
-    if (not (AccessControl.isAdmin(accessControlState, caller))) {
-      Runtime.trap("Unauthorized: Only admins can set the Gemini API key");
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Users only");
     };
 
     if (not apiKey.startsWith(#text("AIza"))) {
@@ -252,8 +250,8 @@ actor {
   };
 
   public query ({ caller }) func getGeminiApiKey() : async ?Text {
-    if (not (AccessControl.isAdmin(accessControlState, caller))) {
-      Runtime.trap("Unauthorized: Only admins can retrieve the Gemini API key");
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Users only");
     };
 
     geminiApiKey;

@@ -66,29 +66,32 @@ export function useUpdateSettings() {
 
 export function useGetGeminiApiKey() {
   const { actor, isFetching } = useActor();
+  const { identity } = useInternetIdentity();
 
   return useQuery<string | null>({
     queryKey: ['geminiApiKey'],
     queryFn: async () => {
-      if (!actor) return null;
+      if (!actor || !identity) return null;
       try {
         return await actor.getGeminiApiKey();
       } catch (error) {
-        // Non-admin users cannot retrieve the key
+        // Non-authenticated users cannot retrieve the key
         return null;
       }
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !isFetching && !!identity,
   });
 }
 
 export function useSetGeminiApiKey() {
   const { actor } = useActor();
+  const { identity } = useInternetIdentity();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (apiKey: string) => {
       if (!actor) throw new Error('Actor not initialized');
+      if (!identity) throw new Error('Unauthorized: Você precisa fazer login para salvar a chave da API');
       return await actor.setGeminiApiKey(apiKey);
     },
     onSuccess: () => {

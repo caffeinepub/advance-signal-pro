@@ -211,8 +211,9 @@ export default function ProcessingScreen() {
             isApiKeyIssue = true;
             break;
           case 'ENDPOINT_NOT_FOUND':
+            // HTTP 404: endpoint not found — show actionable Portuguese message
             errorMessage =
-              'Erro 404: Endpoint não encontrado. Verifique a configuração da API Gemini nas configurações.';
+              'Endpoint da API não encontrado (404). Verifique se a URL e o modelo estão configurados corretamente nas Configurações.';
             is404 = true;
             break;
           case 'INVALID_ENDPOINT':
@@ -286,16 +287,12 @@ export default function ProcessingScreen() {
               <p className="text-muted-foreground whitespace-pre-line">{error}</p>
               {is404Error && (
                 <div className="mt-4 p-4 bg-muted rounded-lg text-left text-sm">
-                  <p className="font-semibold mb-2">Possíveis causas do erro 404:</p>
-                  <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                    <li>URL do endpoint incorreta</li>
-                    <li>Falta versão da API (/v1beta/ ou /v1/)</li>
-                    <li>Nome do modelo incorreto</li>
-                    <li>Falta :generateContent no final</li>
-                  </ul>
-                  <p className="mt-3 text-xs">
-                    Formato correto:
+                  <p className="font-semibold mb-2">Endpoint correto da API Gemini:</p>
+                  <code className="block text-xs break-all bg-background border border-border rounded p-2 mt-1 text-foreground">
                     https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent
+                  </code>
+                  <p className="mt-3 text-muted-foreground text-xs">
+                    Se o erro persistir, verifique se sua chave de API está correta e ativa no Google AI Studio.
                   </p>
                 </div>
               )}

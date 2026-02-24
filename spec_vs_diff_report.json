@@ -1,17 +1,24 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-24T17:38:10.535Z",
-  "summary": "The diff implements both REQ-70 and REQ-71 largely as specified. Settings.tsx is overhauled with per-control skeleton loading states, API key load/save with 'Chave salva com sucesso!' toast, timeframe/sensitivity/notifications/daily-limit handlers wired to backend mutations, and theme toggle via ThemeContext. useQueries.ts adds all required hooks (useGetSettings, useUpdateSettings, useGetGeminiApiKey, useSetGeminiApiKey, useGetDailyOperationProgress, useSetDailyOperationLimit). useSettings.ts is updated to expose settings data cleanly. backend/main.mo is modified to include UserSettings, geminiApiKey, and related functions. All requirements appear addressed with no obvious missing functionality and no clearly hallucinated features.",
+  "generatedAt": "2026-02-24T22:54:48.850Z",
+  "summary": "All three requirements (REQ-74, REQ-75, REQ-76) appear to be implemented in the diff. REQ-74 is fully addressed in apiConfig.ts with the hardcoded endpoint, buildGeminiUrl helper, inline comments, and no dynamic construction. REQ-75 is addressed in analysisApi.ts with JSON body format, base64 encoding, and no FormData. REQ-76 is addressed in ProcessingScreen.tsx with 404 detection, Portuguese error message, and 'Ir para Configurações' button. The diff is truncated for some files, so some details cannot be fully verified, but evidence is strong across all requirements.",
   "missing_requirements": [],
-  "hallucinated_features": [],
+  "hallucinated_features": [
+    {
+      "description": "A getGeminiConfig function was added to apiConfig.ts in addition to buildGeminiUrl, returning both the URL and headers object.",
+      "reason": "The build request only required a buildGeminiUrl(apiKey) helper that appends the API key as a query parameter. The additional getGeminiConfig function was not requested.",
+      "evidence": [
+        "frontend/src/config/apiConfig.ts"
+      ]
+    }
+  ],
   "confidence": 0.82,
   "changed_files": [
-    "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/hooks/useQueries.ts",
-    "frontend/src/hooks/useSettings.ts",
-    "frontend/src/pages/Settings.tsx",
+    "frontend/src/config/apiConfig.ts",
+    "frontend/src/pages/ProcessingScreen.tsx",
+    "frontend/src/services/analysisApi.ts",
     "project_state.json"
   ]
 }

@@ -1,67 +1,83 @@
 {
   "kind": "build_request",
-  "title": "Fix Settings page functionality",
+  "title": "Fix Gemini API 404 Error - Correct Endpoint URL and Request Format",
   "projectName": "Advance Signal Pro",
-  "priority": "normal",
+  "priority": "high",
   "requirements": [
     {
-      "id": "REQ-70",
-      "text": "Audit and fix the Settings page (frontend/src/pages/Settings.tsx) to ensure all settings controls are fully functional: the Gemini API key input field must correctly read the stored key from the backend, save it on submit, and display validation feedback; the default timeframe selector (M1/M5/M10) must load the persisted value and update it via the backend mutation; the AI sensitivity slider must load and save correctly; the theme toggle must apply the selected theme immediately; and the daily operation limit selector must load the current value and trigger the setDailyOperationLimit mutation on change. All save actions must show a Portuguese success or error toast.",
+      "id": "REQ-74",
+      "text": "Update frontend/src/config/apiConfig.ts to hardcode the correct Gemini Vision API endpoint URL: `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`. The `buildGeminiUrl(apiKey)` helper must append the API key as a query parameter (`?key=<apiKey>`). Remove any dynamic endpoint construction that could produce malformed URLs missing the API version, model name, or `:generateContent` suffix. Add inline comments documenting the required URL structure.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-4"
         ],
         "quotes": [
-          "faz a configuração funcionar",
-          "atualizar configuração"
+          "Erro 404: Endpoint não encontrado. Verifique a configuração da API Gemini nas configurações.",
+          "URL do endpoint incorreta",
+          "Falta versão da API (/v1beta/ ou /v1/)",
+          "Nome do modelo incorreto",
+          "Falta :generateContent no final"
         ]
       },
       "acceptanceCriteria": [
-        "Gemini API key field loads the existing stored key on page open and saves changes to the backend on submit",
-        "API key save shows 'Chave salva com sucesso!' toast on success and a Portuguese error message on failure",
-        "Default timeframe selector (M1/M5/M10) reflects the persisted value from backend settings on load",
-        "Changing the timeframe selector persists the new value via the backend mutation",
-        "AI sensitivity slider loads current value from backend settings and saves on change",
-        "Theme toggle correctly applies dark/light theme immediately via ThemeContext and persists preference",
-        "Daily operation limit selector (3/4/6/8) loads current value from backend settings and calls setDailyOperationLimit mutation on change",
-        "All setting controls display loading states while fetching data from the backend",
-        "All save actions show appropriate Portuguese feedback toasts (success or error)"
+        "The Gemini endpoint URL in apiConfig.ts is exactly `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`.",
+        "The `buildGeminiUrl` function appends `?key=<apiKey>` to the base URL.",
+        "No dynamic segment construction that could omit `/v1beta/`, the model name, or `:generateContent`.",
+        "Inline comments document each required URL component (base host, API version, model name, method suffix, key query param)."
       ]
     },
     {
-      "id": "REQ-71",
-      "text": "Audit and fix frontend/src/hooks/useSettings.ts and frontend/src/hooks/useQueries.ts to ensure the backend actor calls for getSettings, updateSettings, getGeminiApiKey, setGeminiApiKey, getDailyOperationProgress, and setDailyOperationLimit are correctly wired. Verify that the Motoko function signatures in backend/main.mo match the frontend call signatures and fix any mismatches that would cause settings to fail silently.",
-      "target": "both",
+      "id": "REQ-75",
+      "text": "Update frontend/src/services/analysisApi.ts to send Gemini API requests using the correct JSON body format. The request must use `fetch` with `method: 'POST'`, `Content-Type: application/json`, and a JSON-stringified body of the form `{ contents: [{ parts: [{ text: <prompt> }, { inlineData: { mimeType: <mimeType>, data: <base64Data> } }] }] }`. Remove any remaining multipart/form-data or FormData approach for the Gemini provider. The image must be base64-encoded before being placed in the `inlineData.data` field.",
+      "target": "frontend",
       "source": {
         "messageIds": [
           "msg-4"
         ],
         "quotes": [
-          "faz a configuração funcionar",
-          "atualizar configuração"
+          "Erro 404: Endpoint não encontrado.",
+          "URL do endpoint incorreta",
+          "Falta :generateContent no final"
         ]
       },
       "acceptanceCriteria": [
-        "useSettings hook returns settings data without errors when the backend is available",
-        "updateSettings mutation successfully persists changes to the backend",
-        "getGeminiApiKey and setGeminiApiKey calls resolve without errors",
-        "getDailyOperationProgress and setDailyOperationLimit calls resolve without errors",
-        "Any mismatches between Motoko function signatures and frontend call arguments are corrected"
+        "Requests to Gemini use `fetch` with `Content-Type: application/json` and a JSON body — no FormData.",
+        "The request body contains a `contents[0].parts` array with a text part (prompt) and an `inlineData` part (mimeType + base64 data).",
+        "The base64-encoded image data is correctly extracted from the File/Blob before sending.",
+        "A successful POST to the correct endpoint returns a 200 response with Gemini analysis output."
+      ]
+    },
+    {
+      "id": "REQ-76",
+      "text": "Update frontend/src/pages/ProcessingScreen.tsx error handling to explicitly detect HTTP 404 responses from the Gemini API and display a clear, actionable Portuguese error message: 'Endpoint da API não encontrado (404). Verifique se a URL e o modelo estão configurados corretamente nas Configurações.' Include a button labeled 'Ir para Configurações' that navigates the user to the Settings page.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Erro 404: Endpoint não encontrado. Verifique a configuração da API Gemini nas configurações."
+        ]
+      },
+      "acceptanceCriteria": [
+        "When a 404 HTTP error is returned by the Gemini API, the ProcessingScreen displays the Portuguese 404-specific error message.",
+        "An 'Ir para Configurações' button is rendered below the error message.",
+        "Clicking 'Ir para Configurações' navigates to the Settings page.",
+        "Other non-404 HTTP errors still display their existing error messages."
       ]
     }
   ],
   "constraints": [
-    "Do not modify files listed in frontend.immutablePaths",
-    "Maintain all existing Portuguese (Brazil) UI text",
-    "Preserve all existing features and analysis history functionality",
-    "Do not change the backend data schema in a breaking way; use migration.mo if schema changes are needed"
+    "Do not change backend/main.mo as part of this fix.",
+    "Do not modify any file listed under frontend.immutablePaths.",
+    "The Gemini endpoint URL must remain `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent` with `?key=<apiKey>` query parameter."
   ],
   "nonGoals": [
-    "Adding new settings options beyond those already designed",
-    "Changing the visual design of the Settings page",
-    "Modifying the Gemini API analysis logic",
-    "Changing the Results or History pages"
+    "Changing the Gemini model to a version other than gemini-1.5-flash.",
+    "Adding new settings fields or backend mutations.",
+    "Modifying the analysis prompt content.",
+    "Changing authentication or Internet Identity logic."
   ],
   "imageRequirements": {
     "required": [],

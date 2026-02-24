@@ -6,6 +6,8 @@
  *
  * Endpoint: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=API_KEY
  * Request format: JSON body with contents[0].parts containing text prompt + inlineData image
+ * Method: POST
+ * Content-Type: application/json (NOT multipart/form-data or FormData)
  */
 
 import type { ApiAnalysisResponse } from '../types/apiTypes';
@@ -89,13 +91,15 @@ async function preprocessImage(
 
 /**
  * Converts a File/Blob to a base64 string (without the data URL prefix).
+ * Reads the file as a Data URL, then strips the "data:<mimeType>;base64," prefix
+ * to extract the raw base64 string for use in inlineData.data.
  */
 function fileToBase64(file: File | Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result as string;
-      // Remove the "data:image/xxx;base64," prefix
+      // Remove the "data:image/xxx;base64," prefix — keep only the raw base64 data
       const base64 = result.split(',')[1];
       resolve(base64);
     };
@@ -217,30 +221,48 @@ Responda APENAS com um JSON válido no seguinte formato (sem markdown, sem texto
 
 /**
  * Core function that sends the image to the Gemini Vision API.
- * Uses the correct v1beta endpoint with JSON body format (contents[].parts[]).
+ *
+ * Uses the correct v1beta endpoint:
+ *   https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=<apiKey>
+ *
+ * Request format:
+ * - Method: POST
+ * - Content-Type: application/json (NOT FormData or multipart)
+ * - Body: JSON with contents[0].parts array containing:
+ *     [0] text part: { text: <prompt> }
+ *     [1] inlineData part: { inlineData: { mimeType: <mimeType>, data: <base64Data> } }
+ *
+ * The base64 image data is extracted from the File/Blob via FileReader.readAsDataURL(),
+ * stripping the "data:<mimeType>;base64," prefix to get the raw base64 string.
  */
 async function sendToGemini(
   file: File | Blob,
   apiKey: string
 ): Promise<ApiAnalysisResponse> {
-  // Preprocess image (validate format, resize if needed)
+  // Step 1: Preprocess image (validate format, resize if needed, extract base64)
   const imageData = await preprocessImage(file);
 
+  // Step 2: Build the URL and headers using the hardcoded endpoint
   const { url, headers } = getGeminiConfig(apiKey.trim());
   const prompt = buildAnalysisPrompt();
 
-  // Build the Gemini Vision API request body
+  // Step 3: Build the Gemini Vision API request body
+  // Uses JSON body format — NOT FormData or multipart/form-data
+  // contents[0].parts[0] = text prompt
+  // contents[0].parts[1] = inlineData with base64-encoded image
   const requestBody = {
     contents: [
       {
         parts: [
           {
+            // Text part: the analysis prompt
             text: prompt,
           },
           {
+            // Image part: base64-encoded image data with MIME type
             inlineData: {
-              mimeType: imageData.mimeType,
-              data: imageData.base64,
+              mimeType: imageData.mimeType, // e.g. 'image/jpeg', 'image/png', 'image/webp'
+              data: imageData.base64,       // raw base64 string (no data URL prefix)
             },
           },
         ],
@@ -258,6 +280,7 @@ async function sendToGemini(
   console.log('[Gemini] Image MIME type:', imageData.mimeType);
   console.log('[Gemini] Base64 length:', imageData.base64.length, 'chars');
 
+  // Step 4: Send the POST request with JSON body
   let response: Response;
   try {
     response = await fetch(url, {
@@ -272,6 +295,7 @@ async function sendToGemini(
     );
   }
 
+  // Step 5: Handle HTTP errors
   if (!response.ok) {
     let errorDetail = '';
     try {
@@ -292,8 +316,9 @@ async function sendToGemini(
         response.status
       );
     } else if (response.status === 404) {
+      // 404: endpoint not found — URL, model name, or method suffix is wrong
       throw new AnalysisApiError(
-        `Endpoint não encontrado (404). Verifique a configuração da API. Detalhe: ${errorDetail}`,
+        'Endpoint da API não encontrado (404). Verifique se a URL e o modelo estão configurados corretamente nas Configurações.',
         'ENDPOINT_NOT_FOUND',
         404
       );
@@ -312,6 +337,7 @@ async function sendToGemini(
     }
   }
 
+  // Step 6: Parse the JSON response
   let responseData: unknown;
   try {
     responseData = await response.json();
@@ -322,7 +348,7 @@ async function sendToGemini(
     );
   }
 
-  // Extract the text content from the Gemini response
+  // Step 7: Extract the text content from the Gemini response
   const geminiResponse = responseData as {
     candidates?: Array<{
       content?: {
@@ -353,7 +379,7 @@ async function sendToGemini(
     throw new AnalysisApiError('Resposta vazia da API Gemini. Tente novamente.', 'INVALID_RESPONSE');
   }
 
-  // Parse the JSON response from the model
+  // Step 8: Parse the JSON response from the model
   let parsed: ApiAnalysisResponse;
   try {
     // Remove possible markdown code fences
@@ -382,7 +408,7 @@ async function sendToGemini(
     }
   }
 
-  // Validate and normalize the parsed response
+  // Step 9: Validate and normalize the parsed response
   const validSignals = ['COMPRA', 'VENDA', 'NEUTRO', 'SEM ENTRADA'];
   const validTrends = ['ALTA', 'BAIXA', 'LATERAL'];
 
