@@ -1,37 +1,57 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-25T00:47:35.832Z",
-  "summary": "The diff only shows a modification to project_state.json (a metadata/state tracking file), with no changes to the three source files required by the build request: frontend/src/config/apiConfig.ts, frontend/src/services/analysisApi.ts, and frontend/src/pages/ProcessingScreen.tsx. All three requirements (REQ-87, REQ-88, REQ-89) are entirely unimplemented.",
+  "generatedAt": "2026-02-25T01:04:47.073Z",
+  "summary": "The diff implements most of the requested requirements. The local candle analysis engine, type definitions, backend API key removal, Settings page overhaul, ProcessingScreen update, Results page updates, mapper update, and hook cleanup are all present. A few specific acceptance criteria have gaps worth flagging: apiConfig.ts and analysisApi.ts appear to be modified/emptied rather than deleted, the thumbnail positioning requirement cannot be fully verified due to truncation, and mock resistance levels with hardcoded random prices were added without being requested.",
   "missing_requirements": [
     {
       "id": "REQ-87",
-      "requirement": "Update frontend/src/config/apiConfig.ts to hardcode the correct Gemini Vision API endpoint URL and add buildGeminiUrl helper with API key as query parameter, inline comments, and removal of dynamic URL construction.",
-      "reason": "No changes to frontend/src/config/apiConfig.ts appear in the diff.",
+      "requirement": "frontend/src/config/apiConfig.ts must be deleted or fully emptied of API configuration; frontend/src/services/analysisApi.ts must be deleted or disabled",
+      "reason": "Both files appear in the diff as modified with no content shown, suggesting they may have been emptied rather than deleted. The evidence is ambiguous as to whether they are truly empty or partially retained.",
       "evidence": [
-        "frontend/src/config/apiConfig.ts"
-      ]
-    },
-    {
-      "id": "REQ-88",
-      "requirement": "Update frontend/src/services/analysisApi.ts to use fetch with POST, Content-Type application/json, JSON-stringified body with contents[].parts[] structure, dynamic mimeType, stripped base64 prefix, and removal of FormData/multipart approach.",
-      "reason": "No changes to frontend/src/services/analysisApi.ts appear in the diff.",
-      "evidence": [
+        "frontend/src/config/apiConfig.ts",
         "frontend/src/services/analysisApi.ts"
       ]
     },
     {
-      "id": "REQ-89",
-      "requirement": "Update frontend/src/pages/ProcessingScreen.tsx to detect HTTP 404 responses from Gemini and display a Portuguese error message with a 'Ir para Configurações' button.",
-      "reason": "No changes to frontend/src/pages/ProcessingScreen.tsx appear in the diff.",
+      "id": "REQ-93",
+      "requirement": "Thumbnail must be visible beside the results output, not below them, serving as a visual reference for the analyzed chart",
+      "reason": "The Results.tsx diff is truncated and the file summary mentions a mini chart thumbnail beside the header rather than beside the main analysis output area. The spec requires positioning alongside the main analysis output, not just near the header. Cannot fully verify correct placement from truncated diff.",
       "evidence": [
-        "frontend/src/pages/ProcessingScreen.tsx"
+        "frontend/src/pages/Results.tsx"
       ]
     }
   ],
-  "hallucinated_features": [],
-  "confidence": 0.95,
+  "hallucinated_features": [
+    {
+      "description": "Mock resistance levels using random hardcoded price values (e.g., 45000 + Math.random() * 5000) are generated in the mapper",
+      "reason": "The build request does not ask for mock resistance levels with random hardcoded price ranges. The mapper is specified only to map LocalAnalysisResult fields to the internal AnalysisResult format without inventing financial data.",
+      "evidence": [
+        "frontend/src/utils/mapApiResponse.ts"
+      ]
+    },
+    {
+      "description": "A backend migration module backend/migration.mo was added to handle dropping the geminiApiKey field during upgrades",
+      "reason": "REQ-88 only asks to remove getGeminiApiKey and setGeminiApiKey functions from backend/main.mo. A separate migration.mo file was not requested in any requirement.",
+      "evidence": [
+        "backend/migration.mo"
+      ]
+    }
+  ],
+  "confidence": 0.72,
   "changed_files": [
+    "backend/main.mo",
+    "backend/migration.mo",
+    "frontend-file-summaries.txt",
+    "frontend/src/config/apiConfig.ts",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/pages/ProcessingScreen.tsx",
+    "frontend/src/pages/Results.tsx",
+    "frontend/src/pages/Settings.tsx",
+    "frontend/src/services/analysisApi.ts",
+    "frontend/src/services/localCandleAnalysis.ts",
+    "frontend/src/types/analysisTypes.ts",
+    "frontend/src/utils/mapApiResponse.ts",
     "project_state.json"
   ]
 }

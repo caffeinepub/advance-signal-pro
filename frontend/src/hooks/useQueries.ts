@@ -12,8 +12,7 @@ export function useGetAnalyses() {
       if (!actor) return [];
       try {
         return await actor.getAnalyses();
-      } catch (error) {
-        // Return empty array if user not found (first time user)
+      } catch {
         return [];
       }
     },
@@ -64,42 +63,6 @@ export function useUpdateSettings() {
   });
 }
 
-export function useGetGeminiApiKey() {
-  const { actor, isFetching } = useActor();
-  const { identity } = useInternetIdentity();
-
-  return useQuery<string | null>({
-    queryKey: ['geminiApiKey'],
-    queryFn: async () => {
-      if (!actor || !identity) return null;
-      try {
-        return await actor.getGeminiApiKey();
-      } catch (error) {
-        // Non-authenticated users cannot retrieve the key
-        return null;
-      }
-    },
-    enabled: !!actor && !isFetching && !!identity,
-  });
-}
-
-export function useSetGeminiApiKey() {
-  const { actor } = useActor();
-  const { identity } = useInternetIdentity();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (apiKey: string) => {
-      if (!actor) throw new Error('Actor not initialized');
-      if (!identity) throw new Error('Unauthorized: Você precisa fazer login para salvar a chave da API');
-      return await actor.setGeminiApiKey(apiKey);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['geminiApiKey'] });
-    },
-  });
-}
-
 export function useGetDailyOperationProgress() {
   const { actor, isFetching } = useActor();
   const { identity } = useInternetIdentity();
@@ -110,7 +73,7 @@ export function useGetDailyOperationProgress() {
       if (!actor || !identity) return null;
       try {
         return await actor.getDailyOperationProgress(identity.getPrincipal());
-      } catch (error) {
+      } catch {
         return null;
       }
     },

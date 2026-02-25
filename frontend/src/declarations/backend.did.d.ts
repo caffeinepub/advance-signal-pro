@@ -101,14 +101,12 @@ export interface _SERVICE {
     [Principal],
     { 'dailyLimit' : bigint, 'completedOperations' : bigint }
   >,
-  'getGeminiApiKey' : ActorMethod<[], [] | [string]>,
   'getSettings' : ActorMethod<[], UserSettings>,
   'getTopResistanceLevels' : ActorMethod<[], Array<ResistanceLevel>>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'setDailyOperationLimit' : ActorMethod<[bigint], string>,
-  'setGeminiApiKey' : ActorMethod<[string], string>,
   'storeExternalAnalysis' : ActorMethod<[AnalysisResult], undefined>,
   'updateSettings' : ActorMethod<[UserSettings], string>,
 }

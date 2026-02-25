@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from '@tanstack/react-router';
-import { ArrowLeft, ArrowUp, ArrowDown, Minus, Share2, Save, AlertCircle, ImageOff, RefreshCw } from 'lucide-react';
+import {
+  ArrowLeft, ArrowUp, ArrowDown, Minus, Share2, Save,
+  AlertCircle, ImageOff, RefreshCw, TrendingUp, TrendingDown
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -28,75 +31,49 @@ export default function Results() {
       navigate({ to: '/' });
     }
 
-    // Load thumbnail from sessionStorage
     const chartImage = sessionStorage.getItem('chartImage');
     if (chartImage) {
       setThumbnailUrl(chartImage);
     }
   }, [id, navigate]);
 
-  if (!analysis) {
-    return null;
-  }
+  if (!analysis) return null;
 
-  // Check if this is a chart detection error result
   const isChartDetectionError = analysis.isChartDetectionError === true;
 
-  const handleShare = () => {
-    shareAnalysis(analysis);
-  };
+  const handleShare = () => shareAnalysis(analysis);
+  const handleSave = () => toast.success('Análise salva no histórico');
 
-  const handleSave = () => {
-    toast.success('Análise salva no histórico');
-  };
-
-  // Get timeframe label
   const getTimeframeLabel = (timeframe: string) => {
     switch (timeframe) {
-      case 'M1':
-        return '1 minuto';
-      case 'M5':
-        return '5 minutos';
-      case 'M10':
-        return '10 minutos';
-      default:
-        return '1 minuto';
+      case 'M1': return '1 minuto';
+      case 'M5': return '5 minutos';
+      case 'M10': return '10 minutos';
+      default: return '1 minuto';
     }
   };
 
   const timeframeToUse = settings?.defaultTimeframe || analysis.defaultTimeframe || Timeframe.M1;
 
-  // Get trend label
   const getTrendLabel = (direction: string) => {
     switch (direction) {
-      case 'bullish':
-        return 'ALTA';
-      case 'bearish':
-        return 'BAIXA';
-      case 'sideways':
-        return 'LATERAL';
-      default:
-        return 'LATERAL';
+      case 'bullish': return 'ALTA';
+      case 'bearish': return 'BAIXA';
+      case 'sideways': return 'LATERAL';
+      default: return 'LATERAL';
     }
   };
 
-  // Get pattern label
   const getPatternLabel = (pattern: string) => {
     switch (pattern) {
-      case 'engulfing':
-        return 'Envolvente';
-      case 'hammer':
-        return 'Martelo';
-      case 'doji':
-        return 'Doji';
-      case 'shootingStar':
-        return 'Estrela Cadente';
-      default:
-        return pattern;
+      case 'engulfing': return 'Envolvente';
+      case 'hammer': return 'Martelo';
+      case 'doji': return 'Doji';
+      case 'shootingStar': return 'Estrela Cadente';
+      default: return pattern;
     }
   };
 
-  // Força badge styling
   const getForcaBadgeClass = (forca?: string) => {
     if (forca === 'forte') return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700 font-bold';
     if (forca === 'média') return 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-700';
@@ -110,11 +87,9 @@ export default function Results() {
     return '';
   };
 
-  // Check if this is a SEM ENTRADA or NEUTRO signal
   const isSemEntrada = analysis.sinalOriginal === 'SEM ENTRADA';
   const isNeutro = analysis.sinalOriginal === 'NEUTRO';
 
-  // Collect all patterns to display (prefer raw padroes from API, fallback to enum patterns)
   const allPatterns: string[] = [];
   if (analysis.padroesRaw && Array.isArray(analysis.padroesRaw) && analysis.padroesRaw.length > 0) {
     allPatterns.push(...analysis.padroesRaw);
@@ -124,27 +99,25 @@ export default function Results() {
   if (analysis.pullbacks) allPatterns.push('Retração (Pullback)');
   if (analysis.breakouts) allPatterns.push('Rompimento (Breakout)');
 
-  // Trend label from raw API tendencia or direction
   const trendLabel = analysis.tendenciaRaw || getTrendLabel(analysis.direction);
 
-  // If chart detection error, show error screen
+  const probAlta: number = analysis.probabilidade_alta ?? 50;
+  const probBaixa: number = analysis.probabilidade_baixa ?? 50;
+
+  // Chart detection error screen
   if (isChartDetectionError) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-6 max-w-4xl">
-          {/* Header */}
           <div className="flex items-center gap-4 mb-6">
             <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/' })}>
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
               <h1 className="text-2xl font-bold">Resultados da Análise</h1>
-              <p className="text-sm text-muted-foreground">
-                Sinal de trading e insights gerados pela IA
-              </p>
+              <p className="text-sm text-muted-foreground">Análise local de candles</p>
             </div>
           </div>
-
           <Card className="p-8 text-center space-y-6">
             <div className="flex justify-center">
               <div className="w-20 h-20 rounded-full bg-orange-100 dark:bg-orange-950/30 flex items-center justify-center">
@@ -178,17 +151,26 @@ export default function Results() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-6 max-w-4xl">
-        {/* Header */}
+        {/* Header with thumbnail */}
         <div className="flex items-center gap-4 mb-6">
           <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/' })}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <div>
+          <div className="flex-1">
             <h1 className="text-2xl font-bold">Resultados da Análise</h1>
-            <p className="text-sm text-muted-foreground">
-              Sinal de trading e insights gerados pela IA
-            </p>
+            <p className="text-sm text-muted-foreground">Análise local de candles</p>
           </div>
+          {/* Mini thumbnail beside header */}
+          {thumbnailUrl && (
+            <div className="shrink-0">
+              <img
+                src={thumbnailUrl}
+                alt="Print original do gráfico"
+                className="w-20 h-14 object-cover rounded-lg border-2 border-border shadow-md opacity-90 hover:opacity-100 transition-opacity cursor-pointer"
+                title="Print original enviado para análise"
+              />
+            </div>
+          )}
         </div>
 
         {/* SEM ENTRADA Alert */}
@@ -223,14 +205,63 @@ export default function Results() {
           forca={analysis.forca}
         />
 
-        {/* ── ORDERED OUTPUT SECTION ── */}
+        {/* ── Probability Section ── */}
+        {(probAlta !== undefined && probBaixa !== undefined) && (
+          <Card className="p-4 mb-4">
+            <h3 className="font-semibold mb-3 text-sm text-muted-foreground uppercase tracking-wide">
+              Probabilidade para próxima vela
+            </h3>
+
+            {/* Probability sentence */}
+            <p className="text-base font-semibold mb-4 leading-snug">
+              <span className="text-emerald-600 dark:text-emerald-400">{probAlta}% de probabilidade de ALTA</span>
+              {' / '}
+              <span className="text-red-500 dark:text-red-400">{probBaixa}% de BAIXA</span>
+              {' na próxima vela'}
+            </p>
+
+            {/* ALTA bar */}
+            <div className="space-y-2 mb-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400">
+                  <TrendingUp className="w-4 h-4" />
+                  ALTA
+                </span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">{probAlta}%</span>
+              </div>
+              <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-emerald-500 dark:bg-emerald-400 rounded-full transition-all duration-700"
+                  style={{ width: `${probAlta}%` }}
+                />
+              </div>
+            </div>
+
+            {/* BAIXA bar */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="flex items-center gap-1 font-medium text-red-500 dark:text-red-400">
+                  <TrendingDown className="w-4 h-4" />
+                  BAIXA
+                </span>
+                <span className="font-bold text-red-500 dark:text-red-400">{probBaixa}%</span>
+              </div>
+              <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-red-500 dark:bg-red-400 rounded-full transition-all duration-700"
+                  style={{ width: `${probBaixa}%` }}
+                />
+              </div>
+            </div>
+          </Card>
+        )}
 
         {/* 1. Tendência */}
         <Card className="p-4 mb-4">
           <h3 className="font-semibold mb-3 text-sm text-muted-foreground uppercase tracking-wide">Tendência</h3>
           <div className="flex items-center gap-3">
             {analysis.direction === AnalysisDirection.bullish && (
-              <ArrowUp className="w-7 h-7 text-chart-1" />
+              <ArrowUp className="w-7 h-7 text-emerald-500" />
             )}
             {analysis.direction === AnalysisDirection.bearish && (
               <ArrowDown className="w-7 h-7 text-destructive" />
@@ -279,21 +310,21 @@ export default function Results() {
           <div className="flex items-center gap-3">
             <p className="text-3xl font-bold">{analysis.confidencePercentage}%</p>
             <Badge variant="outline" className="text-sm">
-              {analysis.confidencePercentage < 50 ? 'Baixa' : analysis.confidencePercentage < 75 ? 'Média' : 'Alta'}
+              {Number(analysis.confidencePercentage) < 50 ? 'Baixa' : Number(analysis.confidencePercentage) < 75 ? 'Média' : 'Alta'}
             </Badge>
           </div>
         </Card>
 
         {/* 5. Sinal */}
-        <Card className="p-4 mb-6">
+        <Card className="p-4 mb-4">
           <h3 className="font-semibold mb-3 text-sm text-muted-foreground uppercase tracking-wide">Sinal</h3>
           <div className="flex items-center gap-3">
-            {(analysis.sinalOriginal === 'COMPRA') && (
-              <span className="text-3xl font-bold text-chart-1 flex items-center gap-2">
+            {analysis.sinalOriginal === 'COMPRA' && (
+              <span className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
                 COMPRA <ArrowUp className="w-7 h-7" />
               </span>
             )}
-            {(analysis.sinalOriginal === 'VENDA') && (
+            {analysis.sinalOriginal === 'VENDA' && (
               <span className="text-3xl font-bold text-destructive flex items-center gap-2">
                 VENDA <ArrowDown className="w-7 h-7" />
               </span>
@@ -306,18 +337,18 @@ export default function Results() {
           </div>
         </Card>
 
+        {/* 6. Explicação */}
+        <Card className="p-4 mb-6">
+          <h3 className="font-semibold mb-3 text-sm text-muted-foreground uppercase tracking-wide">Explicação</h3>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {analysis.explicacao || `Com base na análise do gráfico, detectou-se uma tendência de ${trendLabel} com ${analysis.confidencePercentage}% de confiança.`}
+          </p>
+        </Card>
+
         {/* Chart with Overlay */}
         <Card className="p-4 mb-6">
           <h3 className="font-semibold mb-4">Análise do Gráfico</h3>
           <ChartOverlay analysis={analysis} />
-        </Card>
-
-        {/* Explanation - from API */}
-        <Card className="p-4 mb-6">
-          <h3 className="font-semibold mb-3">Explicação Técnica</h3>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            {analysis.explicacao || `Com base na análise do gráfico, a IA detectou uma tendência de ${trendLabel} com ${analysis.confidencePercentage}% de confiança.`}
-          </p>
         </Card>
 
         {/* Timeframe */}
@@ -347,21 +378,6 @@ export default function Results() {
           <p className="text-xs text-center text-muted-foreground mt-2">
             Análises sem sinal claro não podem ser salvas
           </p>
-        )}
-
-        {/* Thumbnail — original screenshot in bottom corner */}
-        {thumbnailUrl && (
-          <div className="mt-8 flex justify-end">
-            <div className="relative group">
-              <p className="text-xs text-muted-foreground mb-1 text-right">Print original</p>
-              <img
-                src={thumbnailUrl}
-                alt="Print original do gráfico"
-                className="w-24 h-16 object-cover rounded-lg border-2 border-border shadow-md opacity-80 hover:opacity-100 transition-opacity cursor-pointer"
-                title="Print original enviado para análise"
-              />
-            </div>
-          </div>
         )}
       </div>
     </div>

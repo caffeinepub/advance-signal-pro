@@ -1,11 +1,18 @@
 # Specification
 
 ## Summary
-**Goal:** Fix the Gemini API integration to resolve 404 errors caused by incorrect endpoint URL construction and improper request formatting.
+**Goal:** Remove the external Gemini API integration entirely and replace it with a fully client-side local candle analysis engine that reads pixel data from uploaded chart images to generate trading signals.
 
 **Planned changes:**
-- Hardcode the correct Gemini Vision API endpoint URL (`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`) in `apiConfig.ts`, with `buildGeminiUrl(apiKey)` appending the API key as a `?key=<apiKey>` query parameter and inline comments documenting the URL structure
-- Update `analysisApi.ts` to send Gemini requests via `fetch` POST with `Content-Type: application/json` and a `contents[].parts[]` JSON body containing the text prompt and base64 inline image data (with data URI prefix stripped and dynamic mimeType); remove all FormData/multipart code paths for the Gemini provider
-- Update `ProcessingScreen.tsx` to detect HTTP 404 responses from Gemini and display a Portuguese error message with a button labeled "Ir para Configurações" that navigates to the Settings page
+- Remove `analysisApi.ts`, `apiConfig.ts`, and all API key validation logic from the frontend
+- Remove `getGeminiApiKey` and `setGeminiApiKey` functions from `backend/main.mo`
+- Create `frontend/src/services/localCandleAnalysis.ts` with a canvas-based pixel analysis engine that detects candles, trends, and patterns locally without any HTTP requests
+- Define `LocalAnalysisResult` interface in `frontend/src/types/analysisTypes.ts` with all analysis fields and JSDoc comments
+- Update `ProcessingScreen.tsx` to use the local engine with four sequential Portuguese processing stages and appropriate error handling
+- Update `frontend/src/utils/mapApiResponse.ts` to map `LocalAnalysisResult` to the internal `AnalysisResult` format
+- Update `Results.tsx` to show a small chart thumbnail (~80×60 px) beside the results retrieved from sessionStorage
+- Update `Results.tsx` to display a probability sentence ("XX% de probabilidade de ALTA / YY% de BAIXA na próxima vela") with green/red styling and two proportional horizontal bars
+- Update `Results.tsx` to display result fields in order: Tendência, Padrões, Força (color-coded badge), Confiança, Sinal (with arrows), Explicação — all in Portuguese (Brazil)
+- Update `Settings.tsx` to replace the Gemini API key section with a "Configuração de Análise de Candles" section containing a read-only "Motor de análise: Local (sem API externa)" row plus existing sensitivity, timeframe, and daily limit controls
 
-**User-visible outcome:** Image analysis requests to the Gemini API no longer return 404 errors. If a 404 does occur, users see a clear Portuguese error message and a button to navigate to Settings for configuration review.
+**User-visible outcome:** Users can upload a chart image and receive a fully local candle analysis (signal, trend, probabilities, patterns, explanation) with no API key required. The Results page shows the chart thumbnail, probability bars, and all analysis fields in Portuguese. Settings no longer contain any API key input.

@@ -129,7 +129,6 @@ export const idlService = IDL.Service({
       [IDL.Record({ 'dailyLimit' : IDL.Nat, 'completedOperations' : IDL.Nat })],
       ['query'],
     ),
-  'getGeminiApiKey' : IDL.Func([], [IDL.Opt(IDL.Text)], ['query']),
   'getSettings' : IDL.Func([], [UserSettings], ['query']),
   'getTopResistanceLevels' : IDL.Func(
       [],
@@ -144,7 +143,6 @@ export const idlService = IDL.Service({
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'setDailyOperationLimit' : IDL.Func([IDL.Nat], [IDL.Text], []),
-  'setGeminiApiKey' : IDL.Func([IDL.Text], [IDL.Text], []),
   'storeExternalAnalysis' : IDL.Func([AnalysisResult], [], []),
   'updateSettings' : IDL.Func([UserSettings], [IDL.Text], []),
 });
@@ -278,7 +276,6 @@ export const idlFactory = ({ IDL }) => {
         ],
         ['query'],
       ),
-    'getGeminiApiKey' : IDL.Func([], [IDL.Opt(IDL.Text)], ['query']),
     'getSettings' : IDL.Func([], [UserSettings], ['query']),
     'getTopResistanceLevels' : IDL.Func(
         [],
@@ -293,7 +290,6 @@ export const idlFactory = ({ IDL }) => {
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'setDailyOperationLimit' : IDL.Func([IDL.Nat], [IDL.Text], []),
-    'setGeminiApiKey' : IDL.Func([IDL.Text], [IDL.Text], []),
     'storeExternalAnalysis' : IDL.Func([AnalysisResult], [], []),
     'updateSettings' : IDL.Func([UserSettings], [IDL.Text], []),
   });

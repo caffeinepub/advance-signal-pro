@@ -88,14 +88,12 @@ export interface backendInterface {
         dailyLimit: bigint;
         completedOperations: bigint;
     }>;
-    getGeminiApiKey(): Promise<string | null>;
     getSettings(): Promise<UserSettings>;
     getTopResistanceLevels(): Promise<Array<ResistanceLevel>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     setDailyOperationLimit(limit: bigint): Promise<string>;
-    setGeminiApiKey(apiKey: string): Promise<string>;
     storeExternalAnalysis(result: AnalysisResult): Promise<void>;
     updateSettings(newSettings: UserSettings): Promise<string>;
 }

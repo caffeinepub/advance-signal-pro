@@ -1,22 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { AlertCircle, RefreshCw, Settings, ImageOff } from 'lucide-react';
+import { AlertCircle, RefreshCw, ImageOff } from 'lucide-react';
 import ProcessingStage from '../components/ProcessingStage';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ExternalBlob } from '../backend';
 import { toast } from 'sonner';
-import { analyzeChartImage, AnalysisApiError } from '../services/analysisApi';
+import { analyzeChartImage } from '../services/localCandleAnalysis';
 import { mapApiResponseToAnalysisResult } from '../utils/mapApiResponse';
 import { useAnalyzeChart } from '../hooks/useQueries';
 import { useActor } from '../hooks/useActor';
-import { validateApiKey } from '../config/apiConfig';
 
 const stages = [
-  { id: 1, label: 'Carregando imagem', duration: 800 },
-  { id: 2, label: 'Isolando área do gráfico', duration: 1200 },
-  { id: 3, label: 'Detectando padrões de Price Action', duration: 1500 },
-  { id: 4, label: 'Gerando resultado', duration: 800 },
+  { id: 1, label: 'Carregando imagem', duration: 700 },
+  { id: 2, label: 'Processando dados', duration: 900 },
+  { id: 3, label: 'Detectando padrões de candle', duration: 1200 },
+  { id: 4, label: 'Gerando resultado', duration: 600 },
 ];
 
 export default function ProcessingScreen() {
@@ -27,14 +26,13 @@ export default function ProcessingScreen() {
   const [imageFile, setImageFile] = useState<Blob | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [apiKeyError, setApiKeyError] = useState(false);
-  const [is404Error, setIs404Error] = useState(false);
   const [isChartDetectionError, setIsChartDetectionError] = useState(false);
   const analyzeChart = useAnalyzeChart();
+  const hasStarted = useRef(false);
 
+  // Load image from sessionStorage
   useEffect(() => {
     const imageData = sessionStorage.getItem('chartImage');
-    const imageSource = sessionStorage.getItem('imageSource') || 'unknown';
 
     if (!imageData) {
       toast.error('Nenhuma imagem de gráfico encontrada');
@@ -45,9 +43,6 @@ export default function ProcessingScreen() {
     fetch(imageData)
       .then((res) => res.blob())
       .then((blob) => {
-        console.log(
-          `[Image Load] Source: ${imageSource}, Size: ${(blob.size / 1024).toFixed(2)}KB, Type: ${blob.type}`
-        );
         setImageFile(blob);
         return blob.arrayBuffer();
       })
@@ -56,288 +51,172 @@ export default function ProcessingScreen() {
         const externalBlob = ExternalBlob.fromBytes(uint8Array);
         setImageBlob(externalBlob);
       })
-      .catch((err: unknown) => {
-        console.error('[Image Load] Error loading image:', err);
+      .catch(() => {
         toast.error('Erro ao carregar imagem');
         navigate({ to: '/' });
       });
   }, [navigate]);
 
+  // Start analysis once image is ready
   useEffect(() => {
-    if (!imageBlob || !imageFile || isProcessing || !actor) return;
-    validateApiKeyAndStart();
+    if (!imageBlob || !imageFile || isProcessing || hasStarted.current) return;
+    hasStarted.current = true;
+    startAnalysis();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [imageBlob, imageFile, actor]);
-
-  const validateApiKeyAndStart = async () => {
-    if (!actor) return;
-
-    try {
-      const validation = await validateApiKey(actor);
-
-      if (!validation.isValid) {
-        setError(validation.errorMessage || 'CHAVE DE API NÃO CONFIGURADA');
-        setApiKeyError(true);
-        setIs404Error(false);
-        setIsChartDetectionError(false);
-        return;
-      }
-
-      startAnalysis();
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error('[API Key] Validation error:', message);
-      setError('Erro ao validar chave da API');
-      setApiKeyError(true);
-      setIs404Error(false);
-      setIsChartDetectionError(false);
-    }
-  };
+  }, [imageBlob, imageFile]);
 
   const startAnalysis = async () => {
-    if (!imageBlob || !imageFile || isProcessing || !actor) return;
-
+    if (!imageBlob || !imageFile) return;
     setIsProcessing(true);
     setError(null);
-    setApiKeyError(false);
-    setIs404Error(false);
     setIsChartDetectionError(false);
 
-    let stageIndex = 0;
-    const stageInterval = setInterval(() => {
-      if (stageIndex < stages.length) {
-        setCurrentStage(stageIndex);
-        stageIndex++;
-      }
-    }, 1000);
-
     try {
-      const apiKey = await actor.getGeminiApiKey();
+      // Animate through stages sequentially
+      for (let i = 0; i < stages.length; i++) {
+        setCurrentStage(i);
+        await delay(stages[i].duration);
+      }
 
-      const apiResponse = await analyzeChartImage(imageFile, apiKey, (progress) => {
-        console.log(`[Analysis] Upload progress: ${progress}%`);
-      });
+      // Run local candle analysis (no HTTP requests)
+      const localResult = await analyzeChartImage(imageFile);
 
-      clearInterval(stageInterval);
-      setCurrentStage(stages.length);
+      // Map to internal format
+      const mappedResult = mapApiResponseToAnalysisResult(localResult, imageBlob);
 
-      // Check if the AI returned a chart detection error
-      if (apiResponse.erro) {
-        setError(apiResponse.erro);
+      // Store result in sessionStorage for Results page
+      sessionStorage.setItem('latestAnalysis', JSON.stringify(mappedResult));
+
+      // If chart detection error, show error screen
+      if (mappedResult.isChartDetectionError) {
         setIsChartDetectionError(true);
         setIsProcessing(false);
         return;
       }
 
-      const analysisResult = mapApiResponseToAnalysisResult(apiResponse, imageBlob);
-
-      // If the mapped result is a chart detection error, handle it
-      if (analysisResult.isChartDetectionError) {
-        setError(analysisResult.erroMessage || 'Não foi possível identificar o gráfico corretamente');
-        setIsChartDetectionError(true);
-        setIsProcessing(false);
-        return;
-      }
-
-      // Store analysis in backend
-      await analyzeChart.mutateAsync(analysisResult);
-
-      // Store analysis in session storage for Results page
-      sessionStorage.setItem('latestAnalysis', JSON.stringify(analysisResult));
-
-      const analysisId = Date.now().toString();
-
-      navigate({
-        to: '/results/$id',
-        params: { id: analysisId },
-      });
-    } catch (err: unknown) {
-      clearInterval(stageInterval);
-
-      console.error('[Analysis] Error:', err);
-
-      let errorMessage = 'Erro ao analisar o gráfico';
-      let isApiKeyIssue = false;
-      let is404 = false;
-
-      if (err instanceof AnalysisApiError) {
-        switch (err.code) {
-          case 'API_KEY_MISSING':
-            errorMessage = 'CHAVE DE API NÃO CONFIGURADA - Configure a chave da API nas configurações';
-            isApiKeyIssue = true;
-            break;
-          case 'API_AUTH_ERROR':
-            errorMessage = 'Erro de autenticação da API. Verifique sua chave de API nas configurações';
-            isApiKeyIssue = true;
-            break;
-          case 'INVALID_API_KEY':
-            errorMessage = 'Chave de API inválida. Configure uma chave válida nas configurações';
-            isApiKeyIssue = true;
-            break;
-          case 'ENDPOINT_NOT_FOUND':
-            errorMessage = 'Endpoint da API não encontrado (404). Verifique se a URL e o modelo estão configurados corretamente nas Configurações.';
-            is404 = true;
-            break;
-          case 'INVALID_ENDPOINT':
-            errorMessage = err.message;
-            is404 = true;
-            break;
-          case 'HEIC_NOT_SUPPORTED':
-            errorMessage = 'Arquivos HEIC não são suportados. Por favor, use a câmera ou converta para JPEG';
-            break;
-          case 'RATE_LIMIT':
-            errorMessage = 'Limite de requisições excedido. Tente novamente mais tarde';
-            break;
-          case 'TIMEOUT':
-            errorMessage = 'Tempo esgotado. Tente novamente';
-            break;
-          case 'NETWORK_ERROR':
-            errorMessage = 'Erro de conexão. Verifique sua internet';
-            break;
-          default:
-            errorMessage = err.message;
+      // Store in backend if actor is available
+      if (actor) {
+        try {
+          await analyzeChart.mutateAsync({
+            direction: mappedResult.direction,
+            resistanceLevels: mappedResult.resistanceLevels,
+            candlestickPatterns: mappedResult.candlestickPatterns,
+            pullbacks: mappedResult.pullbacks,
+            breakouts: mappedResult.breakouts,
+            trendStrength: mappedResult.trendStrength,
+            confidencePercentage: mappedResult.confidencePercentage,
+            timestamp: mappedResult.timestamp,
+            image: imageBlob,
+            probabilidadeAlta: localResult.probabilidade_alta,
+            probabilidadeBaixa: localResult.probabilidade_baixa,
+            acaoSugerida: localResult.sinal,
+            operationFollowed: undefined,
+            entradaExemplo: undefined,
+            stopExemplo: undefined,
+            alvoExemplo: undefined,
+          });
+        } catch {
+          // Backend storage is best-effort; continue to results
         }
-      } else if (err instanceof Error) {
-        errorMessage = err.message;
       }
 
-      setError(errorMessage);
-      setApiKeyError(isApiKeyIssue);
-      setIs404Error(is404);
-      toast.error(errorMessage);
-    } finally {
+      // Navigate to results using the parameterized route
+      navigate({ to: '/results/$id', params: { id: 'latest' } });
+    } catch {
+      setError('Erro ao processar análise. Tente novamente.');
       setIsProcessing(false);
     }
   };
 
-  const handleRetry = () => {
-    setError(null);
-    setApiKeyError(false);
-    setIs404Error(false);
-    setIsChartDetectionError(false);
-    setCurrentStage(0);
-    if (apiKeyError || is404Error) {
-      validateApiKeyAndStart();
-    } else {
-      startAnalysis();
-    }
-  };
+  const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-  const handleBack = () => {
-    navigate({ to: '/analyze' });
-  };
+  // Chart detection error screen
+  if (isChartDetectionError) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md p-8 text-center space-y-6">
+          <div className="flex justify-center">
+            <div className="w-20 h-20 rounded-full bg-orange-100 dark:bg-orange-950/30 flex items-center justify-center">
+              <ImageOff className="w-10 h-10 text-orange-500 dark:text-orange-400" />
+            </div>
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold mb-3">Gráfico Não Identificado</h2>
+            <p className="text-muted-foreground">
+              Não foi possível identificar o gráfico corretamente
+            </p>
+          </div>
+          <div className="p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg text-sm text-orange-800 dark:text-orange-200">
+            Certifique-se de que o print contém um gráfico de candles visível com velas coloridas (verde/vermelho).
+          </div>
+          <Button
+            className="w-full gap-2"
+            onClick={() => navigate({ to: '/analyze' })}
+          >
+            <RefreshCw className="w-4 h-4" />
+            Tentar novamente
+          </Button>
+        </Card>
+      </div>
+    );
+  }
 
-  const handleGoToSettings = () => {
-    navigate({ to: '/settings' });
-  };
+  // Generic error screen
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md p-8 text-center space-y-6">
+          <div className="flex justify-center">
+            <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center">
+              <AlertCircle className="w-10 h-10 text-destructive" />
+            </div>
+          </div>
+          <div>
+            <h2 className="text-xl font-bold mb-2">Erro na Análise</h2>
+            <p className="text-muted-foreground text-sm">{error}</p>
+          </div>
+          <Button
+            className="w-full gap-2"
+            onClick={() => navigate({ to: '/analyze' })}
+          >
+            <RefreshCw className="w-4 h-4" />
+            Tentar novamente
+          </Button>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-md p-8">
-        {error ? (
-          <div className="text-center space-y-6">
-            <div className="flex justify-center">
-              <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
-                isChartDetectionError
-                  ? 'bg-orange-100 dark:bg-orange-950/30'
-                  : 'bg-destructive/10'
-              }`}>
-                {isChartDetectionError
-                  ? <ImageOff className="w-8 h-8 text-orange-500 dark:text-orange-400" />
-                  : <AlertCircle className="w-8 h-8 text-destructive" />
-                }
-              </div>
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold mb-2">
-                {isChartDetectionError
-                  ? 'Gráfico Não Identificado'
-                  : apiKeyError || is404Error
-                  ? 'Configuração Necessária'
-                  : 'Erro na Análise'}
-              </h2>
-              <p className="text-muted-foreground whitespace-pre-line">{error}</p>
+      <div className="w-full max-w-md space-y-6">
+        {/* Header */}
+        <div className="text-center space-y-2">
+          <h1 className="text-2xl font-bold">Analisando Gráfico</h1>
+          <p className="text-sm text-muted-foreground">
+            Detectando padrões de candle localmente...
+          </p>
+        </div>
 
-              {isChartDetectionError && (
-                <div className="mt-4 p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg text-left text-sm">
-                  <p className="text-orange-800 dark:text-orange-200 text-xs leading-relaxed">
-                    Certifique-se de que o print contém um gráfico de candles visível. Evite imagens com apenas menus ou textos.
-                  </p>
-                </div>
-              )}
+        {/* Processing stages */}
+        <Card className="p-6 space-y-4">
+          {stages.map((stage, index) => (
+            <ProcessingStage
+              key={stage.id}
+              label={stage.label}
+              isActive={currentStage === index && isProcessing}
+              isComplete={currentStage > index}
+            />
+          ))}
+        </Card>
 
-              {is404Error && (
-                <div className="mt-4 p-4 bg-muted rounded-lg text-left text-sm">
-                  <p className="font-semibold mb-2">Endpoint correto da API Gemini:</p>
-                  <code className="block text-xs break-all bg-background border border-border rounded p-2 mt-1 text-foreground">
-                    https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent
-                  </code>
-                  <p className="mt-3 text-muted-foreground text-xs">
-                    Se o erro persistir, verifique se sua chave de API está correta e ativa no Google AI Studio.
-                  </p>
-                </div>
-              )}
-            </div>
-            <div className="flex flex-col gap-3">
-              {isChartDetectionError ? (
-                <>
-                  <Button className="w-full gap-2" onClick={handleBack}>
-                    <RefreshCw className="w-4 h-4" />
-                    Tentar novamente
-                  </Button>
-                  <Button variant="outline" className="w-full" onClick={() => navigate({ to: '/' })}>
-                    Voltar ao início
-                  </Button>
-                </>
-              ) : apiKeyError || is404Error ? (
-                <>
-                  <Button className="w-full gap-2" onClick={handleGoToSettings}>
-                    <Settings className="w-4 h-4" />
-                    Ir para Configurações
-                  </Button>
-                  <Button variant="outline" className="w-full" onClick={handleBack}>
-                    Voltar
-                  </Button>
-                </>
-              ) : (
-                <div className="flex gap-3">
-                  <Button variant="outline" className="flex-1" onClick={handleBack}>
-                    Voltar
-                  </Button>
-                  <Button className="flex-1 gap-2" onClick={handleRetry}>
-                    <RefreshCw className="w-4 h-4" />
-                    Tentar Novamente
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-8">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold mb-2">Analisando Gráfico</h2>
-              <p className="text-muted-foreground">
-                Aguarde enquanto processamos sua análise
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              {stages.map((stage, index) => (
-                <ProcessingStage
-                  key={stage.id}
-                  label={stage.label}
-                  isActive={currentStage === index}
-                  isComplete={currentStage > index}
-                />
-              ))}
-            </div>
-
-            <div className="text-center text-sm text-muted-foreground">
-              Isso pode levar alguns segundos...
-            </div>
-          </div>
-        )}
-      </Card>
+        {/* Progress indicator */}
+        <div className="text-center">
+          <p className="text-xs text-muted-foreground">
+            Análise local — sem envio de dados externos
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

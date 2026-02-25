@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 35,
-  "summary": "Advance Signal Pro: Mobile app (Android/iOS) for automated financial chart analysis using Google Gemini Vision API, focused on basic chart analysis: support/resistance levels, candlestick patterns of the last candle, and trend identification (bullish/bearish/sideways). Accepts mobile screenshots showing the full phone screen and analyzes only the chart portion. Optimized for Pocket Option charts and binary options trading with fast scalping analysis (<3s). Features dark/light themes, professional trading interface, chart upload (camera/gallery/clipboard/drag-drop), and displays AI-powered results (buy/sell signals with confidence levels, trend analysis, detected patterns, and explanations) received from Gemini API. Analysis history and customizable settings included. Exclusively supports short timeframes: M1 (1 minute - default), M5 (5 minutes), and M10 (10 minutes). Full Portuguese (Brazil) interface. Extended with advanced candle analysis engine: probability calculation for next candle direction (bullish/bearish %), practical action suggestions based on previous candle high/low breakouts, entry/stop-loss/target price examples, daily operation management (user selects 3/4/6/8 ops per day with progressive clock tracking and midnight reset), operation history with confirmation buttons (green=followed, red=not followed), and progress tracking display.",
+  "projectStateVersion": 37,
+  "summary": "Advance Signal Pro: Mobile app (Android/iOS) for automated financial chart analysis. Removing the external Gemini API system entirely — analysis is now done locally using a candle analysis engine. The results screen shows: a small thumbnail of the original screenshot, a sentence showing % probability of next candle going up or down (e.g., '70% de alta / 30% de baixa'), and a quality candle-based analysis for the next candle direction. Features dark/light themes, Portuguese (Brazil) interface, chart upload (camera/gallery/clipboard/drag-drop), analysis history, daily operation management (3/4/6/8 ops per day with midnight reset), operation confirmation buttons (green=followed, red=not followed), and M1/M5/M10 timeframe support.",
   "architectural_notes": [
     "Mobile-first architecture for Android and iOS platforms",
     "Modular, clean, and scalable code structure",
@@ -10,19 +10,10 @@
     "Fast, lightweight performance optimized for small screens",
     "Navigation flow: Dashboard → Upload → Processing → Results → History/Settings",
     "Fast processing target: <3 seconds for analysis results",
-    "External AI analysis via REST API (POST /analisar-grafico)",
-    "Frontend displays results from external API only (no local AI processing)",
-    "Gemini Vision API performs basic analysis: support/resistance, last candle patterns, trend direction only"
+    "API system removed: no external Gemini/REST API calls. All chart analysis is performed locally using a candle analysis engine based on image processing and pattern rules."
   ],
-  "known_issues": [
-    "Error occurs after image upload completes loading but before analysis result returns",
-    "User reports persistent error after image upload despite error handling improvements",
-    "Permission error when saving Gemini API key: 'Sem permissão para salvar a chave da API' appears in Settings page",
-    "HTTP 404 error on Gemini API calls: endpoint URL misconfigured (wrong API version, model name, or missing :generateContent suffix)",
-    "Analysis not working on screenshots: Gemini API prompt may be too complex, causing failures; user requests simplified basic next-candle analysis without UI changes",
-    "Gemini API returning 400 error 'API key expired' — user needs to renew key at Google AI Studio"
-  ],
-  "isFixRequest": true,
+  "known_issues": [],
+  "isFixRequest": false,
   "existing_features": [
     {
       "id": "feature-create-a-dashboard-home-screen-with-four-primary-action-buttons-analyze-chart-analysis-history-settings-and-an-ai-status-indicator-showing-system-readiness-use-a-minimalist-black-white-and-gray-color-scheme-with-large-prominent-buttons-and-simple-iconography-in-a-professional-trading-app-style",
@@ -591,6 +582,78 @@
         "REQ-86"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-remove-the-entire-external-gemini-api-integration-system-from-the-frontend-delete-or-disable-frontend-src-services-analysisapi-ts-frontend-src-config-apiconfig-ts-and-all-api-key-validation-logic-remove-the-gemini-api-key-input-field-from-the-settings-page-frontend-src-pages-settings-tsx-and-all-related-hooks-in-frontend-src-hooks-usequeries-ts-getgeminiapikey-setgeminiapikey-mutations-remove-api-key-validation-from-frontend-src-pages-processingscreen-tsx-keep-all-other-settings-controls-theme-ai-sensitivity-timeframe-daily-operation-limit-intact",
+      "title": "Remove the entire external Gemini/API integration system from the frontend. Delete or disable frontend/src/services/analysisApi.ts, frontend/src/config/apiConfig.ts, and all API key validation logic. Remove the Gemini API key input field from the Settings page (frontend/src/pages/Settings.tsx) and all related hooks in frontend/src/hooks/useQueries.ts (getGeminiApiKey, setGeminiApiKey mutations). Remove API key validation from frontend/src/pages/ProcessingScreen.tsx. Keep all other settings controls (theme, AI sensitivity, timeframe, daily operation limit) intact.",
+      "reqIds": [
+        "REQ-87"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-local-candle-analysis-engine-in-frontend-src-services-localcandleanalysis-ts-that-analyzes-an-uploaded-chart-image-client-side-without-any-external-api-calls-the-engine-must-1-accept-a-file-or-blob-image-input-2-draw-the-image-onto-an-html-canvas-to-read-pixel-data-3-detect-the-candlestick-chart-region-by-scanning-for-alternating-green-red-vertical-pixel-columns-against-a-dark-or-light-background-4-identify-the-last-5-7-visible-candles-by-detecting-their-body-color-green-bullish-red-bearish-body-height-wick-length-and-relative-position-5-compute-a-next-candle-probability-score-based-on-trend-direction-across-the-detected-candles-ascending-tops-bottoms-alta-descending-baixa-otherwise-lateral-last-candle-pattern-engulfing-hammer-shooting-star-doji-pin-bar-detected-from-body-to-wick-ratio-and-color-momentum-consecutive-same-color-candles-increase-confidence-6-return-a-typed-localanalysisresult-object-containing-sinal-compra-venda-sem-entrada-tendencia-alta-baixa-lateral-confianca-number-0-100-probabilidade-alta-number-0-100-probabilidade-baixa-number-0-100-padroes-string-in-portuguese-forca-fraca-m-dia-forte-explicacao-one-portuguese-sentence-summarizing-the-prediction-and-erro-optional-string-if-chart-region-cannot-be-detected-the-probabilities-must-sum-to-100-if-the-chart-region-cannot-be-reliably-detected-set-erro-to-n-o-foi-poss-vel-identificar-o-gr-fico-corretamente-and-return-a-sem-entrada-signal",
+      "title": "Create a local candle analysis engine in frontend/src/services/localCandleAnalysis.ts that analyzes an uploaded chart image client-side without any external API calls. The engine must: (1) accept a File or Blob image input; (2) draw the image onto an HTML Canvas to read pixel data; (3) detect the candlestick chart region by scanning for alternating green/red vertical pixel columns against a dark or light background; (4) identify the last 5–7 visible candles by detecting their body color (green = bullish, red = bearish), body height, wick length, and relative position; (5) compute a next-candle probability score based on: trend direction across the detected candles (ascending tops/bottoms = ALTA, descending = BAIXA, otherwise LATERAL), last candle pattern (engulfing, hammer, shooting star, doji, pin bar detected from body-to-wick ratio and color), momentum (consecutive same-color candles increase confidence); (6) return a typed LocalAnalysisResult object containing: sinal ('COMPRA' | 'VENDA' | 'SEM ENTRADA'), tendencia ('ALTA' | 'BAIXA' | 'LATERAL'), confianca (number 0–100), probabilidade_alta (number 0–100), probabilidade_baixa (number 0–100), padroes (string[] in Portuguese), forca ('fraca' | 'média' | 'forte'), explicacao (one Portuguese sentence summarizing the prediction), and erro (optional string if chart region cannot be detected). The probabilities must sum to 100. If the chart region cannot be reliably detected, set erro to 'Não foi possível identificar o gráfico corretamente' and return a SEM ENTRADA signal.",
+      "reqIds": [
+        "REQ-89"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-types-apitypes-ts-or-create-frontend-src-types-analysistypes-ts-to-define-the-localanalysisresult-interface-with-fields-sinal-compra-venda-sem-entrada-tendencia-alta-baixa-lateral-confianca-number-probabilidade-alta-number-probabilidade-baixa-number-padroes-string-forca-fraca-m-dia-forte-explicacao-string-pontuacao-optional-number-and-erro-optional-string-add-jsdoc-comments-explaining-each-field-and-note-that-all-analysis-is-performed-locally-without-external-api-calls",
+      "title": "Update frontend/src/types/apiTypes.ts (or create frontend/src/types/analysisTypes.ts) to define the LocalAnalysisResult interface with fields: sinal ('COMPRA' | 'VENDA' | 'SEM ENTRADA'), tendencia ('ALTA' | 'BAIXA' | 'LATERAL'), confianca (number), probabilidade_alta (number), probabilidade_baixa (number), padroes (string[]), forca ('fraca' | 'média' | 'forte'), explicacao (string), pontuacao (optional number), and erro (optional string). Add JSDoc comments explaining each field and note that all analysis is performed locally without external API calls.",
+      "reqIds": [
+        "REQ-90"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-pages-processingscreen-tsx-to-use-the-local-candle-analysis-engine-instead-of-any-external-api-when-analysis-starts-1-load-the-image-from-sessionstorage-2-display-the-four-sequential-portuguese-stages-carregando-imagem-processando-dados-detectando-padr-es-gerando-resultado-with-animated-indicators-advancing-each-stage-on-a-short-timeout-to-simulate-processing-steps-3-call-analyzechartimage-file-from-the-local-engine-during-the-detectando-padr-es-stage-4-on-success-store-the-result-in-sessionstorage-and-navigate-to-the-results-page-5-if-the-result-contains-an-erro-field-display-the-portuguese-error-message-n-o-foi-poss-vel-identificar-o-gr-fico-corretamente-with-a-tentar-novamente-button-that-navigates-back-to-analyzechart-6-remove-all-api-key-validation-checks-and-http-error-handling-404-403-etc-since-no-network-calls-are-made",
+      "title": "Update frontend/src/pages/ProcessingScreen.tsx to use the local candle analysis engine instead of any external API. When analysis starts: (1) load the image from sessionStorage; (2) display the four sequential Portuguese stages (Carregando imagem → Processando dados → Detectando padrões → Gerando resultado) with animated indicators, advancing each stage on a short timeout to simulate processing steps; (3) call analyzeChartImage(file) from the local engine during the 'Detectando padrões' stage; (4) on success, store the result in sessionStorage and navigate to the Results page; (5) if the result contains an erro field, display the Portuguese error message 'Não foi possível identificar o gráfico corretamente' with a 'Tentar novamente' button that navigates back to AnalyzeChart; (6) remove all API key validation checks and HTTP error handling (404, 403, etc.) since no network calls are made.",
+      "reqIds": [
+        "REQ-91"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-utils-mapapiresponse-ts-or-create-a-new-mapper-to-map-localanalysisresult-fields-to-the-internal-analysisresult-format-used-by-results-tsx-and-history-components-preserve-probabilidade-alta-probabilidade-baixa-forca-padroes-tendencia-confianca-sinal-and-explicacao-fields-through-the-mapping-so-they-are-all-available-for-rendering",
+      "title": "Update frontend/src/utils/mapApiResponse.ts (or create a new mapper) to map LocalAnalysisResult fields to the internal AnalysisResult format used by Results.tsx and history components. Preserve probabilidade_alta, probabilidade_baixa, forca, padroes, tendencia, confianca, sinal, and explicacao fields through the mapping so they are all available for rendering.",
+      "reqIds": [
+        "REQ-92"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-pages-results-tsx-to-display-the-original-uploaded-screenshot-as-a-small-thumbnail-approximately-80-60-px-positioned-beside-the-main-analysis-output-area-retrieve-the-image-data-url-from-sessionstorage-using-the-key-used-during-upload-style-the-thumbnail-with-a-subtle-border-and-rounded-corners-consistent-with-the-active-dark-light-theme-the-thumbnail-must-be-visible-alongside-the-results-not-below-them-serving-as-a-visual-reference-for-the-analyzed-chart",
+      "title": "Update frontend/src/pages/Results.tsx to display the original uploaded screenshot as a small thumbnail (approximately 80×60 px) positioned beside the main analysis output area. Retrieve the image data URL from sessionStorage using the key used during upload. Style the thumbnail with a subtle border and rounded corners consistent with the active dark/light theme. The thumbnail must be visible alongside the results, not below them, serving as a visual reference for the analyzed chart.",
+      "reqIds": [
+        "REQ-93"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-pages-results-tsx-to-display-a-prominent-probability-sentence-near-the-top-of-the-results-immediately-below-the-signal-card-the-sentence-must-read-in-portuguese-xx-de-probabilidade-de-alta-yy-de-baixa-na-pr-xima-vela-where-xx-is-probabilidade-alta-and-yy-is-probabilidade-baixa-from-the-analysis-result-style-the-alta-portion-in-green-and-the-baixa-portion-in-red-also-show-two-horizontal-percentage-bar-indicators-side-by-side-green-bar-for-alta-red-bar-for-baixa-filling-proportionally-to-their-values",
+      "title": "Update frontend/src/pages/Results.tsx to display a prominent probability sentence near the top of the results, immediately below the signal card. The sentence must read in Portuguese: '[XX]% de probabilidade de ALTA / [YY]% de BAIXA na próxima vela' where XX is probabilidade_alta and YY is probabilidade_baixa from the analysis result. Style the ALTA portion in green and the BAIXA portion in red. Also show two horizontal percentage bar indicators side by side (green bar for ALTA, red bar for BAIXA) filling proportionally to their values.",
+      "reqIds": [
+        "REQ-94"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-pages-results-tsx-to-display-the-candle-analysis-output-fields-in-the-following-order-with-portuguese-labels-1-tend-ncia-alta-baixa-lateral-2-padr-es-encontrados-list-of-detected-patterns-from-padroes-array-3-for-a-fraca-m-dia-forte-with-color-coded-badge-gray-fraca-amber-m-dia-green-forte-4-confian-a-percentage-5-sinal-compra-venda-sem-entrada-with-directional-arrows-and-color-coding-6-explica-o-one-sentence-portuguese-explanation-from-explicacao-field-ensure-this-order-is-consistent-and-all-labels-are-in-portuguese-brazil-if-the-result-contains-an-erro-field-display-the-portuguese-error-message-prominently-instead-of-the-results-fields",
+      "title": "Update frontend/src/pages/Results.tsx to display the candle analysis output fields in the following order with Portuguese labels: (1) Tendência (ALTA/BAIXA/LATERAL), (2) Padrões encontrados (list of detected patterns from padroes array), (3) Força (fraca/média/forte with color-coded badge: gray=fraca, amber=média, green=forte), (4) Confiança percentage, (5) Sinal (COMPRA ↑ / VENDA ↓ / SEM ENTRADA) with directional arrows and color coding, (6) Explicação (one-sentence Portuguese explanation from explicacao field). Ensure this order is consistent and all labels are in Portuguese (Brazil). If the result contains an erro field, display the Portuguese error message prominently instead of the results fields.",
+      "reqIds": [
+        "REQ-95"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-settings-page-frontend-src-pages-settings-tsx-to-remove-the-gemini-api-key-section-entirely-and-replace-it-with-a-configura-o-de-an-lise-de-candles-section-this-section-must-contain-1-a-read-only-informational-row-labeled-motor-de-an-lise-showing-the-value-local-sem-api-externa-2-the-existing-ai-sensitivity-slider-labeled-sensibilidade-da-ia-3-the-existing-default-timeframe-selector-m1-m5-m10-labeled-timeframe-padr-o-4-the-existing-daily-operation-limit-selector-labeled-opera-es-por-dia-all-labels-must-be-in-portuguese-brazil-keep-all-other-existing-settings-theme-toggle-notifications-unchanged",
+      "title": "Update the Settings page (frontend/src/pages/Settings.tsx) to remove the Gemini API key section entirely and replace it with a 'Configuração de Análise de Candles' section. This section must contain: (1) a read-only informational row labeled 'Motor de análise' showing the value 'Local (sem API externa)'; (2) the existing AI sensitivity slider labeled 'Sensibilidade da IA'; (3) the existing default timeframe selector (M1/M5/M10) labeled 'Timeframe padrão'; (4) the existing daily operation limit selector labeled 'Operações por dia'. All labels must be in Portuguese (Brazil). Keep all other existing settings (theme toggle, notifications) unchanged.",
+      "reqIds": [
+        "REQ-96"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -687,26 +750,8 @@
       "status": "pending"
     },
     {
-      "id": "AR-33",
-      "summary": "Integrate Google Gemini Vision API for chart image analysis",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
       "id": "AR-34",
       "summary": "Update app tagline to 'Análise de Gráficos com IA & Sinais de Trading 1.0'",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-35",
-      "summary": "Configure Google Gemini Vision API key to enable chart analysis for mobile screenshots from Pocket Option broker",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-36",
-      "summary": "Fix error that occurs after image upload loads: add detailed error handling with Portuguese error messages, validate image format/size before API call, auto-resize large images, add diagnostic logging for Gemini API response errors",
       "reqIds": [],
       "status": "pending"
     },
@@ -823,14 +868,6 @@
       "status": "pending"
     },
     {
-      "id": "AR-52",
-      "summary": "Investigate and fix the permission error that prevents saving the Gemini API key in the Settings page. The error message 'Sem permissão para salvar a chave da API' appears when the user attempts to save the key. Audit the backend Motoko actor in backend/main.mo to ensure the `setGeminiApiKey` function does not enforce overly restrictive access control (e.g., caller-based authorization that rejects anonymous or non-admin principals). If the function uses role-based access control via the AccessControl mixin, verify that the authenticated user's principal is granted the necessary role to call this function. Update the access control logic so that any authenticated user can save their own Gemini API key.",
-      "reqIds": [
-        "REQ-72"
-      ],
-      "status": "pending"
-    },
-    {
       "id": "AR-53",
       "summary": "Update image analysis system: auto-detect and crop only the candle chart area from screenshots (ignore all broker UI), apply contrast/binarize colors to highlight candles, analyze using price action rules only (no broker text/values), return error if chart cannot be isolated, display thumbnail of original screenshot in corner of results layout. Output: Tendência, Padrões, Força (fraca/média/forte), Confiança %, Sinal (COMPRA/VENDA/SEM ENTRADA) in Portuguese.",
       "reqIds": [],
@@ -843,26 +880,22 @@
       "status": "pending"
     },
     {
-      "id": "AR-55",
-      "summary": "Update frontend/src/config/apiConfig.ts to hardcode the correct Gemini Vision API endpoint URL: `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`. The `buildGeminiUrl(apiKey)` helper must append the API key as a query parameter (`?key=<apiKey>`). Remove any dynamic endpoint construction that could produce malformed URLs missing the API version, model name, or `:generateContent` suffix. Add inline comments documenting the required URL structure.",
-      "reqIds": [
-        "REQ-87"
-      ],
+      "id": "AR-58",
+      "summary": "Remove the entire external Gemini/API system (API key config, API calls, API settings field, endpoint config). Replace with a local candle analysis engine that analyzes the uploaded chart image and predicts next candle direction.",
+      "reqIds": [],
       "status": "pending"
     },
     {
-      "id": "AR-56",
-      "summary": "Update frontend/src/services/analysisApi.ts to ensure all Gemini API requests are sent using `fetch` with `method: 'POST'`, `Content-Type: application/json`, and a JSON-stringified body of the form `{ contents: [{ parts: [{ text: <prompt> }, { inlineData: { mimeType: <mimeType>, data: <base64Data> } }] }] }`. The image must be base64-encoded with the data URI prefix (e.g., `data:image/jpeg;base64,`) stripped before placement in `inlineData.data`. The `mimeType` field must reflect the actual file MIME type and must never be hardcoded to a fixed value. Remove any remaining multipart/form-data or FormData approach for the Gemini provider.",
+      "id": "AR-59",
+      "summary": "Results screen: display a small thumbnail of the original uploaded screenshot beside the analysis results, show a prominent sentence like '70% de probabilidade de ALTA / 30% de BAIXA na próxima vela', and display a quality next-candle analysis based on visible candle patterns (trend, last candle shape, momentum).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-61",
+      "summary": "Remove backend Gemini API key storage from backend/main.mo. Delete the getGeminiApiKey and setGeminiApiKey functions and any associated stable storage for the API key. Ensure backward compatibility so existing analyses and other settings stored in the backend are unaffected.",
       "reqIds": [
         "REQ-88"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-57",
-      "summary": "Update frontend/src/pages/ProcessingScreen.tsx error handling to explicitly detect HTTP 404 responses from the Gemini API and display a clear, actionable Portuguese error message: 'Endpoint da API não encontrado (404). Verifique se a URL e o modelo estão configurados corretamente nas Configurações.' Include a button labeled 'Ir para Configurações' that navigates the user to the Settings page.",
-      "reqIds": [
-        "REQ-89"
       ],
       "status": "pending"
     }

@@ -1,23 +1,15 @@
-import { useState, useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { ArrowLeft, Moon, Sun, Eye, EyeOff, Save, Loader2, LogIn } from 'lucide-react';
+import { ArrowLeft, Moon, Sun, Loader2, CandlestickChart, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useTheme } from '../context/ThemeContext';
 import { useSettings } from '../hooks/useSettings';
-import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import {
-  useGetGeminiApiKey,
-  useSetGeminiApiKey,
-  useSetDailyOperationLimit,
-} from '../hooks/useQueries';
+import { useSetDailyOperationLimit } from '../hooks/useQueries';
 import { Timeframe } from '../backend';
 import { toast } from 'sonner';
 
@@ -25,60 +17,7 @@ export default function Settings() {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
   const { settings, isLoading: isLoadingSettings, updateSettings, isUpdating } = useSettings();
-  const { identity, login, loginStatus } = useInternetIdentity();
-  const isAuthenticated = !!identity;
-
-  // Gemini API Key
-  const { data: storedApiKey, isLoading: isLoadingApiKey } = useGetGeminiApiKey();
-  const setGeminiApiKeyMutation = useSetGeminiApiKey();
-  const [apiKey, setApiKey] = useState('');
-  const [showApiKey, setShowApiKey] = useState(false);
-
-  // Daily operation limit
   const setDailyLimitMutation = useSetDailyOperationLimit();
-
-  // Populate API key field when loaded
-  useEffect(() => {
-    if (storedApiKey) {
-      setApiKey(storedApiKey);
-    }
-  }, [storedApiKey]);
-
-  const handleSaveApiKey = async () => {
-    if (!isAuthenticated) {
-      toast.error('Você precisa fazer login para salvar a chave da API');
-      return;
-    }
-
-    if (!apiKey || apiKey.trim() === '') {
-      toast.error('Por favor, insira uma chave de API válida');
-      return;
-    }
-
-    if (!apiKey.startsWith('AIza')) {
-      toast.error('Formato de chave inválido. A chave deve começar com "AIza"');
-      return;
-    }
-
-    if (apiKey.length < 30) {
-      toast.error('Chave de API muito curta. Verifique se copiou a chave completa');
-      return;
-    }
-
-    try {
-      await setGeminiApiKeyMutation.mutateAsync(apiKey);
-      toast.success('Chave salva com sucesso!');
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : '';
-      if (msg.includes('Invalid Gemini API key format')) {
-        toast.error('Formato de chave inválido. Verifique sua chave da API');
-      } else if (msg.includes('Unauthorized') || msg.includes('login')) {
-        toast.error('Você precisa fazer login para salvar a chave da API');
-      } else {
-        toast.error('Erro ao salvar chave da API. Tente novamente');
-      }
-    }
-  };
 
   const handleSensitivityChange = async (value: number[]) => {
     if (!settings) return;
@@ -134,11 +73,8 @@ export default function Settings() {
   const handleThemeToggle = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
-    // Persist theme preference in settings if available
     if (settings) {
-      updateSettings({ ...settings, theme: newTheme }).catch(() => {
-        // Theme is already applied locally, backend persistence is best-effort
-      });
+      updateSettings({ ...settings, theme: newTheme }).catch(() => {});
     }
   };
 
@@ -162,106 +98,115 @@ export default function Settings() {
           </div>
         </div>
 
-        {/* Settings Cards */}
         <div className="space-y-4">
-          {/* API Configuration */}
+          {/* ── Candle Analysis Configuration ── */}
           <Card className="p-4">
             <div className="space-y-4">
-              <div>
-                <Label className="text-base font-semibold">Configuração da API</Label>
-                <p className="text-sm text-muted-foreground">
-                  Configure sua chave da API do Google Gemini
-                </p>
+              <div className="flex items-center gap-2">
+                <CandlestickChart className="w-5 h-5 text-primary" />
+                <div>
+                  <Label className="text-base font-semibold">Configuração de Análise de Candles</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Motor local de detecção de padrões de candlestick
+                  </p>
+                </div>
               </div>
 
-              {/* Login required alert */}
-              {!isAuthenticated && (
-                <Alert>
-                  <LogIn className="h-4 w-4" />
-                  <AlertDescription className="flex items-center justify-between gap-2 flex-wrap">
-                    <span>Você precisa fazer login para salvar a chave da API.</span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => login()}
-                      disabled={loginStatus === 'logging-in'}
-                      className="shrink-0"
-                    >
-                      {loginStatus === 'logging-in' ? (
-                        <>
-                          <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                          Entrando...
-                        </>
-                      ) : (
-                        <>
-                          <LogIn className="w-3 h-3 mr-1" />
-                          Fazer Login
-                        </>
-                      )}
-                    </Button>
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              <div className="space-y-3">
-                <div>
-                  <Label htmlFor="apiKey" className="text-sm font-medium">
-                    Chave da API Gemini
-                  </Label>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    Obtenha sua chave em{' '}
-                    <a
-                      href="https://aistudio.google.com/app/apikey"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline"
-                    >
-                      Google AI Studio
-                    </a>
-                  </p>
-                  {isLoadingApiKey ? (
-                    <Skeleton className="h-10 w-full" />
-                  ) : (
-                    <div className="relative">
-                      <Input
-                        id="apiKey"
-                        type={showApiKey ? 'text' : 'password'}
-                        value={apiKey}
-                        onChange={(e) => setApiKey(e.target.value)}
-                        placeholder="AIza..."
-                        className="pr-10"
-                        disabled={!isAuthenticated}
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-0 top-0 h-full"
-                        onClick={() => setShowApiKey(!showApiKey)}
-                        disabled={!isAuthenticated}
-                      >
-                        {showApiKey ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </div>
-                  )}
+              {/* Engine info row */}
+              <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50 border border-border">
+                <div className="flex items-center gap-2">
+                  <Info className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <span className="text-sm font-medium">Motor de análise</span>
                 </div>
+                <span className="text-sm text-muted-foreground font-mono">
+                  Local (sem API externa)
+                </span>
+              </div>
 
-                <Button
-                  onClick={handleSaveApiKey}
-                  disabled={setGeminiApiKeyMutation.isPending || isLoadingApiKey || !apiKey || !isAuthenticated}
-                  className="w-full gap-2"
-                >
-                  {setGeminiApiKeyMutation.isPending ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Save className="w-4 h-4" />
-                  )}
-                  {setGeminiApiKeyMutation.isPending ? 'Salvando...' : 'Salvar Chave da API'}
-                </Button>
+              {/* AI Sensitivity */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Sensibilidade da IA</Label>
+                <p className="text-xs text-muted-foreground">
+                  Ajuste a sensibilidade da detecção de padrões
+                </p>
+                {isLoadingSettings ? (
+                  <Skeleton className="h-6 w-full" />
+                ) : (
+                  <div className="flex items-center gap-4">
+                    <Slider
+                      value={[Number(settings?.aiSensitivity ?? 50)]}
+                      onValueChange={handleSensitivityChange}
+                      min={0}
+                      max={100}
+                      step={1}
+                      className="flex-1"
+                      disabled={isUpdating}
+                    />
+                    <span className="text-sm font-medium w-12 text-right">
+                      {Number(settings?.aiSensitivity ?? 50)}%
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Default Timeframe */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Timeframe padrão</Label>
+                <p className="text-xs text-muted-foreground">
+                  Escolha o período de tempo para análise
+                </p>
+                {isLoadingSettings ? (
+                  <Skeleton className="h-10 w-full" />
+                ) : (
+                  <Select
+                    value={settings?.defaultTimeframe ?? Timeframe.M1}
+                    onValueChange={handleTimeframeChange}
+                    disabled={isUpdating}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={Timeframe.M1}>M1 (1 minuto)</SelectItem>
+                      <SelectItem value={Timeframe.M5}>M5 (5 minutos)</SelectItem>
+                      <SelectItem value={Timeframe.M10}>M10 (10 minutos)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+
+              {/* Daily Operation Limit */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Operações por dia</Label>
+                <p className="text-xs text-muted-foreground">
+                  Número máximo de análises por dia
+                </p>
+                {isLoadingSettings ? (
+                  <Skeleton className="h-10 w-full" />
+                ) : (
+                  <Select
+                    value={String(settings?.dailyOperationLimit ?? 3)}
+                    onValueChange={handleDailyLimitChange}
+                    disabled={setDailyLimitMutation.isPending}
+                  >
+                    <SelectTrigger>
+                      {setDailyLimitMutation.isPending ? (
+                        <span className="flex items-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Salvando...
+                        </span>
+                      ) : (
+                        <SelectValue />
+                      )}
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="3">3 operações por dia</SelectItem>
+                      <SelectItem value="4">4 operações por dia</SelectItem>
+                      <SelectItem value="6">6 operações por dia</SelectItem>
+                      <SelectItem value="8">8 operações por dia</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             </div>
           </Card>
@@ -286,104 +231,6 @@ export default function Settings() {
                   <Moon className="w-5 h-5" />
                 )}
               </Button>
-            </div>
-          </Card>
-
-          {/* AI Sensitivity */}
-          <Card className="p-4">
-            <div className="space-y-4">
-              <div>
-                <Label className="text-base font-semibold">Sensibilidade da IA</Label>
-                <p className="text-sm text-muted-foreground">
-                  Ajuste a sensibilidade da detecção de padrões
-                </p>
-              </div>
-              {isLoadingSettings ? (
-                <Skeleton className="h-6 w-full" />
-              ) : (
-                <div className="flex items-center gap-4">
-                  <Slider
-                    value={[Number(settings?.aiSensitivity ?? 50)]}
-                    onValueChange={handleSensitivityChange}
-                    min={0}
-                    max={100}
-                    step={1}
-                    className="flex-1"
-                    disabled={isUpdating}
-                  />
-                  <span className="text-sm font-medium w-12 text-right">
-                    {Number(settings?.aiSensitivity ?? 50)}%
-                  </span>
-                </div>
-              )}
-            </div>
-          </Card>
-
-          {/* Default Timeframe */}
-          <Card className="p-4">
-            <div className="space-y-4">
-              <div>
-                <Label className="text-base font-semibold">Selecionar timeframe padrão</Label>
-                <p className="text-sm text-muted-foreground">
-                  Escolha o período de tempo para análise
-                </p>
-              </div>
-              {isLoadingSettings ? (
-                <Skeleton className="h-10 w-full" />
-              ) : (
-                <Select
-                  value={settings?.defaultTimeframe ?? Timeframe.M1}
-                  onValueChange={handleTimeframeChange}
-                  disabled={isUpdating}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={Timeframe.M1}>M1 (1 minuto)</SelectItem>
-                    <SelectItem value={Timeframe.M5}>M5 (5 minutos)</SelectItem>
-                    <SelectItem value={Timeframe.M10}>M10 (10 minutos)</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-          </Card>
-
-          {/* Daily Operation Limit */}
-          <Card className="p-4">
-            <div className="space-y-4">
-              <div>
-                <Label className="text-base font-semibold">Limite Diário de Operações</Label>
-                <p className="text-sm text-muted-foreground">
-                  Número máximo de análises por dia
-                </p>
-              </div>
-              {isLoadingSettings ? (
-                <Skeleton className="h-10 w-full" />
-              ) : (
-                <Select
-                  value={String(settings?.dailyOperationLimit ?? 3)}
-                  onValueChange={handleDailyLimitChange}
-                  disabled={setDailyLimitMutation.isPending}
-                >
-                  <SelectTrigger>
-                    {setDailyLimitMutation.isPending ? (
-                      <span className="flex items-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Salvando...
-                      </span>
-                    ) : (
-                      <SelectValue />
-                    )}
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="3">3 operações por dia</SelectItem>
-                    <SelectItem value="4">4 operações por dia</SelectItem>
-                    <SelectItem value="6">6 operações por dia</SelectItem>
-                    <SelectItem value="8">8 operações por dia</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
             </div>
           </Card>
 

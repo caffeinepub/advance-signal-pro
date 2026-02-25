@@ -181,14 +181,12 @@ export interface backendInterface {
         dailyLimit: bigint;
         completedOperations: bigint;
     }>;
-    getGeminiApiKey(): Promise<string | null>;
     getSettings(): Promise<UserSettings>;
     getTopResistanceLevels(): Promise<Array<ResistanceLevel>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     setDailyOperationLimit(limit: bigint): Promise<string>;
-    setGeminiApiKey(apiKey: string): Promise<string>;
     storeExternalAnalysis(result: AnalysisResult): Promise<void>;
     updateSettings(newSettings: UserSettings): Promise<string>;
 }
@@ -401,20 +399,6 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async getGeminiApiKey(): Promise<string | null> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getGeminiApiKey();
-                return from_candid_opt_n19(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getGeminiApiKey();
-            return from_candid_opt_n19(this._uploadFile, this._downloadFile, result);
-        }
-    }
     async getSettings(): Promise<UserSettings> {
         if (this.processError) {
             try {
@@ -496,20 +480,6 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.setDailyOperationLimit(arg0);
-            return result;
-        }
-    }
-    async setGeminiApiKey(arg0: string): Promise<string> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.setGeminiApiKey(arg0);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.setGeminiApiKey(arg0);
             return result;
         }
     }

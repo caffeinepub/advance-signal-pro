@@ -1,17 +1,18 @@
 import Map "mo:core/Map";
-import Order "mo:core/Order";
-import Nat "mo:core/Nat";
-import Iter "mo:core/Iter";
 import Array "mo:core/Array";
 import Text "mo:core/Text";
 import Time "mo:core/Time";
 import Runtime "mo:core/Runtime";
+import Order "mo:core/Order";
 import Principal "mo:core/Principal";
 import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
+import Migration "migration";
 
+// Specify the data migration function in with-clause (see migration.mo)
+(with migration = Migration.run)
 actor {
   include MixinStorage();
 
@@ -108,8 +109,6 @@ actor {
   let analyses = Map.empty<Principal, [AnalysisResult]>();
   let settings = Map.empty<Principal, UserSettings>();
 
-  var geminiApiKey : ?Text = null;
-
   public shared ({ caller }) func storeExternalAnalysis(result : AnalysisResult) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can store analyses");
@@ -134,8 +133,7 @@ actor {
       case (?data) { data };
     };
 
-    let reversedIter = userAnalyses.reverse().values();
-    reversedIter.take(userAnalyses.size()).toArray();
+    userAnalyses.reverse();
   };
 
   public query ({ caller }) func getAnalysisHistory() : async [AnalysisResult] {
@@ -234,27 +232,6 @@ actor {
 
     let topLevelsIter = allLevels.values();
     topLevelsIter.take(5).toArray();
-  };
-
-  public shared ({ caller }) func setGeminiApiKey(apiKey : Text) : async Text {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Users only");
-    };
-
-    if (not apiKey.startsWith(#text("AIza"))) {
-      Runtime.trap("Invalid Gemini API key format");
-    };
-
-    geminiApiKey := ?apiKey;
-    "Gemini API key stored successfully";
-  };
-
-  public query ({ caller }) func getGeminiApiKey() : async ?Text {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Users only");
-    };
-
-    geminiApiKey;
   };
 
   public query ({ caller }) func getDailyOperationProgress(userId : Principal) : async {
