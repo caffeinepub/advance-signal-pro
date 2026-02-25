@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 33,
+  "projectStateVersion": 35,
   "summary": "Advance Signal Pro: Mobile app (Android/iOS) for automated financial chart analysis using Google Gemini Vision API, focused on basic chart analysis: support/resistance levels, candlestick patterns of the last candle, and trend identification (bullish/bearish/sideways). Accepts mobile screenshots showing the full phone screen and analyzes only the chart portion. Optimized for Pocket Option charts and binary options trading with fast scalping analysis (<3s). Features dark/light themes, professional trading interface, chart upload (camera/gallery/clipboard/drag-drop), and displays AI-powered results (buy/sell signals with confidence levels, trend analysis, detected patterns, and explanations) received from Gemini API. Analysis history and customizable settings included. Exclusively supports short timeframes: M1 (1 minute - default), M5 (5 minutes), and M10 (10 minutes). Full Portuguese (Brazil) interface. Extended with advanced candle analysis engine: probability calculation for next candle direction (bullish/bearish %), practical action suggestions based on previous candle high/low breakouts, entry/stop-loss/target price examples, daily operation management (user selects 3/4/6/8 ops per day with progressive clock tracking and midnight reset), operation history with confirmation buttons (green=followed, red=not followed), and progress tracking display.",
   "architectural_notes": [
     "Mobile-first architecture for Android and iOS platforms",
@@ -19,7 +19,8 @@
     "User reports persistent error after image upload despite error handling improvements",
     "Permission error when saving Gemini API key: 'Sem permissão para salvar a chave da API' appears in Settings page",
     "HTTP 404 error on Gemini API calls: endpoint URL misconfigured (wrong API version, model name, or missing :generateContent suffix)",
-    "Analysis not working on screenshots: Gemini API prompt may be too complex, causing failures; user requests simplified basic next-candle analysis without UI changes"
+    "Analysis not working on screenshots: Gemini API prompt may be too complex, causing failures; user requests simplified basic next-candle analysis without UI changes",
+    "Gemini API returning 400 error 'API key expired' — user needs to renew key at Google AI Studio"
   ],
   "isFixRequest": true,
   "existing_features": [
@@ -839,6 +840,30 @@
       "id": "AR-54",
       "summary": "Fix analysis not working on screenshots: simplify Gemini API prompt to perform basic next-candle analysis without changing the app interface. Focus on predicting next candle direction based on visible chart data.",
       "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-55",
+      "summary": "Update frontend/src/config/apiConfig.ts to hardcode the correct Gemini Vision API endpoint URL: `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`. The `buildGeminiUrl(apiKey)` helper must append the API key as a query parameter (`?key=<apiKey>`). Remove any dynamic endpoint construction that could produce malformed URLs missing the API version, model name, or `:generateContent` suffix. Add inline comments documenting the required URL structure.",
+      "reqIds": [
+        "REQ-87"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-56",
+      "summary": "Update frontend/src/services/analysisApi.ts to ensure all Gemini API requests are sent using `fetch` with `method: 'POST'`, `Content-Type: application/json`, and a JSON-stringified body of the form `{ contents: [{ parts: [{ text: <prompt> }, { inlineData: { mimeType: <mimeType>, data: <base64Data> } }] }] }`. The image must be base64-encoded with the data URI prefix (e.g., `data:image/jpeg;base64,`) stripped before placement in `inlineData.data`. The `mimeType` field must reflect the actual file MIME type and must never be hardcoded to a fixed value. Remove any remaining multipart/form-data or FormData approach for the Gemini provider.",
+      "reqIds": [
+        "REQ-88"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-57",
+      "summary": "Update frontend/src/pages/ProcessingScreen.tsx error handling to explicitly detect HTTP 404 responses from the Gemini API and display a clear, actionable Portuguese error message: 'Endpoint da API não encontrado (404). Verifique se a URL e o modelo estão configurados corretamente nas Configurações.' Include a button labeled 'Ir para Configurações' that navigates the user to the Settings page.",
+      "reqIds": [
+        "REQ-89"
+      ],
       "status": "pending"
     }
   ],

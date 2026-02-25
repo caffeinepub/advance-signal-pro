@@ -1,59 +1,58 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix screenshot analysis: simplify Gemini prompt for basic next-candle prediction",
+  "title": "Fix Gemini API endpoint URL to resolve 404 error",
   "requirements": [
     {
-      "id": "REQ-84",
-      "summary": "Rewrite Gemini API prompt to be minimal and focused on next-candle prediction",
+      "id": "REQ-87",
+      "summary": "Hardcode correct Gemini Vision API endpoint URL in apiConfig.ts with proper query parameter construction",
       "acceptanceCriteria": [
-        "The prompt text in analysisApi.ts is under 200 words",
-        "The prompt explicitly requests a JSON-only response with no markdown or code fences",
-        "The prompt asks Gemini to identify the candlestick chart area within the full screenshot",
-        "The prompt asks for next-candle direction prediction based on the last 5 candles",
-        "The prompt requests exactly these fields: sinal, tendencia, confianca, padroes, explicacao",
-        "No complex multi-step scoring system or broker-specific detection logic is present in the prompt"
+        "apiConfig.ts hardcodes the base URL as `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`",
+        "The `buildGeminiUrl(apiKey)` function appends the API key as `?key=<apiKey>` query parameter",
+        "No dynamic construction can produce a URL missing `v1beta`, the model name, or `:generateContent`",
+        "Inline comments document the required URL structure for future maintainers"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/services/analysisApi.ts",
+          "path": "frontend/src/config/apiConfig.ts",
           "operation": "modify",
-          "description": "Replace the existing Gemini API prompt text with a new minimal, direct instruction (under 200 words) that: (1) tells Gemini to locate the candlestick chart area in the image and ignore other screen elements; (2) instructs Gemini to examine the last 5 visible candles and overall trend; (3) asks for a prediction of whether the NEXT candle is likely bullish or bearish; (4) explicitly requests a raw JSON response containing only these fields: sinal ('COMPRA'/'VENDA'/'SEM ENTRADA'), tendencia ('ALTA'/'BAIXA'/'LATERAL'), confianca (0-100 number), padroes (array of max 3 short Portuguese pattern names), explicacao (one Portuguese sentence explaining the prediction); (5) explicitly states that Gemini must return raw JSON only with no markdown code blocks or extra text. Remove any references to broker detection, complex scoring systems, or multi-step analysis workflows from the prompt."
+          "description": "Replace any dynamic endpoint construction with the hardcoded base URL `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`. Ensure the `buildGeminiUrl(apiKey)` function appends the API key as a query parameter in the format `?key=<apiKey>`. Add inline comments explaining the required URL structure: the base must include `/v1beta/` (not `/v1/`), the model name `gemini-1.5-flash`, and the `:generateContent` suffix. Remove any code that could generate malformed URLs missing these components."
         }
       ]
     },
     {
-      "id": "REQ-85",
-      "summary": "Update Gemini API response parsing to robustly extract JSON from wrapped or mixed responses",
+      "id": "REQ-88",
+      "summary": "Update analysisApi.ts to use POST with JSON body containing base64-encoded image in Gemini API format",
       "acceptanceCriteria": [
-        "Parser strips markdown code fences (```json and ```) before attempting JSON.parse",
-        "Parser falls back to extracting the first { } block if direct parse fails",
-        "Raw Gemini response text is logged to the browser console on every request",
-        "An AnalysisApiError with Portuguese message is thrown when JSON cannot be extracted",
-        "Valid JSON responses parse correctly without modification"
+        "Requests to Gemini use `fetch` with `method: 'POST'` and `Content-Type: application/json`",
+        "Request body is JSON-stringified with the `contents[].parts[]` structure containing both the text prompt and the inlineData object",
+        "Base64 data URI prefix is stripped before the value is placed in `inlineData.data`",
+        "The `mimeType` field is set dynamically from the actual file MIME type",
+        "No FormData or multipart/form-data code paths remain for the Gemini provider",
+        "A successful image upload no longer returns a 404 error"
       ],
       "file_operations": [
         {
           "path": "frontend/src/services/analysisApi.ts",
           "operation": "modify",
-          "description": "Update the Gemini API response parsing logic in the analyzeChartImage function to: (1) log the raw response text to the browser console for debugging on every request; (2) strip markdown code fence wrappers (```json ... ``` or ``` ... ```) from the response text before attempting JSON.parse; (3) if direct JSON.parse fails, attempt to extract the first { ... } block from the response text using a regex pattern and parse that; (4) throw an AnalysisApiError with the Portuguese message 'Resposta inválida da IA — tente novamente' if no valid JSON can be extracted after all fallback attempts; (5) ensure that valid JSON responses continue to parse correctly without modification or data loss."
+          "description": "Rewrite the Gemini API request logic to use `fetch` with `method: 'POST'`, `Content-Type: application/json`, and a JSON-stringified body structured as `{ contents: [{ parts: [{ text: <prompt> }, { inlineData: { mimeType: <mimeType>, data: <base64Data> } }] }] }`. Before placing the image data in `inlineData.data`, strip any data URI prefix (e.g., `data:image/jpeg;base64,`) to obtain raw base64. Set the `mimeType` field dynamically from the actual file MIME type (e.g., `image/jpeg`, `image/png`, `image/webp`). Remove all FormData or multipart/form-data code paths for the Gemini provider. Ensure the preprocessed image is converted to base64 and embedded in the JSON payload."
         }
       ]
     },
     {
-      "id": "REQ-86",
-      "summary": "Ensure base64 image data is sent without data URI prefix and with correct MIME type",
+      "id": "REQ-89",
+      "summary": "Add explicit 404 error detection and Portuguese error message with navigation to Settings in ProcessingScreen.tsx",
       "acceptanceCriteria": [
-        "The data URI prefix 'data:[mimetype];base64,' is stripped before placing base64 data in inlineData.data",
-        "The mimeType value reflects the actual uploaded file's type",
-        "The base64 string sent to Gemini is raw (no prefix)",
-        "A console.log confirms the mimeType and base64 length before the fetch call"
+        "When a 404 HTTP error is returned from Gemini, the processing animation stops",
+        "The error message 'Endpoint da API não encontrado (404). Verifique se a URL e o modelo estão configurados corretamente nas Configurações.' is displayed in Portuguese",
+        "A button labeled 'Ir para Configurações' is shown that navigates to the Settings page",
+        "Other error types (400, 403, 500) continue to display their existing error messages"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/services/analysisApi.ts",
+          "path": "frontend/src/pages/ProcessingScreen.tsx",
           "operation": "modify",
-          "description": "Update the image-to-base64 conversion and Gemini API request payload construction to: (1) after converting the file to a base64 data URI, strip the 'data:[mimetype];base64,' prefix from the string before placing it in the inlineData.data field; (2) extract the actual file MIME type (e.g., 'image/jpeg', 'image/png', 'image/webp') from the file object and set it in the mimeType field (never hardcode a fixed value); (3) add a console.log statement before the fetch call that outputs the mimeType and the length of the raw base64 string to confirm the correct format; (4) ensure the Gemini Vision API receives raw base64 data in inlineData.data without any data URI prefix."
+          "description": "Add error handling logic that explicitly detects HTTP 404 responses from the Gemini API. When a 404 is caught, stop the processing animation and display a clear Portuguese error message: 'Endpoint da API não encontrado (404). Verifique se a URL e o modelo estão configurados corretamente nas Configurações.' Include a button labeled 'Ir para Configurações' that uses TanStack Router navigation to redirect the user to the Settings page. Ensure other HTTP error codes (400, 403, 500, etc.) continue to display their existing error messages without modification."
         }
       ]
     }
