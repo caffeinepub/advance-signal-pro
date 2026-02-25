@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { AlertCircle, RefreshCw, Settings } from 'lucide-react';
+import { AlertCircle, RefreshCw, Settings, ImageOff } from 'lucide-react';
 import ProcessingStage from '../components/ProcessingStage';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -14,8 +14,8 @@ import { validateApiKey } from '../config/apiConfig';
 
 const stages = [
   { id: 1, label: 'Carregando imagem', duration: 800 },
-  { id: 2, label: 'Processando dados', duration: 1200 },
-  { id: 3, label: 'Detectando padrões', duration: 1500 },
+  { id: 2, label: 'Isolando área do gráfico', duration: 1200 },
+  { id: 3, label: 'Detectando padrões de Price Action', duration: 1500 },
   { id: 4, label: 'Gerando resultado', duration: 800 },
 ];
 
@@ -29,10 +29,10 @@ export default function ProcessingScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [apiKeyError, setApiKeyError] = useState(false);
   const [is404Error, setIs404Error] = useState(false);
+  const [isChartDetectionError, setIsChartDetectionError] = useState(false);
   const analyzeChart = useAnalyzeChart();
 
   useEffect(() => {
-    // Load image from session storage
     const imageData = sessionStorage.getItem('chartImage');
     const imageSource = sessionStorage.getItem('imageSource') || 'unknown';
 
@@ -42,7 +42,6 @@ export default function ProcessingScreen() {
       return;
     }
 
-    // Convert base64 to blob
     fetch(imageData)
       .then((res) => res.blob())
       .then((blob) => {
@@ -66,8 +65,6 @@ export default function ProcessingScreen() {
 
   useEffect(() => {
     if (!imageBlob || !imageFile || isProcessing || !actor) return;
-
-    // Validate API key before starting analysis
     validateApiKeyAndStart();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imageBlob, imageFile, actor]);
@@ -76,28 +73,24 @@ export default function ProcessingScreen() {
     if (!actor) return;
 
     try {
-      console.log('[API Key] Validating API key configuration...');
       const validation = await validateApiKey(actor);
 
       if (!validation.isValid) {
-        const timestamp = new Date().toISOString();
-        console.error(`[${timestamp}] API Key validation failed:`, validation.errorMessage);
         setError(validation.errorMessage || 'CHAVE DE API NÃO CONFIGURADA');
         setApiKeyError(true);
         setIs404Error(false);
+        setIsChartDetectionError(false);
         return;
       }
 
-      console.log('[API Key] Validation successful, starting analysis...');
       startAnalysis();
     } catch (err: unknown) {
-      const timestamp = new Date().toISOString();
-      console.error(`[${timestamp}] API Key validation error:`, err);
       const message = err instanceof Error ? err.message : String(err);
-      console.error(`[${timestamp}] Error message:`, message);
+      console.error('[API Key] Validation error:', message);
       setError('Erro ao validar chave da API');
       setApiKeyError(true);
       setIs404Error(false);
+      setIsChartDetectionError(false);
     }
   };
 
@@ -108,8 +101,8 @@ export default function ProcessingScreen() {
     setError(null);
     setApiKeyError(false);
     setIs404Error(false);
+    setIsChartDetectionError(false);
 
-    // Start stage animation
     let stageIndex = 0;
     const stageInterval = setInterval(() => {
       if (stageIndex < stages.length) {
@@ -119,35 +112,32 @@ export default function ProcessingScreen() {
     }, 1000);
 
     try {
-      // Get API key from backend
       const apiKey = await actor.getGeminiApiKey();
-      const timestamp = new Date().toISOString();
-      console.log(`[${timestamp}] API key retrieved from backend`);
-      console.log(`[${timestamp}] API key present:`, !!apiKey);
-      console.log(
-        `[${timestamp}] API key format:`,
-        apiKey ? `${apiKey.substring(0, 4)}...` : 'null'
-      );
-
-      // Call external API for analysis
-      console.log(`[${timestamp}] Starting chart analysis...`);
-      console.log(`[${timestamp}] Image details:`, {
-        size: `${(imageFile.size / 1024).toFixed(2)}KB`,
-        type: imageFile.type,
-      });
 
       const apiResponse = await analyzeChartImage(imageFile, apiKey, (progress) => {
-        console.log(`[${timestamp}] Upload progress: ${progress}%`);
+        console.log(`[Analysis] Upload progress: ${progress}%`);
       });
 
-      console.log(`[${timestamp}] Analysis complete:`, apiResponse);
-
-      // Clear stage animation
       clearInterval(stageInterval);
       setCurrentStage(stages.length);
 
-      // Map API response to internal format
+      // Check if the AI returned a chart detection error
+      if (apiResponse.erro) {
+        setError(apiResponse.erro);
+        setIsChartDetectionError(true);
+        setIsProcessing(false);
+        return;
+      }
+
       const analysisResult = mapApiResponseToAnalysisResult(apiResponse, imageBlob);
+
+      // If the mapped result is a chart detection error, handle it
+      if (analysisResult.isChartDetectionError) {
+        setError(analysisResult.erroMessage || 'Não foi possível identificar o gráfico corretamente');
+        setIsChartDetectionError(true);
+        setIsProcessing(false);
+        return;
+      }
 
       // Store analysis in backend
       await analyzeChart.mutateAsync(analysisResult);
@@ -155,10 +145,8 @@ export default function ProcessingScreen() {
       // Store analysis in session storage for Results page
       sessionStorage.setItem('latestAnalysis', JSON.stringify(analysisResult));
 
-      // Generate a simple ID for the route (timestamp)
       const analysisId = Date.now().toString();
 
-      // Navigate to results with the analysis ID
       navigate({
         to: '/results/$id',
         params: { id: analysisId },
@@ -166,28 +154,7 @@ export default function ProcessingScreen() {
     } catch (err: unknown) {
       clearInterval(stageInterval);
 
-      const timestamp = new Date().toISOString();
-      console.error(`[${timestamp}] ========== ANALYSIS ERROR ==========`);
-      console.error(`[${timestamp}] Error object:`, err);
-      const errMessage = err instanceof Error ? err.message : String(err);
-      console.error(`[${timestamp}] Error message:`, errMessage);
-
-      if (err instanceof Error && err.stack) {
-        console.error(`[${timestamp}] Stack trace:`, err.stack);
-      }
-
-      if (err instanceof AnalysisApiError) {
-        console.error(`[${timestamp}] API Error code:`, err.code);
-        console.error(`[${timestamp}] API Error status:`, err.statusCode);
-      }
-
-      console.error(`[${timestamp}] Current processing stage:`, currentStage);
-      console.error(`[${timestamp}] Image file details:`, {
-        size: imageFile ? `${(imageFile.size / 1024).toFixed(2)}KB` : 'null',
-        type: imageFile?.type || 'null',
-      });
-
-      console.error(`[${timestamp}] ====================================`);
+      console.error('[Analysis] Error:', err);
 
       let errorMessage = 'Erro ao analisar o gráfico';
       let isApiKeyIssue = false;
@@ -196,24 +163,19 @@ export default function ProcessingScreen() {
       if (err instanceof AnalysisApiError) {
         switch (err.code) {
           case 'API_KEY_MISSING':
-            errorMessage =
-              'CHAVE DE API NÃO CONFIGURADA - Configure a chave da API nas configurações';
+            errorMessage = 'CHAVE DE API NÃO CONFIGURADA - Configure a chave da API nas configurações';
             isApiKeyIssue = true;
             break;
           case 'API_AUTH_ERROR':
-            errorMessage =
-              'Erro de autenticação da API. Verifique sua chave de API nas configurações';
+            errorMessage = 'Erro de autenticação da API. Verifique sua chave de API nas configurações';
             isApiKeyIssue = true;
             break;
           case 'INVALID_API_KEY':
-            errorMessage =
-              'Chave de API inválida. Configure uma chave válida nas configurações';
+            errorMessage = 'Chave de API inválida. Configure uma chave válida nas configurações';
             isApiKeyIssue = true;
             break;
           case 'ENDPOINT_NOT_FOUND':
-            // HTTP 404: endpoint not found — show actionable Portuguese message
-            errorMessage =
-              'Endpoint da API não encontrado (404). Verifique se a URL e o modelo estão configurados corretamente nas Configurações.';
+            errorMessage = 'Endpoint da API não encontrado (404). Verifique se a URL e o modelo estão configurados corretamente nas Configurações.';
             is404 = true;
             break;
           case 'INVALID_ENDPOINT':
@@ -221,8 +183,7 @@ export default function ProcessingScreen() {
             is404 = true;
             break;
           case 'HEIC_NOT_SUPPORTED':
-            errorMessage =
-              'Arquivos HEIC não são suportados. Por favor, use a câmera ou converta para JPEG';
+            errorMessage = 'Arquivos HEIC não são suportados. Por favor, use a câmera ou converta para JPEG';
             break;
           case 'RATE_LIMIT':
             errorMessage = 'Limite de requisições excedido. Tente novamente mais tarde';
@@ -253,9 +214,9 @@ export default function ProcessingScreen() {
     setError(null);
     setApiKeyError(false);
     setIs404Error(false);
+    setIsChartDetectionError(false);
     setCurrentStage(0);
     if (apiKeyError || is404Error) {
-      // Re-validate API key before retrying
       validateApiKeyAndStart();
     } else {
       startAnalysis();
@@ -276,15 +237,35 @@ export default function ProcessingScreen() {
         {error ? (
           <div className="text-center space-y-6">
             <div className="flex justify-center">
-              <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center">
-                <AlertCircle className="w-8 h-8 text-destructive" />
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
+                isChartDetectionError
+                  ? 'bg-orange-100 dark:bg-orange-950/30'
+                  : 'bg-destructive/10'
+              }`}>
+                {isChartDetectionError
+                  ? <ImageOff className="w-8 h-8 text-orange-500 dark:text-orange-400" />
+                  : <AlertCircle className="w-8 h-8 text-destructive" />
+                }
               </div>
             </div>
             <div>
               <h2 className="text-2xl font-bold mb-2">
-                {apiKeyError || is404Error ? 'Configuração Necessária' : 'Erro na Análise'}
+                {isChartDetectionError
+                  ? 'Gráfico Não Identificado'
+                  : apiKeyError || is404Error
+                  ? 'Configuração Necessária'
+                  : 'Erro na Análise'}
               </h2>
               <p className="text-muted-foreground whitespace-pre-line">{error}</p>
+
+              {isChartDetectionError && (
+                <div className="mt-4 p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg text-left text-sm">
+                  <p className="text-orange-800 dark:text-orange-200 text-xs leading-relaxed">
+                    Certifique-se de que o print contém um gráfico de candles visível. Evite imagens com apenas menus ou textos.
+                  </p>
+                </div>
+              )}
+
               {is404Error && (
                 <div className="mt-4 p-4 bg-muted rounded-lg text-left text-sm">
                   <p className="font-semibold mb-2">Endpoint correto da API Gemini:</p>
@@ -298,7 +279,17 @@ export default function ProcessingScreen() {
               )}
             </div>
             <div className="flex flex-col gap-3">
-              {apiKeyError || is404Error ? (
+              {isChartDetectionError ? (
+                <>
+                  <Button className="w-full gap-2" onClick={handleBack}>
+                    <RefreshCw className="w-4 h-4" />
+                    Tentar novamente
+                  </Button>
+                  <Button variant="outline" className="w-full" onClick={() => navigate({ to: '/' })}>
+                    Voltar ao início
+                  </Button>
+                </>
+              ) : apiKeyError || is404Error ? (
                 <>
                   <Button className="w-full gap-2" onClick={handleGoToSettings}>
                     <Settings className="w-4 h-4" />

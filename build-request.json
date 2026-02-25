@@ -1,83 +1,81 @@
 {
   "kind": "build_request",
-  "title": "Fix Gemini API 404 Error - Correct Endpoint URL and Request Format",
+  "title": "Fix screenshot analysis: simplify Gemini prompt for basic next-candle prediction",
   "projectName": "Advance Signal Pro",
   "priority": "high",
   "requirements": [
     {
-      "id": "REQ-74",
-      "text": "Update frontend/src/config/apiConfig.ts to hardcode the correct Gemini Vision API endpoint URL: `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`. The `buildGeminiUrl(apiKey)` helper must append the API key as a query parameter (`?key=<apiKey>`). Remove any dynamic endpoint construction that could produce malformed URLs missing the API version, model name, or `:generateContent` suffix. Add inline comments documenting the required URL structure.",
+      "id": "REQ-84",
+      "text": "Rewrite the Gemini API prompt in frontend/src/services/analysisApi.ts to be a minimal, direct instruction focused solely on predicting the next candle direction. The new prompt must: (1) tell Gemini to look at the image and find the candlestick chart area, ignoring everything else on the screen; (2) examine the last 5 visible candles and the overall trend; (3) predict whether the NEXT candle is more likely to be bullish or bearish; (4) return ONLY a valid JSON object with these fields: sinal ('COMPRA' if next candle likely bullish, 'VENDA' if likely bearish, 'SEM ENTRADA' if unclear), tendencia ('ALTA'/'BAIXA'/'LATERAL'), confianca (number 0-100), padroes (array of short Portuguese pattern name strings, max 3 items), explicacao (one sentence in Portuguese explaining the prediction). The prompt must be short (under 200 words), use plain language, and explicitly state that Gemini must respond with raw JSON only — no markdown, no code blocks, no extra text.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-1"
         ],
         "quotes": [
-          "Erro 404: Endpoint não encontrado. Verifique a configuração da API Gemini nas configurações.",
-          "URL do endpoint incorreta",
-          "Falta versão da API (/v1beta/ ou /v1/)",
-          "Nome do modelo incorreto",
-          "Falta :generateContent no final"
+          "nao esta analisando print, tenda fazer analise basica, para proxima vela, sem mudar interface do aplicativo"
         ]
       },
       "acceptanceCriteria": [
-        "The Gemini endpoint URL in apiConfig.ts is exactly `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`.",
-        "The `buildGeminiUrl` function appends `?key=<apiKey>` to the base URL.",
-        "No dynamic segment construction that could omit `/v1beta/`, the model name, or `:generateContent`.",
-        "Inline comments document each required URL component (base host, API version, model name, method suffix, key query param)."
+        "The prompt text in analysisApi.ts is under 200 words",
+        "The prompt explicitly requests a JSON-only response with no markdown or code fences",
+        "The prompt asks Gemini to identify the candlestick chart area within the full screenshot",
+        "The prompt asks for next-candle direction prediction based on the last 5 candles",
+        "The prompt requests exactly these fields: sinal, tendencia, confianca, padroes, explicacao",
+        "No complex multi-step scoring system or broker-specific detection logic is present in the prompt"
       ]
     },
     {
-      "id": "REQ-75",
-      "text": "Update frontend/src/services/analysisApi.ts to send Gemini API requests using the correct JSON body format. The request must use `fetch` with `method: 'POST'`, `Content-Type: application/json`, and a JSON-stringified body of the form `{ contents: [{ parts: [{ text: <prompt> }, { inlineData: { mimeType: <mimeType>, data: <base64Data> } }] }] }`. Remove any remaining multipart/form-data or FormData approach for the Gemini provider. The image must be base64-encoded before being placed in the `inlineData.data` field.",
+      "id": "REQ-85",
+      "text": "Update the Gemini API response parsing logic in frontend/src/services/analysisApi.ts to robustly extract JSON from the Gemini response text. Gemini sometimes wraps JSON in markdown code fences (```json ... ```) or adds surrounding text. The parser must: strip any markdown code fence wrappers before JSON.parse; attempt to extract the first {...} block from the response text if direct parsing fails; log the raw response text to the console for debugging; throw a descriptive AnalysisApiError with Portuguese message 'Resposta inválida da IA — tente novamente' if no valid JSON can be extracted.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-1"
         ],
         "quotes": [
-          "Erro 404: Endpoint não encontrado.",
-          "URL do endpoint incorreta",
-          "Falta :generateContent no final"
+          "nao esta analisando print"
         ]
       },
       "acceptanceCriteria": [
-        "Requests to Gemini use `fetch` with `Content-Type: application/json` and a JSON body — no FormData.",
-        "The request body contains a `contents[0].parts` array with a text part (prompt) and an `inlineData` part (mimeType + base64 data).",
-        "The base64-encoded image data is correctly extracted from the File/Blob before sending.",
-        "A successful POST to the correct endpoint returns a 200 response with Gemini analysis output."
+        "Parser strips markdown code fences (```json and ```) before attempting JSON.parse",
+        "Parser falls back to extracting the first { } block if direct parse fails",
+        "Raw Gemini response text is logged to the browser console on every request",
+        "An AnalysisApiError with Portuguese message is thrown when JSON cannot be extracted",
+        "Valid JSON responses parse correctly without modification"
       ]
     },
     {
-      "id": "REQ-76",
-      "text": "Update frontend/src/pages/ProcessingScreen.tsx error handling to explicitly detect HTTP 404 responses from the Gemini API and display a clear, actionable Portuguese error message: 'Endpoint da API não encontrado (404). Verifique se a URL e o modelo estão configurados corretamente nas Configurações.' Include a button labeled 'Ir para Configurações' that navigates the user to the Settings page.",
+      "id": "REQ-86",
+      "text": "Update the image-to-base64 conversion step in frontend/src/services/analysisApi.ts to ensure the image is always sent as a clean base64 string. Remove the base64 data URI prefix (e.g., 'data:image/jpeg;base64,') before placing the value in the inlineData.data field — Gemini Vision API requires raw base64 data without the data URI prefix. Also ensure the mimeType field is correctly set to the actual file MIME type (e.g., 'image/jpeg', 'image/png', 'image/webp') and never hardcoded to a fixed value.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-1"
         ],
         "quotes": [
-          "Erro 404: Endpoint não encontrado. Verifique a configuração da API Gemini nas configurações."
+          "nao esta analisando print"
         ]
       },
       "acceptanceCriteria": [
-        "When a 404 HTTP error is returned by the Gemini API, the ProcessingScreen displays the Portuguese 404-specific error message.",
-        "An 'Ir para Configurações' button is rendered below the error message.",
-        "Clicking 'Ir para Configurações' navigates to the Settings page.",
-        "Other non-404 HTTP errors still display their existing error messages."
+        "The data URI prefix 'data:[mimetype];base64,' is stripped before placing base64 data in inlineData.data",
+        "The mimeType value reflects the actual uploaded file's type",
+        "The base64 string sent to Gemini is raw (no prefix)",
+        "A console.log confirms the mimeType and base64 length before the fetch call"
       ]
     }
   ],
   "constraints": [
-    "Do not change backend/main.mo as part of this fix.",
-    "Do not modify any file listed under frontend.immutablePaths.",
-    "The Gemini endpoint URL must remain `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent` with `?key=<apiKey>` query parameter."
+    "Do not change any UI components, page layouts, or visual design",
+    "Do not modify backend/main.mo",
+    "Do not alter any immutable frontend paths",
+    "Changes are limited to frontend/src/services/analysisApi.ts only"
   ],
   "nonGoals": [
-    "Changing the Gemini model to a version other than gemini-1.5-flash.",
-    "Adding new settings fields or backend mutations.",
-    "Modifying the analysis prompt content.",
-    "Changing authentication or Internet Identity logic."
+    "Changing the app interface or visual design in any way",
+    "Adding new UI sections or result fields",
+    "Modifying backend data models or storage",
+    "Changing the Settings, Results, History, or ProcessingScreen pages"
   ],
   "imageRequirements": {
     "required": [],

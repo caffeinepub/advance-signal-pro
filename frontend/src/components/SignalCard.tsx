@@ -9,6 +9,8 @@ interface SignalCardProps {
   trendStrength: number;
   sinalOriginal?: string;
   pontuacao?: number;
+  /** Signal/trend strength from price action analysis */
+  forca?: 'fraca' | 'média' | 'forte';
 }
 
 export default function SignalCard({
@@ -17,11 +19,12 @@ export default function SignalCard({
   trendStrength,
   sinalOriginal,
   pontuacao,
+  forca,
 }: SignalCardProps) {
   const isBullish = direction === AnalysisDirection.bullish;
   const isBearish = direction === AnalysisDirection.bearish;
   const isSideways = direction === AnalysisDirection.sideways;
-  
+
   // Check if this is a SEM ENTRADA signal
   const isSemEntrada = sinalOriginal === 'SEM ENTRADA';
   const isNeutro = sinalOriginal === 'NEUTRO';
@@ -48,7 +51,7 @@ export default function SignalCard({
     : isBearish
     ? 'text-destructive'
     : 'text-muted-foreground';
-    
+
   const bgColor = isSemEntrada
     ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800'
     : isNeutro
@@ -58,6 +61,17 @@ export default function SignalCard({
     : isBearish
     ? 'bg-destructive/10 border-destructive/20'
     : 'bg-muted border-border';
+
+  // Força badge styling
+  const forcaBadgeClass =
+    forca === 'forte'
+      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700 font-bold'
+      : forca === 'média'
+      ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border-amber-200 dark:border-amber-700'
+      : 'bg-muted text-muted-foreground border-border';
+
+  const forcaLabel =
+    forca === 'forte' ? 'Forte' : forca === 'média' ? 'Média' : forca === 'fraca' ? 'Fraca' : '';
 
   return (
     <Card className={`p-6 mb-6 border-2 ${bgColor}`}>
@@ -81,12 +95,12 @@ export default function SignalCard({
           <p className="text-3xl font-bold">{confidence}%</p>
         </div>
       </div>
-      
+
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-muted-foreground mb-1">Direção da Tendência</p>
           <Badge variant="secondary" className="capitalize">
-            {direction === AnalysisDirection.bullish ? 'ALTA' : 
+            {direction === AnalysisDirection.bullish ? 'ALTA' :
              direction === AnalysisDirection.bearish ? 'BAIXA' : 'LATERAL'}
           </Badge>
         </div>
@@ -95,7 +109,21 @@ export default function SignalCard({
           <Badge variant="outline">{trendStrength}%</Badge>
         </div>
       </div>
-      
+
+      {/* Força badge — only rendered when forca field is present */}
+      {forca && (
+        <div className="mt-4 pt-4 border-t border-border">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">Força:</p>
+            <span
+              className={`inline-flex items-center px-3 py-1 rounded-full text-sm border ${forcaBadgeClass}`}
+            >
+              {forcaLabel}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Display score if available */}
       {pontuacao !== undefined && (
         <div className="mt-4 pt-4 border-t border-border">

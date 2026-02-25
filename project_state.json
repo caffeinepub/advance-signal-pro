@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 29,
+  "projectStateVersion": 33,
   "summary": "Advance Signal Pro: Mobile app (Android/iOS) for automated financial chart analysis using Google Gemini Vision API, focused on basic chart analysis: support/resistance levels, candlestick patterns of the last candle, and trend identification (bullish/bearish/sideways). Accepts mobile screenshots showing the full phone screen and analyzes only the chart portion. Optimized for Pocket Option charts and binary options trading with fast scalping analysis (<3s). Features dark/light themes, professional trading interface, chart upload (camera/gallery/clipboard/drag-drop), and displays AI-powered results (buy/sell signals with confidence levels, trend analysis, detected patterns, and explanations) received from Gemini API. Analysis history and customizable settings included. Exclusively supports short timeframes: M1 (1 minute - default), M5 (5 minutes), and M10 (10 minutes). Full Portuguese (Brazil) interface. Extended with advanced candle analysis engine: probability calculation for next candle direction (bullish/bearish %), practical action suggestions based on previous candle high/low breakouts, entry/stop-loss/target price examples, daily operation management (user selects 3/4/6/8 ops per day with progressive clock tracking and midnight reset), operation history with confirmation buttons (green=followed, red=not followed), and progress tracking display.",
   "architectural_notes": [
     "Mobile-first architecture for Android and iOS platforms",
@@ -18,7 +18,8 @@
     "Error occurs after image upload completes loading but before analysis result returns",
     "User reports persistent error after image upload despite error handling improvements",
     "Permission error when saving Gemini API key: 'Sem permissão para salvar a chave da API' appears in Settings page",
-    "HTTP 404 error on Gemini API calls: endpoint URL misconfigured (wrong API version, model name, or missing :generateContent suffix)"
+    "HTTP 404 error on Gemini API calls: endpoint URL misconfigured (wrong API version, model name, or missing :generateContent suffix)",
+    "Analysis not working on screenshots: Gemini API prompt may be too complex, causing failures; user requests simplified basic next-candle analysis without UI changes"
   ],
   "isFixRequest": true,
   "existing_features": [
@@ -509,6 +510,86 @@
         "REQ-76"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-update-the-gemini-api-prompt-in-frontend-src-services-analysisapi-ts-to-instruct-the-ai-to-1-automatically-detect-and-isolate-only-the-candlestick-chart-region-within-the-uploaded-screenshot-ignoring-all-broker-ui-elements-menus-buttons-balance-display-sidebar-header-footer-comprar-vender-buttons-icons-logos-price-labels-text-overlays-2-perform-image-preprocessing-mentally-increase-contrast-binarize-to-highlight-only-green-red-candle-bodies-and-wicks-isolate-candles-moving-average-lines-and-time-axis-3-analyze-only-using-price-action-rules-tops-bottoms-support-resistance-engulfing-hammer-doji-breakout-pullback-and-trend-strength-4-strictly-prohibit-using-any-text-numbers-or-values-visible-in-the-broker-interface-to-derive-signals-5-if-the-candlestick-chart-area-cannot-be-isolated-return-a-json-response-with-a-single-field-erro-set-to-n-o-foi-poss-vel-identificar-o-gr-fico-corretamente-6-otherwise-return-json-with-fields-sinal-compra-venda-sem-entrada-tendencia-alta-baixa-lateral-forca-fraca-m-dia-forte-confianca-0-100-padroes-array-of-detected-pattern-strings-in-portuguese-and-explicacao-brief-portuguese-explanation-based-only-on-candle-patterns",
+      "title": "Update the Gemini API prompt in frontend/src/services/analysisApi.ts to instruct the AI to: (1) automatically detect and isolate only the candlestick chart region within the uploaded screenshot, ignoring all broker UI elements (menus, buttons, balance display, sidebar, header, footer, COMPRAR/VENDER buttons, icons, logos, price labels, text overlays); (2) perform image preprocessing mentally: increase contrast, binarize to highlight only green/red candle bodies and wicks, isolate candles, moving average lines, and time axis; (3) analyze only using price action rules — tops/bottoms, support/resistance, engulfing, hammer, doji, breakout, pullback, and trend strength; (4) strictly prohibit using any text, numbers, or values visible in the broker interface to derive signals; (5) if the candlestick chart area cannot be isolated, return a JSON response with a single field 'erro' set to 'Não foi possível identificar o gráfico corretamente'; (6) otherwise return JSON with fields: sinal ('COMPRA'/'VENDA'/'SEM ENTRADA'), tendencia ('ALTA'/'BAIXA'/'LATERAL'), forca ('fraca'/'média'/'forte'), confianca (0–100), padroes (array of detected pattern strings in Portuguese), and explicacao (brief Portuguese explanation based only on candle patterns).",
+      "reqIds": [
+        "REQ-77"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-typescript-interface-apianalysisresponse-in-frontend-src-types-apitypes-ts-to-add-an-optional-forca-field-string-fraca-m-dia-forte-representing-trend-signal-strength-and-an-optional-erro-field-string-for-when-the-chart-cannot-be-isolated-add-jsdoc-comments-explaining-that-forca-comes-from-price-action-analysis-and-erro-is-returned-when-the-chart-region-cannot-be-detected",
+      "title": "Update the TypeScript interface ApiAnalysisResponse in frontend/src/types/apiTypes.ts to add an optional 'forca' field (string: 'fraca' | 'média' | 'forte') representing trend/signal strength, and an optional 'erro' field (string) for when the chart cannot be isolated. Add JSDoc comments explaining that 'forca' comes from price action analysis and 'erro' is returned when the chart region cannot be detected.",
+      "reqIds": [
+        "REQ-78"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-utils-mapapiresponse-ts-to-handle-the-new-forca-field-from-the-api-response-mapping-it-to-the-internal-analysisresult-format-if-the-api-response-contains-an-erro-field-the-mapping-function-should-return-a-special-error-result-that-downstream-components-can-detect-and-display-the-portuguese-error-message-n-o-foi-poss-vel-identificar-o-gr-fico-corretamente",
+      "title": "Update frontend/src/utils/mapApiResponse.ts to handle the new 'forca' field from the API response, mapping it to the internal AnalysisResult format. If the API response contains an 'erro' field, the mapping function should return a special error result that downstream components can detect and display the Portuguese error message 'Não foi possível identificar o gráfico corretamente'.",
+      "reqIds": [
+        "REQ-79"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-components-signalcard-tsx-to-display-the-for-a-trend-signal-strength-field-with-values-fraca-m-dia-or-forte-using-distinct-visual-indicators-fraca-gray-dim-badge-m-dia-yellow-amber-badge-forte-green-bold-badge-add-a-for-a-label-in-portuguese-next-to-the-badge-only-render-the-strength-badge-when-the-forca-field-is-present-in-the-analysis-result",
+      "title": "Update frontend/src/components/SignalCard.tsx to display the 'Força' (trend/signal strength) field with values 'Fraca', 'Média', or 'Forte' using distinct visual indicators: fraca = gray/dim badge, média = yellow/amber badge, forte = green/bold badge. Add a 'Força:' label in Portuguese next to the badge. Only render the strength badge when the forca field is present in the analysis result.",
+      "reqIds": [
+        "REQ-80"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-pages-processingscreen-tsx-to-handle-the-error-case-where-the-gemini-api-returns-an-erro-field-chart-not-identifiable-when-this-occurs-stop-the-processing-animation-and-display-the-portuguese-error-message-n-o-foi-poss-vel-identificar-o-gr-fico-corretamente-with-a-button-labeled-tentar-novamente-that-navigates-back-to-the-analyzechart-page",
+      "title": "Update frontend/src/pages/ProcessingScreen.tsx to handle the error case where the Gemini API returns an 'erro' field (chart not identifiable). When this occurs, stop the processing animation and display the Portuguese error message 'Não foi possível identificar o gráfico corretamente' with a button labeled 'Tentar novamente' that navigates back to the AnalyzeChart page.",
+      "reqIds": [
+        "REQ-81"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-pages-results-tsx-to-display-the-original-uploaded-screenshot-as-a-small-thumbnail-positioned-in-the-bottom-corner-of-the-results-layout-the-thumbnail-should-be-a-compact-image-approximately-80x60px-or-similar-small-size-showing-the-original-screenshot-the-user-submitted-for-analysis-retrieve-the-image-from-sessionstorage-where-it-was-stored-during-upload-style-it-with-a-subtle-border-and-rounded-corners-consistent-with-the-dark-light-theme",
+      "title": "Update frontend/src/pages/Results.tsx to display the original uploaded screenshot as a small thumbnail positioned in the bottom corner of the results layout. The thumbnail should be a compact image (approximately 80x60px or similar small size) showing the original screenshot the user submitted for analysis. Retrieve the image from sessionStorage where it was stored during upload. Style it with a subtle border and rounded corners consistent with the dark/light theme.",
+      "reqIds": [
+        "REQ-82"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-pages-results-tsx-to-display-the-output-fields-in-the-following-order-with-portuguese-labels-1-tend-ncia-alta-baixa-lateral-2-padr-es-encontrados-list-of-detected-patterns-3-for-a-fraca-m-dia-forte-4-confian-a-percentage-5-sinal-compra-venda-sem-entrada-ensure-this-output-order-is-consistent-and-all-labels-are-in-portuguese-brazil-if-the-api-returned-an-erro-response-instead-of-valid-analysis-data-display-the-portuguese-error-message-prominently-instead-of-the-results",
+      "title": "Update frontend/src/pages/Results.tsx to display the output fields in the following order with Portuguese labels: (1) 'Tendência' (ALTA/BAIXA/LATERAL), (2) 'Padrões encontrados' (list of detected patterns), (3) 'Força' (fraca/média/forte), (4) 'Confiança' percentage, (5) 'Sinal' (COMPRA/VENDA/SEM ENTRADA). Ensure this output order is consistent and all labels are in Portuguese (Brazil). If the API returned an 'erro' response instead of valid analysis data, display the Portuguese error message prominently instead of the results.",
+      "reqIds": [
+        "REQ-83"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-rewrite-the-gemini-api-prompt-in-frontend-src-services-analysisapi-ts-to-be-a-minimal-direct-instruction-focused-solely-on-predicting-the-next-candle-direction-the-new-prompt-must-1-tell-gemini-to-look-at-the-image-and-find-the-candlestick-chart-area-ignoring-everything-else-on-the-screen-2-examine-the-last-5-visible-candles-and-the-overall-trend-3-predict-whether-the-next-candle-is-more-likely-to-be-bullish-or-bearish-4-return-only-a-valid-json-object-with-these-fields-sinal-compra-if-next-candle-likely-bullish-venda-if-likely-bearish-sem-entrada-if-unclear-tendencia-alta-baixa-lateral-confianca-number-0-100-padroes-array-of-short-portuguese-pattern-name-strings-max-3-items-explicacao-one-sentence-in-portuguese-explaining-the-prediction-the-prompt-must-be-short-under-200-words-use-plain-language-and-explicitly-state-that-gemini-must-respond-with-raw-json-only-no-markdown-no-code-blocks-no-extra-text",
+      "title": "Rewrite the Gemini API prompt in frontend/src/services/analysisApi.ts to be a minimal, direct instruction focused solely on predicting the next candle direction. The new prompt must: (1) tell Gemini to look at the image and find the candlestick chart area, ignoring everything else on the screen; (2) examine the last 5 visible candles and the overall trend; (3) predict whether the NEXT candle is more likely to be bullish or bearish; (4) return ONLY a valid JSON object with these fields: sinal ('COMPRA' if next candle likely bullish, 'VENDA' if likely bearish, 'SEM ENTRADA' if unclear), tendencia ('ALTA'/'BAIXA'/'LATERAL'), confianca (number 0-100), padroes (array of short Portuguese pattern name strings, max 3 items), explicacao (one sentence in Portuguese explaining the prediction). The prompt must be short (under 200 words), use plain language, and explicitly state that Gemini must respond with raw JSON only — no markdown, no code blocks, no extra text.",
+      "reqIds": [
+        "REQ-84"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-gemini-api-response-parsing-logic-in-frontend-src-services-analysisapi-ts-to-robustly-extract-json-from-the-gemini-response-text-gemini-sometimes-wraps-json-in-markdown-code-fences-json-or-adds-surrounding-text-the-parser-must-strip-any-markdown-code-fence-wrappers-before-json-parse-attempt-to-extract-the-first-block-from-the-response-text-if-direct-parsing-fails-log-the-raw-response-text-to-the-console-for-debugging-throw-a-descriptive-analysisapierror-with-portuguese-message-resposta-inv-lida-da-ia-tente-novamente-if-no-valid-json-can-be-extracted",
+      "title": "Update the Gemini API response parsing logic in frontend/src/services/analysisApi.ts to robustly extract JSON from the Gemini response text. Gemini sometimes wraps JSON in markdown code fences (```json ... ```) or adds surrounding text. The parser must: strip any markdown code fence wrappers before JSON.parse; attempt to extract the first {...} block from the response text if direct parsing fails; log the raw response text to the console for debugging; throw a descriptive AnalysisApiError with Portuguese message 'Resposta inválida da IA — tente novamente' if no valid JSON can be extracted.",
+      "reqIds": [
+        "REQ-85"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-image-to-base64-conversion-step-in-frontend-src-services-analysisapi-ts-to-ensure-the-image-is-always-sent-as-a-clean-base64-string-remove-the-base64-data-uri-prefix-e-g-data-image-jpeg-base64-before-placing-the-value-in-the-inlinedata-data-field-gemini-vision-api-requires-raw-base64-data-without-the-data-uri-prefix-also-ensure-the-mimetype-field-is-correctly-set-to-the-actual-file-mime-type-e-g-image-jpeg-image-png-image-webp-and-never-hardcoded-to-a-fixed-value",
+      "title": "Update the image-to-base64 conversion step in frontend/src/services/analysisApi.ts to ensure the image is always sent as a clean base64 string. Remove the base64 data URI prefix (e.g., 'data:image/jpeg;base64,') before placing the value in the inlineData.data field — Gemini Vision API requires raw base64 data without the data URI prefix. Also ensure the mimeType field is correctly set to the actual file MIME type (e.g., 'image/jpeg', 'image/png', 'image/webp') and never hardcoded to a fixed value.",
+      "reqIds": [
+        "REQ-86"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -746,6 +827,18 @@
       "reqIds": [
         "REQ-72"
       ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-53",
+      "summary": "Update image analysis system: auto-detect and crop only the candle chart area from screenshots (ignore all broker UI), apply contrast/binarize colors to highlight candles, analyze using price action rules only (no broker text/values), return error if chart cannot be isolated, display thumbnail of original screenshot in corner of results layout. Output: Tendência, Padrões, Força (fraca/média/forte), Confiança %, Sinal (COMPRA/VENDA/SEM ENTRADA) in Portuguese.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-54",
+      "summary": "Fix analysis not working on screenshots: simplify Gemini API prompt to perform basic next-candle analysis without changing the app interface. Focus on predicting next candle direction based on visible chart data.",
+      "reqIds": [],
       "status": "pending"
     }
   ],

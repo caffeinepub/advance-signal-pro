@@ -1,23 +1,30 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-24T22:54:48.850Z",
-  "summary": "All three requirements (REQ-74, REQ-75, REQ-76) appear to be implemented in the diff. REQ-74 is fully addressed in apiConfig.ts with the hardcoded endpoint, buildGeminiUrl helper, inline comments, and no dynamic construction. REQ-75 is addressed in analysisApi.ts with JSON body format, base64 encoding, and no FormData. REQ-76 is addressed in ProcessingScreen.tsx with 404 detection, Portuguese error message, and 'Ir para Configurações' button. The diff is truncated for some files, so some details cannot be fully verified, but evidence is strong across all requirements.",
-  "missing_requirements": [],
-  "hallucinated_features": [
+  "generatedAt": "2026-02-25T00:04:46.202Z",
+  "summary": "The diff modifies frontend/src/services/analysisApi.ts implementing REQ-86 (base64 stripping and mimeType detection) and partially REQ-85/REQ-84. However, due to truncation, full verification of the prompt text (REQ-84) and complete parser logic (REQ-85) is limited. Evidence for REQ-86 is strong. REQ-84 and REQ-85 partial evidence exists but cannot be fully confirmed due to truncation.",
+  "missing_requirements": [
     {
-      "description": "A getGeminiConfig function was added to apiConfig.ts in addition to buildGeminiUrl, returning both the URL and headers object.",
-      "reason": "The build request only required a buildGeminiUrl(apiKey) helper that appends the API key as a query parameter. The additional getGeminiConfig function was not requested.",
+      "id": "REQ-84",
+      "requirement": "Rewrite Gemini API prompt to be a minimal, direct instruction under 200 words with specific fields (sinal, tendencia, confianca, padroes, explicacao), no markdown, JSON-only response, last 5 candles analysis, candlestick chart area identification, no complex scoring/broker logic.",
+      "reason": "The diff is truncated before the prompt text is visible. The file comment mentions 'basic next-candle prediction' which aligns, but the actual prompt string content cannot be verified from the truncated diff.",
       "evidence": [
-        "frontend/src/config/apiConfig.ts"
+        "frontend/src/services/analysisApi.ts"
+      ]
+    },
+    {
+      "id": "REQ-85",
+      "requirement": "Parser must strip markdown code fences, fall back to extracting first {...} block, log raw response to console, throw AnalysisApiError with Portuguese message 'Resposta invalida da IA - tente novamente' when JSON cannot be extracted.",
+      "reason": "The diff is truncated before the response parsing logic is shown. The resizeImage and preprocessImage functions are visible but the fetch/parse logic is cut off at the truncation point.",
+      "evidence": [
+        "frontend/src/services/analysisApi.ts"
       ]
     }
   ],
-  "confidence": 0.82,
+  "hallucinated_features": [],
+  "confidence": 0.4,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/config/apiConfig.ts",
-    "frontend/src/pages/ProcessingScreen.tsx",
     "frontend/src/services/analysisApi.ts",
     "project_state.json"
   ]
