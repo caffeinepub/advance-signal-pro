@@ -1,178 +1,125 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Remove Gemini API system and replace with local candle analysis engine",
+  "title": "Redesign ProcessingScreen layout with logo, animated progress bars with % counter, and simplified upload",
   "requirements": [
     {
-      "id": "REQ-87",
-      "summary": "Remove entire Gemini/API integration from frontend including API key input field, validation logic, and related hooks",
+      "id": "REQ-107",
+      "summary": "Redesign ProcessingScreen layout to match reference design with logo placement, subtitle, circular status icons, and footer disclaimer",
       "acceptanceCriteria": [
-        "No Gemini API key field appears anywhere in the Settings page",
-        "No API calls to external endpoints are made during analysis",
-        "No API key validation or error messages related to missing API keys appear",
-        "frontend/src/config/apiConfig.ts is deleted or fully emptied of API configuration",
-        "All other settings (theme, timeframe, sensitivity, daily limit) remain functional"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/config/apiConfig.ts",
-          "operation": "delete",
-          "description": "Delete the entire API configuration file that contains Gemini API URL building, header generation, and API key validation functions"
-        },
-        {
-          "path": "frontend/src/services/analysisApi.ts",
-          "operation": "delete",
-          "description": "Delete the external analysis API service that preprocesses images and sends them to Gemini Vision API"
-        },
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Remove getGeminiApiKey query hook and setGeminiApiKey mutation hook. Keep all other hooks (analyses, settings, daily operation progress) intact"
-        },
-        {
-          "path": "frontend/src/pages/Settings.tsx",
-          "operation": "modify",
-          "description": "Remove the Gemini API key input section and all related state/validation logic. Keep theme toggle, notifications, and other settings controls unchanged"
-        }
-      ]
-    },
-    {
-      "id": "REQ-89",
-      "summary": "Create local client-side candle analysis engine that detects candlesticks from chart screenshots and predicts next-candle probabilities",
-      "acceptanceCriteria": [
-        "localCandleAnalysis.ts exists and exports an analyzeChartImage(file: File) function",
-        "Function returns a typed LocalAnalysisResult without making any HTTP requests",
-        "Detected candle count is between 5 and 7 when chart is identifiable",
-        "probabilidade_alta + probabilidade_baixa === 100 in all valid results",
-        "sinal is 'COMPRA' when probabilidade_alta >= 60, 'VENDA' when probabilidade_baixa >= 60, otherwise 'SEM ENTRADA'",
-        "Returns erro field if chart region cannot be detected from pixel data"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/services/localCandleAnalysis.ts",
-          "operation": "create",
-          "description": "Create local candle analysis engine that: (1) accepts a File/Blob image; (2) draws it onto HTML Canvas to read pixel data; (3) detects candlestick chart region by scanning for alternating green/red vertical columns; (4) identifies last 5–7 visible candles by body color (green=bullish, red=bearish), body height, wick length, relative position; (5) computes next-candle probability score based on trend direction (ascending tops/bottoms=ALTA, descending=BAIXA, otherwise=LATERAL), last candle pattern (engulfing, hammer, shooting star, doji, pin bar from body-to-wick ratio), momentum (consecutive same-color candles); (6) returns LocalAnalysisResult with sinal ('COMPRA'|'VENDA'|'SEM ENTRADA'), tendencia, confianca (0–100), probabilidade_alta (0–100), probabilidade_baixa (0–100), padroes (string[] in Portuguese), forca ('fraca'|'média'|'forte'), explicacao (Portuguese sentence), erro (optional). Probabilities must sum to 100. If chart region undetectable, set erro to 'Não foi possível identificar o gráfico corretamente' and return SEM ENTRADA signal. All logic runs client-side with zero HTTP requests"
-        }
-      ]
-    },
-    {
-      "id": "REQ-90",
-      "summary": "Define LocalAnalysisResult TypeScript interface with all candle analysis fields and JSDoc comments",
-      "acceptanceCriteria": [
-        "LocalAnalysisResult interface is exported and used by the analysis engine and results components",
-        "All fields have correct TypeScript types",
-        "JSDoc comments are present on each field"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/types/analysisTypes.ts",
-          "operation": "create",
-          "description": "Create new type definition file exporting LocalAnalysisResult interface with fields: sinal ('COMPRA'|'VENDA'|'SEM ENTRADA'), tendencia ('ALTA'|'BAIXA'|'LATERAL'), confianca (number), probabilidade_alta (number), probabilidade_baixa (number), padroes (string[]), forca ('fraca'|'média'|'forte'), explicacao (string), pontuacao (optional number), erro (optional string). Add JSDoc comments on each field explaining purpose and noting all analysis is local without external API calls"
-        }
-      ]
-    },
-    {
-      "id": "REQ-91",
-      "summary": "Update ProcessingScreen to use local candle analysis engine with four Portuguese stages and error handling",
-      "acceptanceCriteria": [
-        "No HTTP requests are made during the processing screen",
-        "All four Portuguese stages animate sequentially",
-        "Successful analysis navigates to Results page with LocalAnalysisResult in sessionStorage",
-        "Error state shows 'Não foi possível identificar o gráfico corretamente' with retry button",
-        "No API key validation step occurs"
+        "App logo appears above the 'Analisando Gráfico' title",
+        "Subtitle 'Detectando padrões de velas localmente...' appears below the title",
+        "Four stage rows are displayed in a dark card/panel",
+        "Completed stages have filled green circle checkmark icons and green text",
+        "Active stage has spinning ring icon and white bold text",
+        "Pending stages have dim/gray circle icons and gray text",
+        "Footer 'Análise local — sem envio de dados externos' is visible at the bottom"
       ],
       "file_operations": [
         {
           "path": "frontend/src/pages/ProcessingScreen.tsx",
           "operation": "modify",
-          "description": "Replace external API calls with local candle analysis engine. When analysis starts: (1) load image from sessionStorage; (2) display four sequential Portuguese stages (Carregando imagem → Processando dados → Detectando padrões → Gerando resultado) with animated indicators, advancing each stage on short timeout; (3) call analyzeChartImage(file) from localCandleAnalysis.ts during 'Detectando padrões' stage; (4) on success, store LocalAnalysisResult in sessionStorage and navigate to Results; (5) if result contains erro field, display Portuguese error message 'Não foi possível identificar o gráfico corretamente' with 'Tentar novamente' button navigating back to AnalyzeChart; (6) remove all API key validation checks and HTTP error handling (404, 403, etc.)"
+          "description": "Restructure the page layout to place the generated app logo (frontend/public/assets/generated/app-icon.dim_512x512.png) above the 'Analisando Gráfico' heading, add subtitle 'Detectando padrões de velas localmente...' below the heading, wrap all four processing stages in a dark elevated card container, and add footer text 'Análise local — sem envio de dados externos' at the bottom. Replace existing horizontal progress bars with circular status icons: pending stages show dim gray circles, active stage shows a spinning ring loader, completed stages show filled green checkmark circles. Update stage text colors: completed in green, active in white/bold, pending in gray. Maintain all existing error handling logic and stage progression."
+        },
+        {
+          "path": "frontend/src/components/ProcessingStage.tsx",
+          "operation": "modify",
+          "description": "Replace the current status indicator implementation with circular icon variants. For pending state: render a dim gray outlined circle. For active state: render a spinning ring loader animation (CSS-based or SVG spinner). For complete state: render a filled green circle with a white checkmark icon inside. Update text styling: completed stages use green color, active stage uses white bold text, pending stages use gray text. Remove any horizontal progress bar elements from this component."
         }
       ]
     },
     {
-      "id": "REQ-92",
-      "summary": "Create or update response mapper to convert LocalAnalysisResult to internal AnalysisResult format",
+      "id": "REQ-108",
+      "summary": "Replace stage status indicators with animated horizontal loading bars in black and white with glow effect and live percentage counter",
       "acceptanceCriteria": [
-        "Mapper function accepts LocalAnalysisResult and returns an internal AnalysisResult",
-        "All new fields (probabilidade_alta, probabilidade_baixa, forca) are preserved",
-        "Existing Results.tsx and History components receive correctly mapped data"
+        "Each stage row contains an animated horizontal progress bar",
+        "Active stage bar animates smoothly from 0% to 100%",
+        "A small percentage label (e.g., '73%') is displayed beside the bar and updates in real time",
+        "Bar fill color is white with a visible glow/shine CSS effect",
+        "Bar track background is dark/black",
+        "Completed stage bars remain filled at 100% in white",
+        "Pending stage bars are shown as dark empty tracks"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/utils/mapApiResponse.ts",
+          "path": "frontend/src/components/ProcessingStage.tsx",
           "operation": "modify",
-          "description": "Update or create mapper function to convert LocalAnalysisResult fields to internal AnalysisResult format used by Results.tsx and history components. Preserve probabilidade_alta, probabilidade_baixa, forca, padroes, tendencia, confianca, sinal, explicacao fields through mapping. Ensure all fields are available for rendering in results and history views"
+          "description": "Replace the circular status icons implemented in REQ-107 with horizontal animated loading bars. Each bar consists of a black/dark track background and a white fill that animates from 0% to 100% width when the stage is active. Apply a CSS glow effect (box-shadow or filter: brightness) to the white fill for a shining appearance. Display a small percentage counter (e.g., '47%') beside the right end of each bar, updating in real-time as the bar fills. Pending bars render as empty dark tracks. Completed bars remain filled at 100% in white. Add state and useEffect logic to animate the percentage from 0 to 100 over the stage duration."
+        },
+        {
+          "path": "frontend/src/pages/ProcessingScreen.tsx",
+          "operation": "modify",
+          "description": "Update stage state management to pass current progress percentage (0-100) to each ProcessingStage component. Ensure the active stage receives animated percentage updates during its execution. Adjust stage timing logic if needed to support smooth percentage animation (e.g., use setInterval or animation frame callbacks to increment percentage state). Ensure completed stages pass 100% and pending stages pass 0%."
         }
       ]
     },
     {
-      "id": "REQ-93",
-      "summary": "Display uploaded chart screenshot as small thumbnail (~80×60 px) beside results output",
+      "id": "REQ-109",
+      "summary": "Simplify AnalyzeChart page upload interface to accept any image input method without format restrictions",
       "acceptanceCriteria": [
-        "A small chart thumbnail (~80×60 px) appears beside the results output",
-        "Thumbnail is retrieved from sessionStorage and rendered as an <img> element",
-        "Thumbnail has rounded corners and a subtle border matching the current theme",
-        "Thumbnail is visible in both dark and light mode"
+        "File picker accepts PNG, JPG, JPEG, WebP, and screenshot file types",
+        "Camera capture option is available",
+        "Clipboard paste (Ctrl+V) works to capture a copied screenshot",
+        "Drag-and-drop upload is supported",
+        "No format rejection errors appear for common screenshot files",
+        "Upload UI is minimal with Portuguese labels only"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/AnalyzeChart.tsx",
+          "operation": "modify",
+          "description": "Simplify the upload interface and remove all file format rejection logic that blocks common screenshot formats. Ensure the file picker accepts any image MIME type including image/png, image/jpeg, image/jpg, image/webp, and any screenshot file type. Integrate camera capture using the camera component (verify the component's usage instructions before implementing). Ensure clipboard paste (useClipboard hook) works for copied screenshots. Verify drag-and-drop via FileUpload component accepts all image formats. Simplify UI text to minimal Portuguese labels without verbose instructions. Remove any HEIC/HEIF rejection toasts or validation that would block user images."
+        },
+        {
+          "path": "frontend/src/components/FileUpload.tsx",
+          "operation": "modify",
+          "description": "Remove or relax file format validation logic that currently rejects HEIC/HEIF files. Update the accept attribute and validation to accept any common image MIME type (image/png, image/jpeg, image/jpg, image/webp, image/heic, image/heif). Remove error toasts for file format rejection. Keep the 10MB size limit but ensure all image formats are accepted. Simplify drag-and-drop UI text to minimal Portuguese."
+        },
+        {
+          "path": "frontend/src/components/CameraCapture.tsx",
+          "operation": "modify",
+          "description": "Ensure the camera capture component integrates seamlessly into the AnalyzeChart page. Verify the useCamera hook is used correctly (check camera/useCamera.ts usage instructions). Ensure all UI text remains in Portuguese. Confirm camera preview has stable non-zero dimensions and aspect ratio. Ensure capture button is only clickable when camera is fully initialized. Display camera errors gracefully. Ensure captured photo is returned as a File and passed to the upload flow."
+        }
+      ]
+    },
+    {
+      "id": "REQ-110",
+      "summary": "Display uploaded chart image as a minimized thumbnail in Results page corner",
+      "acceptanceCriteria": [
+        "Chart thumbnail is rendered at approximately 80×60px",
+        "Thumbnail is positioned in the corner of the results layout (not dominating the view)",
+        "Image is retrieved from sessionStorage 'chartImage' key",
+        "Thumbnail has a subtle border and rounded corners",
+        "Thumbnail respects the active dark/light theme"
       ],
       "file_operations": [
         {
           "path": "frontend/src/pages/Results.tsx",
           "operation": "modify",
-          "description": "Add small chart thumbnail (~80×60 px) positioned beside main analysis output area. Retrieve image data URL from sessionStorage using the key used during upload. Style thumbnail with subtle border and rounded corners consistent with active dark/light theme. Thumbnail must be visible alongside results, not below them, serving as visual reference for analyzed chart"
+          "description": "Add a minimized chart thumbnail to the Results page layout. Retrieve the chart image data URL from sessionStorage using the 'chartImage' key. Render the thumbnail at approximately 80×60px size in a corner of the layout (top-right or bottom-right, whichever fits the existing design better). Apply subtle border and rounded corners (e.g., rounded-md border border-border). Ensure the thumbnail styling respects the active theme using Tailwind theme tokens (e.g., border-border, bg-card). Position the thumbnail absolutely or within a flex/grid layout so it does not dominate the results view. Do not modify the main results content layout or existing signal cards."
         }
       ]
     },
     {
-      "id": "REQ-94",
-      "summary": "Display probability sentence and two horizontal percentage bars (ALTA green, BAIXA red) in Results page",
+      "id": "REQ-111",
+      "summary": "Apply professional premium visual polish to ProcessingScreen with dark background, large bold typography, and elevated card styling",
       "acceptanceCriteria": [
-        "Probability sentence appears prominently below the signal card",
-        "Text reads 'XX% de probabilidade de ALTA / YY% de BAIXA na próxima vela' with correct values",
-        "ALTA text and bar are styled green; BAIXA text and bar are styled red",
-        "Two horizontal percentage bars are proportionally filled",
-        "Section only renders when probabilidade_alta and probabilidade_baixa are present"
+        "ProcessingScreen background is fully dark (black or near-black)",
+        "Heading typography is large and bold",
+        "Stage list is contained in a dark elevated card panel",
+        "Spacing and proportions feel premium and professional",
+        "All text labels are in Portuguese (Brazil)"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/Results.tsx",
+          "path": "frontend/src/pages/ProcessingScreen.tsx",
           "operation": "modify",
-          "description": "Add prominent probability sentence near top of results, immediately below signal card. Sentence reads in Portuguese: '[XX]% de probabilidade de ALTA / [YY]% de BAIXA na próxima vela' where XX is probabilidade_alta and YY is probabilidade_baixa from analysis result. Style ALTA portion in green and BAIXA portion in red. Show two horizontal percentage bar indicators side by side (green bar for ALTA, red bar for BAIXA) filling proportionally to their values"
-        }
-      ]
-    },
-    {
-      "id": "REQ-95",
-      "summary": "Display candle analysis output fields in specified order with Portuguese labels and color-coded badges",
-      "acceptanceCriteria": [
-        "Results fields render in the specified order: Tendência, Padrões, Força, Confiança, Sinal, Explicação",
-        "Força badge uses gray/amber/green styling for fraca/média/forte",
-        "Sinal shows ↑ for COMPRA (green), ↓ for VENDA (red), neutral for SEM ENTRADA",
-        "Explicação sentence renders below the signal",
-        "Error message displays prominently when erro field is present"
-      ],
-      "file_operations": [
+          "description": "Apply premium visual polish to the ProcessingScreen. Set the page background to fully dark (bg-black or bg-zinc-950). Increase the 'Analisando Gráfico' heading to large bold typography (text-4xl or text-5xl font-bold). Wrap the stage list in a dark elevated card with subtle shadow and border (bg-card border border-border shadow-lg rounded-lg). Adjust spacing and padding for professional proportions (generous padding around heading, subtitle, and stage card; consistent internal padding in the card). Ensure all text remains in Portuguese (Brazil). Use Tailwind theme tokens for colors to respect dark/light theme."
+        },
         {
-          "path": "frontend/src/pages/Results.tsx",
+          "path": "frontend/src/index.css",
           "operation": "modify",
-          "description": "Update Results page to display candle analysis fields in following order with Portuguese labels: (1) Tendência (ALTA/BAIXA/LATERAL); (2) Padrões encontrados (list from padroes array); (3) Força (fraca/média/forte with color-coded badge: gray=fraca, amber=média, green=forte); (4) Confiança percentage; (5) Sinal (COMPRA ↑ / VENDA ↓ / SEM ENTRADA) with directional arrows and color coding; (6) Explicação (one-sentence Portuguese explanation from explicacao field). Ensure order is consistent and all labels are Portuguese (Brazil). If result contains erro field, display Portuguese error message prominently instead of results fields"
-        }
-      ]
-    },
-    {
-      "id": "REQ-96",
-      "summary": "Replace Gemini API key section in Settings with 'Configuração de Análise de Candles' section showing local engine info",
-      "acceptanceCriteria": [
-        "No Gemini API key field or section appears in Settings",
-        "A 'Configuração de Análise de Candles' section header is visible",
-        "Read-only row shows 'Motor de análise: Local (sem API externa)'",
-        "AI sensitivity, timeframe, and daily limit controls remain functional",
-        "Theme toggle and notifications settings remain unchanged"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/Settings.tsx",
-          "operation": "modify",
-          "description": "Remove Gemini API key section entirely and replace with 'Configuração de Análise de Candles' section containing: (1) read-only informational row labeled 'Motor de análise' showing value 'Local (sem API externa)'; (2) existing AI sensitivity slider labeled 'Sensibilidade da IA'; (3) existing default timeframe selector (M1/M5/M10) labeled 'Timeframe padrão'; (4) existing daily operation limit selector labeled 'Operações por dia'. All labels in Portuguese (Brazil). Keep all other existing settings (theme toggle, notifications) unchanged"
+          "description": "If additional global CSS adjustments are needed for premium typography or spacing on the ProcessingScreen (e.g., custom heading line-height, letter-spacing, or glow effects for the loading bars), add them here using the existing CSS custom properties. Ensure changes are scoped or use utility classes to avoid affecting other pages. Keep all theme tokens consistent with the existing light/dark mode definitions."
         }
       ]
     }

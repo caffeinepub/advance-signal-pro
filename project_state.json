@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 37,
+  "projectStateVersion": 45,
   "summary": "Advance Signal Pro: Mobile app (Android/iOS) for automated financial chart analysis. Removing the external Gemini API system entirely — analysis is now done locally using a candle analysis engine. The results screen shows: a small thumbnail of the original screenshot, a sentence showing % probability of next candle going up or down (e.g., '70% de alta / 30% de baixa'), and a quality candle-based analysis for the next candle direction. Features dark/light themes, Portuguese (Brazil) interface, chart upload (camera/gallery/clipboard/drag-drop), analysis history, daily operation management (3/4/6/8 ops per day with midnight reset), operation confirmation buttons (green=followed, red=not followed), and M1/M5/M10 timeframe support.",
   "architectural_notes": [
     "Mobile-first architecture for Android and iOS platforms",
@@ -12,7 +12,9 @@
     "Fast processing target: <3 seconds for analysis results",
     "API system removed: no external Gemini/REST API calls. All chart analysis is performed locally using a candle analysis engine based on image processing and pattern rules."
   ],
-  "known_issues": [],
+  "known_issues": [
+    "Analysis error: 'Erro ao processar análise. Tente novamente.' occurring when users attempt to analyze charts — local candle analysis engine failing to process uploaded image."
+  ],
   "isFixRequest": false,
   "existing_features": [
     {
@@ -654,6 +656,118 @@
         "REQ-96"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-audit-and-rewrite-frontend-src-services-localcandleanalysis-ts-to-fix-the-runtime-error-that-causes-erro-ao-processar-an-lise-tente-novamente-when-users-upload-chart-images-the-engine-must-1-safely-load-the-image-onto-an-html-canvas-without-throwing-exceptions-for-any-valid-image-file-png-jpg-webp-2-handle-edge-cases-where-the-canvas-context-is-null-or-the-image-fails-to-load-by-catching-errors-and-returning-a-graceful-sem-entrada-result-with-an-explicacao-in-portuguese-rather-than-throwing-3-ensure-the-pixel-scanning-logic-for-detecting-the-candlestick-region-does-not-crash-on-images-with-unusual-dimensions-aspect-ratios-or-color-profiles-4-always-return-a-valid-localanalysisresult-object-never-throw-an-unhandled-exception-even-when-the-chart-region-cannot-be-detected-set-erro-field-and-return-sem-entrada-5-add-try-catch-around-the-entire-analysis-pipeline-so-any-unexpected-error-produces-a-safe-fallback-result-instead-of-propagating-to-the-ui-as-an-unhandled-error",
+      "title": "Audit and rewrite frontend/src/services/localCandleAnalysis.ts to fix the runtime error that causes 'Erro ao processar análise. Tente novamente.' when users upload chart images. The engine must: (1) safely load the image onto an HTML Canvas without throwing exceptions for any valid image file (PNG, JPG, WebP); (2) handle edge cases where the canvas context is null or the image fails to load by catching errors and returning a graceful SEM ENTRADA result with an explicacao in Portuguese rather than throwing; (3) ensure the pixel-scanning logic for detecting the candlestick region does not crash on images with unusual dimensions, aspect ratios, or color profiles; (4) always return a valid LocalAnalysisResult object — never throw an unhandled exception — even when the chart region cannot be detected (set erro field and return SEM ENTRADA); (5) add try/catch around the entire analysis pipeline so any unexpected error produces a safe fallback result instead of propagating to the UI as an unhandled error.",
+      "reqIds": [
+        "REQ-97"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-audit-frontend-src-pages-processingscreen-tsx-to-ensure-the-call-to-the-local-candle-analysis-engine-is-fully-wrapped-in-a-try-catch-block-if-the-engine-throws-or-rejects-display-the-portuguese-error-message-n-o-foi-poss-vel-processar-a-imagem-tente-novamente-with-a-tentar-novamente-button-that-navigates-back-to-the-analyzechart-page-instead-of-showing-a-generic-error-also-verify-that-the-image-file-or-blob-is-correctly-reconstructed-from-sessionstorage-where-it-was-stored-as-a-data-url-during-upload-before-being-passed-to-analyzechartimage-if-the-sessionstorage-entry-is-missing-or-cannot-be-converted-back-to-a-file-display-imagem-n-o-encontrada-envie-o-gr-fico-novamente-and-navigate-back-to-analyzechart",
+      "title": "Audit frontend/src/pages/ProcessingScreen.tsx to ensure the call to the local candle analysis engine is fully wrapped in a try/catch block. If the engine throws or rejects, display the Portuguese error message 'Não foi possível processar a imagem. Tente novamente.' with a 'Tentar novamente' button that navigates back to the AnalyzeChart page instead of showing a generic error. Also verify that the image File or Blob is correctly reconstructed from sessionStorage (where it was stored as a data URL during upload) before being passed to analyzeChartImage — if the sessionStorage entry is missing or cannot be converted back to a File, display 'Imagem não encontrada. Envie o gráfico novamente.' and navigate back to AnalyzeChart.",
+      "reqIds": [
+        "REQ-98"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-image-data-url-stored-in-sessionstorage-during-chart-upload-in-frontend-src-pages-analyzechart-tsx-is-correctly-converted-back-to-a-file-or-blob-before-being-passed-to-the-local-candle-analysis-engine-in-processingscreen-tsx-implement-a-utility-function-that-1-reads-the-data-url-string-from-sessionstorage-2-converts-it-to-a-blob-using-fetch-or-atob-uint8array-3-wraps-the-blob-in-a-file-object-with-the-correct-mime-type-extracted-from-the-data-url-prefix-4-returns-null-if-the-data-url-is-missing-empty-or-malformed-use-this-utility-in-processingscreen-tsx-instead-of-any-ad-hoc-conversion-logic",
+      "title": "Ensure the image data URL stored in sessionStorage during chart upload (in frontend/src/pages/AnalyzeChart.tsx) is correctly converted back to a File or Blob before being passed to the local candle analysis engine in ProcessingScreen.tsx. Implement a utility function that: (1) reads the data URL string from sessionStorage; (2) converts it to a Blob using fetch() or atob() + Uint8Array; (3) wraps the Blob in a File object with the correct MIME type extracted from the data URL prefix; (4) returns null if the data URL is missing, empty, or malformed. Use this utility in ProcessingScreen.tsx instead of any ad-hoc conversion logic.",
+      "reqIds": [
+        "REQ-99"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-rewrite-frontend-src-services-localcandleanalysis-ts-with-a-completely-rebuilt-robust-analysis-pipeline-the-engine-must-1-wrap-the-entire-analysis-in-a-top-level-try-catch-that-always-returns-a-valid-localanalysisresult-and-never-throws-2-load-the-image-onto-an-html-canvas-using-a-promise-based-image-onload-onerror-handler-with-a-timeout-fallback-of-10-seconds-3-handle-null-canvas-context-failed-image-loads-and-zero-dimension-images-by-returning-a-graceful-sem-entrada-result-with-explicacao-in-portuguese-4-implement-simplified-but-reliable-candlestick-region-detection-scan-horizontal-bands-of-the-image-for-red-green-pixel-density-rather-than-relying-on-strict-alternating-column-patterns-5-extract-candle-data-from-the-detected-region-and-compute-trend-direction-alta-baixa-lateral-momentum-and-last-candle-pattern-engulfing-hammer-doji-shooting-star-pin-bar-using-body-to-wick-ratio-6-calculate-probabilidade-alta-and-probabilidade-baixa-must-sum-to-100-and-forca-fraca-m-dia-forte-from-the-scoring-7-return-a-complete-localanalysisresult-object-in-all-code-paths-including-error-paths-8-if-chart-region-cannot-be-detected-set-the-erro-field-to-n-o-foi-poss-vel-identificar-o-gr-fico-corretamente-and-return-sinal-sem-entrada-with-confianca-0",
+      "title": "Rewrite frontend/src/services/localCandleAnalysis.ts with a completely rebuilt, robust analysis pipeline. The engine must: (1) wrap the entire analysis in a top-level try/catch that always returns a valid LocalAnalysisResult and never throws; (2) load the image onto an HTML Canvas using a Promise-based Image onload/onerror handler with a timeout fallback of 10 seconds; (3) handle null canvas context, failed image loads, and zero-dimension images by returning a graceful SEM ENTRADA result with explicacao in Portuguese; (4) implement simplified but reliable candlestick region detection — scan horizontal bands of the image for red/green pixel density rather than relying on strict alternating column patterns; (5) extract candle data from the detected region and compute trend direction (ALTA/BAIXA/LATERAL), momentum, and last-candle pattern (engulfing, hammer, doji, shooting star, pin bar) using body-to-wick ratio; (6) calculate probabilidade_alta and probabilidade_baixa (must sum to 100) and forca (fraca/média/forte) from the scoring; (7) return a complete LocalAnalysisResult object in all code paths including error paths; (8) if chart region cannot be detected, set the erro field to 'Não foi possível identificar o gráfico corretamente' and return sinal='SEM ENTRADA' with confianca=0.",
+      "reqIds": [
+        "REQ-100"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-rewrite-the-image-data-url-to-file-blob-conversion-utility-used-in-frontend-src-pages-processingscreen-tsx-implement-a-standalone-utility-function-dataurltofile-dataurl-string-filename-string-file-null-that-1-validates-the-dataurl-is-a-non-empty-string-starting-with-data-2-extracts-the-mime-type-from-the-data-url-prefix-e-g-image-jpeg-image-png-image-webp-3-decodes-the-base64-payload-using-atob-uint8array-4-wraps-the-result-in-a-file-object-with-the-extracted-mime-type-5-returns-null-if-any-step-fails-use-this-utility-exclusively-in-processingscreen-tsx-to-reconstruct-the-file-before-passing-it-to-analyzechartimage",
+      "title": "Rewrite the image data URL to File/Blob conversion utility used in frontend/src/pages/ProcessingScreen.tsx. Implement a standalone utility function dataUrlToFile(dataUrl: string, filename: string): File | null that: (1) validates the dataUrl is a non-empty string starting with 'data:'; (2) extracts the MIME type from the data URL prefix (e.g., 'image/jpeg', 'image/png', 'image/webp'); (3) decodes the base64 payload using atob() + Uint8Array; (4) wraps the result in a File object with the extracted MIME type; (5) returns null if any step fails. Use this utility exclusively in ProcessingScreen.tsx to reconstruct the File before passing it to analyzeChartImage.",
+      "reqIds": [
+        "REQ-101"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-audit-and-fix-frontend-src-pages-processingscreen-tsx-to-ensure-robust-error-handling-around-the-local-analysis-call-the-page-must-1-use-the-dataurltofile-utility-to-reconstruct-the-image-file-from-sessionstorage-2-if-the-reconstructed-file-is-null-immediately-show-the-error-imagem-n-o-encontrada-envie-o-gr-fico-novamente-with-a-tentar-novamente-button-navigating-to-analyzechart-3-wrap-the-entire-analyzechartimage-call-in-try-catch-on-catch-display-n-o-foi-poss-vel-processar-a-imagem-tente-novamente-with-a-tentar-novamente-button-navigating-to-analyzechart-4-if-the-result-contains-an-erro-field-stop-the-processing-animation-and-display-n-o-foi-poss-vel-identificar-o-gr-fico-corretamente-with-a-tentar-novamente-button-5-on-success-store-the-result-in-sessionstorage-and-navigate-to-the-results-page-6-ensure-no-api-key-validation-or-http-error-handling-code-remains",
+      "title": "Audit and fix frontend/src/pages/ProcessingScreen.tsx to ensure robust error handling around the local analysis call. The page must: (1) use the dataUrlToFile utility to reconstruct the image File from sessionStorage; (2) if the reconstructed File is null, immediately show the error 'Imagem não encontrada. Envie o gráfico novamente.' with a 'Tentar novamente' button navigating to AnalyzeChart; (3) wrap the entire analyzeChartImage() call in try/catch — on catch, display 'Não foi possível processar a imagem. Tente novamente.' with a 'Tentar novamente' button navigating to AnalyzeChart; (4) if the result contains an erro field, stop the processing animation and display 'Não foi possível identificar o gráfico corretamente' with a 'Tentar novamente' button; (5) on success, store the result in sessionStorage and navigate to the Results page; (6) ensure no API key validation or HTTP error handling code remains.",
+      "reqIds": [
+        "REQ-102"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-completely-rewrite-frontend-src-services-localcandleanalysis-ts-with-a-bulletproof-crash-free-implementation-the-engine-must-1-wrap-the-entire-function-body-in-a-single-top-level-try-catch-that-always-returns-a-valid-localanalysisresult-and-never-throws-or-rejects-2-load-the-image-onto-an-html-canvas-using-a-promise-with-explicit-onload-onerror-handlers-and-a-10-second-timeout-if-the-image-fails-to-load-for-any-reason-return-a-graceful-sem-entrada-result-with-explicacao-n-o-foi-poss-vel-carregar-a-imagem-3-after-drawing-immediately-check-that-canvas-width-and-height-are-both-greater-than-0-before-reading-pixel-data-if-zero-dimension-return-sem-entrada-gracefully-4-wrap-all-getimagedata-pixel-scanning-logic-in-its-own-try-catch-if-it-throws-e-g-tainted-canvas-security-error-return-sem-entrada-with-explicacao-erro-ao-ler-dados-da-imagem-5-scan-horizontal-bands-of-the-image-divide-height-into-10-equal-bands-and-count-red-pixels-r-150-g-100-b-100-and-green-pixels-g-120-r-100-b-100-in-each-band-to-locate-the-candlestick-chart-region-use-the-band-with-the-highest-combined-red-green-density-as-the-chart-area-with-a-minimum-threshold-of-at-least-50-colored-pixels-to-consider-the-region-valid-6-if-no-band-meets-the-threshold-set-erro-n-o-foi-poss-vel-identificar-o-gr-fico-corretamente-and-return-sinal-sem-entrada-with-confianca-0-and-probabilidade-alta-50-probabilidade-baixa-50-7-within-the-detected-chart-band-divide-the-horizontal-axis-into-7-equal-columns-and-classify-each-column-as-bullish-more-green-pixels-or-bearish-more-red-pixels-or-neutral-8-compute-trend-direction-if-the-last-3-columns-show-ascending-pattern-alta-descending-baixa-otherwise-lateral-9-compute-momentum-count-consecutive-same-color-columns-from-the-right-edge-10-detect-last-column-pattern-using-body-to-wick-pixel-ratio-tall-green-with-small-wicks-strong-bullish-etc-11-compute-probabilidade-alta-and-probabilidade-baixa-that-always-sum-to-exactly-100-12-set-forca-based-on-confidence-40-fraca-40-69-m-dia-70-forte-13-set-sinal-if-probabilidade-alta-60-compra-if-probabilidade-baixa-60-venda-otherwise-sem-entrada-14-return-a-complete-localanalysisresult-in-every-code-path-including-the-catch-block",
+      "title": "Completely rewrite frontend/src/services/localCandleAnalysis.ts with a bulletproof, crash-free implementation. The engine must: (1) wrap the ENTIRE function body in a single top-level try/catch that always returns a valid LocalAnalysisResult and never throws or rejects; (2) load the image onto an HTML Canvas using a Promise with explicit onload/onerror handlers and a 10-second timeout — if the image fails to load for any reason, return a graceful SEM ENTRADA result with explicacao 'Não foi possível carregar a imagem'; (3) after drawing, immediately check that canvas width and height are both greater than 0 before reading pixel data — if zero-dimension, return SEM ENTRADA gracefully; (4) wrap all getImageData/pixel-scanning logic in its own try/catch — if it throws (e.g. tainted canvas, security error), return SEM ENTRADA with explicacao 'Erro ao ler dados da imagem'; (5) scan horizontal bands of the image (divide height into ~10 equal bands) and count red pixels (R>150, G<100, B<100) and green pixels (G>120, R<100, B<100) in each band to locate the candlestick chart region — use the band with the highest combined red+green density as the chart area, with a minimum threshold of at least 50 colored pixels to consider the region valid; (6) if no band meets the threshold, set erro='Não foi possível identificar o gráfico corretamente' and return sinal='SEM ENTRADA' with confianca=0 and probabilidade_alta=50, probabilidade_baixa=50; (7) within the detected chart band, divide the horizontal axis into 7 equal columns and classify each column as bullish (more green pixels) or bearish (more red pixels) or neutral; (8) compute trend direction: if the last 3 columns show ascending pattern → ALTA, descending → BAIXA, otherwise → LATERAL; (9) compute momentum: count consecutive same-color columns from the right edge; (10) detect last-column pattern using body-to-wick pixel ratio (tall green with small wicks = strong bullish, etc.); (11) compute probabilidade_alta and probabilidade_baixa that always sum to exactly 100; (12) set forca based on confidence: <40 = 'fraca', 40–69 = 'média', >=70 = 'forte'; (13) set sinal: if probabilidade_alta >= 60 → 'COMPRA', if probabilidade_baixa >= 60 → 'VENDA', otherwise → 'SEM ENTRADA'; (14) return a complete LocalAnalysisResult in every code path including the catch block.",
+      "reqIds": [
+        "REQ-103"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-rewrite-frontend-src-utils-dataurltofile-ts-to-implement-a-robust-dataurltofile-dataurl-string-filename-string-file-null-utility-it-must-1-return-null-immediately-if-dataurl-is-falsy-not-a-string-or-does-not-start-with-data-2-use-a-try-catch-around-all-operations-and-return-null-on-any-exception-3-parse-the-mime-type-from-the-data-url-prefix-between-data-and-base64-4-default-to-image-jpeg-if-mime-type-cannot-be-parsed-5-extract-the-base64-portion-after-base64-6-decode-using-atob-inside-a-try-catch-return-null-if-atob-throws-malformed-base64-7-convert-the-decoded-string-to-a-uint8array-byte-by-byte-8-wrap-in-a-blob-with-the-extracted-mime-type-then-in-a-file-with-the-provided-filename-9-return-the-file-on-success-null-on-any-failure",
+      "title": "Rewrite frontend/src/utils/dataUrlToFile.ts to implement a robust dataUrlToFile(dataUrl: string, filename: string): File | null utility. It must: (1) return null immediately if dataUrl is falsy, not a string, or does not start with 'data:'; (2) use a try/catch around all operations and return null on any exception; (3) parse the MIME type from the data URL prefix between 'data:' and ';base64,'; (4) default to 'image/jpeg' if MIME type cannot be parsed; (5) extract the base64 portion after ';base64,'; (6) decode using atob() inside a try/catch — return null if atob throws (malformed base64); (7) convert the decoded string to a Uint8Array byte by byte; (8) wrap in a Blob with the extracted MIME type, then in a File with the provided filename; (9) return the File on success, null on any failure.",
+      "reqIds": [
+        "REQ-104"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-rewrite-frontend-src-pages-processingscreen-tsx-with-fully-robust-error-handling-the-component-must-1-on-mount-immediately-read-the-chart-image-data-url-from-sessionstorage-key-chartimage-or-whichever-key-analyzechart-tsx-uses-to-store-it-2-call-dataurltofile-to-convert-it-if-the-result-is-null-immediately-stop-and-show-error-state-imagem-n-o-encontrada-envie-o-gr-fico-novamente-with-a-tentar-novamente-button-navigating-to-analyze-3-display-the-four-sequential-portuguese-processing-stages-carregando-imagem-processando-dados-detectando-padr-es-gerando-resultado-with-animated-indicators-advancing-each-stage-every-800ms-4-during-the-detectando-padr-es-stage-call-analyzechartimage-file-from-localcandleanalysis-ts-inside-a-try-catch-5-on-catch-stop-the-animation-and-show-n-o-foi-poss-vel-processar-a-imagem-tente-novamente-with-a-tentar-novamente-button-navigating-to-analyze-6-if-the-result-has-an-erro-field-set-stop-the-animation-and-show-n-o-foi-poss-vel-identificar-o-gr-fico-corretamente-with-a-tentar-novamente-button-navigating-to-analyze-7-on-success-store-the-result-in-sessionstorage-and-navigate-to-results-8-ensure-zero-api-key-validation-zero-http-error-handling-and-zero-gemini-related-code-remains-in-this-file",
+      "title": "Rewrite frontend/src/pages/ProcessingScreen.tsx with fully robust error handling. The component must: (1) on mount, immediately read the chart image data URL from sessionStorage (key: 'chartImage' or whichever key AnalyzeChart.tsx uses to store it); (2) call dataUrlToFile() to convert it — if the result is null, immediately stop and show error state 'Imagem não encontrada. Envie o gráfico novamente.' with a 'Tentar novamente' button navigating to /analyze; (3) display the four sequential Portuguese processing stages (Carregando imagem → Processando dados → Detectando padrões → Gerando resultado) with animated indicators, advancing each stage every 800ms; (4) during the 'Detectando padrões' stage, call analyzeChartImage(file) from localCandleAnalysis.ts inside a try/catch; (5) on catch, stop the animation and show 'Não foi possível processar a imagem. Tente novamente.' with a 'Tentar novamente' button navigating to /analyze; (6) if the result has an erro field set, stop the animation and show 'Não foi possível identificar o gráfico corretamente' with a 'Tentar novamente' button navigating to /analyze; (7) on success, store the result in sessionStorage and navigate to /results; (8) ensure zero API key validation, zero HTTP error handling, and zero Gemini-related code remains in this file.",
+      "reqIds": [
+        "REQ-105"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-audit-frontend-src-pages-analyzechart-tsx-to-verify-that-when-a-user-selects-or-captures-a-chart-image-the-image-is-stored-in-sessionstorage-as-a-base64-data-url-under-a-consistent-documented-key-e-g-chartimage-ensure-1-the-data-url-is-stored-immediately-after-file-selection-before-navigating-to-processingscreen-2-the-stored-value-is-a-complete-data-url-string-starting-with-data-image-3-the-same-sessionstorage-key-is-read-in-processingscreen-tsx-if-the-keys-differ-unify-them-to-chartimage-4-if-storing-to-sessionstorage-fails-e-g-quota-exceeded-show-a-portuguese-error-toast-erro-ao-preparar-imagem-tente-novamente-and-do-not-navigate-to-processingscreen",
+      "title": "Audit frontend/src/pages/AnalyzeChart.tsx to verify that when a user selects or captures a chart image, the image is stored in sessionStorage as a base64 data URL under a consistent, documented key (e.g., 'chartImage'). Ensure: (1) the data URL is stored immediately after file selection before navigating to ProcessingScreen; (2) the stored value is a complete data URL string starting with 'data:image/'; (3) the same sessionStorage key is read in ProcessingScreen.tsx — if the keys differ, unify them to 'chartImage'; (4) if storing to sessionStorage fails (e.g., quota exceeded), show a Portuguese error toast 'Erro ao preparar imagem. Tente novamente.' and do not navigate to ProcessingScreen.",
+      "reqIds": [
+        "REQ-106"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-redesign-frontend-src-pages-processingscreen-tsx-layout-to-match-the-reference-design-image-7-png-place-the-app-logo-brand-mark-above-the-analisando-gr-fico-heading-followed-by-a-subtitle-line-detectando-padr-es-de-velas-localmente-all-four-processing-stages-carregando-imagem-processando-dados-detectando-padr-es-de-candle-gerando-resultado-must-be-displayed-in-a-card-list-below-each-stage-row-shows-a-circular-status-icon-on-the-left-pending-dim-circle-active-spinning-ring-complete-filled-green-checkmark-and-the-stage-label-text-on-the-right-completed-stages-show-the-icon-and-label-in-green-the-active-stage-shows-the-spinning-ring-with-white-bold-label-at-the-bottom-of-the-screen-display-a-small-footer-line-reading-an-lise-local-sem-envio-de-dados-externos-remove-any-horizontal-colored-progress-bars-from-the-stage-rows",
+      "title": "Redesign frontend/src/pages/ProcessingScreen.tsx layout to match the reference design (image-7.png): place the app logo/brand mark above the 'Analisando Gráfico' heading, followed by a subtitle line ('Detectando padrões de velas localmente...'). All four processing stages (Carregando imagem, Processando dados, Detectando padrões de candle, Gerando resultado) must be displayed in a card list below. Each stage row shows a circular status icon on the left (pending = dim circle, active = spinning ring, complete = filled green checkmark) and the stage label text on the right. Completed stages show the icon and label in green. The active stage shows the spinning ring with white/bold label. At the bottom of the screen display a small footer line reading 'Análise local — sem envio de dados externos'. Remove any horizontal colored progress bars from the stage rows.",
+      "reqIds": [
+        "REQ-107"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-the-stage-icon-status-indicators-in-processingscreen-tsx-with-animated-horizontal-loading-bars-styled-in-black-and-white-each-bar-must-animate-from-0-to-100-fill-while-that-stage-is-active-display-a-small-percentage-counter-e-g-47-in-a-small-font-beside-the-right-end-of-each-bar-updating-as-the-bar-fills-the-bars-must-use-a-black-base-track-with-a-white-fill-that-has-a-glowing-shining-brightness-effect-e-g-css-box-shadow-or-filter-brightness-glow-on-the-white-fill-inactive-pending-bars-are-shown-as-dim-dark-tracks-with-no-fill-completed-bars-remain-fully-filled-in-white",
+      "title": "Replace the stage icon/status indicators in ProcessingScreen.tsx with animated horizontal loading bars styled in black and white. Each bar must animate from 0% to 100% fill while that stage is active. Display a small percentage counter (e.g., '47%') in a small font beside the right end of each bar, updating as the bar fills. The bars must use a black base track with a white fill that has a glowing/shining brightness effect (e.g., CSS box-shadow or filter: brightness glow on the white fill). Inactive/pending bars are shown as dim dark tracks with no fill. Completed bars remain fully filled in white.",
+      "reqIds": [
+        "REQ-108"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-pages-analyzechart-tsx-to-simplify-the-upload-interface-and-ensure-it-accepts-any-image-input-method-without-restrictions-the-page-must-support-file-picker-any-image-type-including-screenshots-and-copies-camera-capture-clipboard-paste-ctrl-v-mobile-screenshot-paste-and-drag-and-drop-remove-any-file-format-rejection-logic-that-would-block-common-screenshot-formats-accept-png-jpg-jpeg-webp-and-any-other-common-image-mime-type-the-ui-must-be-clean-and-minimal-with-portuguese-labels-do-not-display-complex-upload-instructions-show-a-single-prominent-upload-area-with-a-brief-label",
+      "title": "Update frontend/src/pages/AnalyzeChart.tsx to simplify the upload interface and ensure it accepts any image input method without restrictions. The page must support: file picker (any image type including screenshots and copies), camera capture, clipboard paste (Ctrl+V / mobile screenshot paste), and drag-and-drop. Remove any file format rejection logic that would block common screenshot formats. Accept PNG, JPG, JPEG, WebP, and any other common image MIME type. The UI must be clean and minimal with Portuguese labels. Do not display complex upload instructions — show a single prominent upload area with a brief label.",
+      "reqIds": [
+        "REQ-109"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-apply-a-professional-premium-visual-polish-to-the-processingscreen-use-a-fully-dark-background-000-or-near-black-large-bold-typography-for-the-analisando-gr-fico-heading-and-ensure-spacing-padding-and-layout-proportions-give-the-screen-a-high-quality-trading-app-appearance-the-stage-card-should-have-a-slightly-elevated-dark-surface-e-g-dark-gray-card-on-black-background-all-text-must-remain-in-portuguese-brazil",
+      "title": "Apply a professional, premium visual polish to the ProcessingScreen. Use a fully dark background (#000 or near-black), large bold typography for the 'Analisando Gráfico' heading, and ensure spacing, padding, and layout proportions give the screen a high-quality trading app appearance. The stage card should have a slightly elevated dark surface (e.g., dark gray card on black background). All text must remain in Portuguese (Brazil).",
+      "reqIds": [
+        "REQ-111"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -896,6 +1010,20 @@
       "summary": "Remove backend Gemini API key storage from backend/main.mo. Delete the getGeminiApiKey and setGeminiApiKey functions and any associated stable storage for the API key. Ensure backward compatibility so existing analyses and other settings stored in the backend are unaffected.",
       "reqIds": [
         "REQ-88"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-62",
+      "summary": "Results screen: minimize the uploaded chart photo (thumbnail), redesign layout to show logo above 'Analisando gráfico' text, with clean analysis info layout. Accept any photo upload type (screenshot, copy/paste, file). Animate loading bars with 1%-100% percentage counter beside each bar; bars styled in black and white with white glow/shine effect. Professional app appearance.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-66",
+      "summary": "Update frontend/src/pages/Results.tsx to display the uploaded chart image as a minimized thumbnail. The thumbnail must be small (approximately 80×60px), positioned in a corner of the results layout (top-right or bottom-right), and must not dominate the results view. Retrieve the image data URL from sessionStorage using the 'chartImage' key. Style the thumbnail with a subtle border and rounded corners consistent with the active dark/light theme.",
+      "reqIds": [
+        "REQ-110"
       ],
       "status": "pending"
     }

@@ -5,96 +5,109 @@ import ProcessingStage from '../components/ProcessingStage';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ExternalBlob } from '../backend';
-import { toast } from 'sonner';
 import { analyzeChartImage } from '../services/localCandleAnalysis';
 import { mapApiResponseToAnalysisResult } from '../utils/mapApiResponse';
+import { dataUrlToFile } from '../utils/dataUrlToFile';
 import { useAnalyzeChart } from '../hooks/useQueries';
 import { useActor } from '../hooks/useActor';
 
 const stages = [
-  { id: 1, label: 'Carregando imagem', duration: 700 },
-  { id: 2, label: 'Processando dados', duration: 900 },
-  { id: 3, label: 'Detectando padrões de candle', duration: 1200 },
-  { id: 4, label: 'Gerando resultado', duration: 600 },
+  { id: 1, label: 'Carregando imagem', duration: 600 },
+  { id: 2, label: 'Processando dados', duration: 700 },
+  { id: 3, label: 'Detectando padrões de candle', duration: 800 },
+  { id: 4, label: 'Gerando resultado', duration: 500 },
 ];
+
+const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 export default function ProcessingScreen() {
   const navigate = useNavigate();
   const { actor } = useActor();
   const [currentStage, setCurrentStage] = useState(0);
-  const [imageBlob, setImageBlob] = useState<ExternalBlob | null>(null);
-  const [imageFile, setImageFile] = useState<Blob | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isChartDetectionError, setIsChartDetectionError] = useState(false);
   const analyzeChart = useAnalyzeChart();
   const hasStarted = useRef(false);
 
-  // Load image from sessionStorage
   useEffect(() => {
-    const imageData = sessionStorage.getItem('chartImage');
-
-    if (!imageData) {
-      toast.error('Nenhuma imagem de gráfico encontrada');
-      navigate({ to: '/' });
-      return;
-    }
-
-    fetch(imageData)
-      .then((res) => res.blob())
-      .then((blob) => {
-        setImageFile(blob);
-        return blob.arrayBuffer();
-      })
-      .then((buffer) => {
-        const uint8Array = new Uint8Array(buffer);
-        const externalBlob = ExternalBlob.fromBytes(uint8Array);
-        setImageBlob(externalBlob);
-      })
-      .catch(() => {
-        toast.error('Erro ao carregar imagem');
-        navigate({ to: '/' });
-      });
-  }, [navigate]);
-
-  // Start analysis once image is ready
-  useEffect(() => {
-    if (!imageBlob || !imageFile || isProcessing || hasStarted.current) return;
+    if (hasStarted.current) return;
     hasStarted.current = true;
     startAnalysis();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [imageBlob, imageFile]);
+  }, []);
 
   const startAnalysis = async () => {
-    if (!imageBlob || !imageFile) return;
     setIsProcessing(true);
     setError(null);
     setIsChartDetectionError(false);
 
+    // ── Stage 0: Load image ──
+    setCurrentStage(0);
+    await delay(stages[0].duration);
+
+    let imageData: string | null = null;
     try {
-      // Animate through stages sequentially
-      for (let i = 0; i < stages.length; i++) {
-        setCurrentStage(i);
-        await delay(stages[i].duration);
-      }
+      imageData = sessionStorage.getItem('chartImage');
+    } catch {
+      setError('Não foi possível acessar a imagem. Tente novamente.');
+      setIsProcessing(false);
+      return;
+    }
 
-      // Run local candle analysis (no HTTP requests)
-      const localResult = await analyzeChartImage(imageFile);
+    if (!imageData || !imageData.startsWith('data:')) {
+      setError('Imagem não encontrada. Envie o gráfico novamente.');
+      setIsProcessing(false);
+      return;
+    }
 
-      // Map to internal format
+    const imageFile = dataUrlToFile(imageData, 'chart.png');
+    if (!imageFile) {
+      setError('Imagem inválida ou corrompida. Envie o gráfico novamente.');
+      setIsProcessing(false);
+      return;
+    }
+
+    let imageBlob: ExternalBlob;
+    try {
+      const buffer = await imageFile.arrayBuffer();
+      imageBlob = ExternalBlob.fromBytes(new Uint8Array(buffer));
+    } catch {
+      setError('Não foi possível processar a imagem. Tente novamente.');
+      setIsProcessing(false);
+      return;
+    }
+
+    // ── Stage 1: Process data ──
+    setCurrentStage(1);
+    await delay(stages[1].duration);
+
+    // ── Stage 2: Detect patterns ──
+    setCurrentStage(2);
+
+    let localResult;
+    try {
+      localResult = await analyzeChartImage(imageFile);
+    } catch {
+      setError('Não foi possível processar a imagem. Tente novamente.');
+      setIsProcessing(false);
+      return;
+    }
+
+    if (localResult.erro && localResult.confianca === 0) {
+      setIsChartDetectionError(true);
+      setIsProcessing(false);
+      return;
+    }
+
+    // ── Stage 3: Generate result ──
+    setCurrentStage(3);
+    await delay(stages[3].duration);
+
+    try {
       const mappedResult = mapApiResponseToAnalysisResult(localResult, imageBlob);
-
-      // Store result in sessionStorage for Results page
       sessionStorage.setItem('latestAnalysis', JSON.stringify(mappedResult));
 
-      // If chart detection error, show error screen
-      if (mappedResult.isChartDetectionError) {
-        setIsChartDetectionError(true);
-        setIsProcessing(false);
-        return;
-      }
-
-      // Store in backend if actor is available
       if (actor) {
         try {
           await analyzeChart.mutateAsync({
@@ -120,37 +133,34 @@ export default function ProcessingScreen() {
         }
       }
 
-      // Navigate to results using the parameterized route
       navigate({ to: '/results/$id', params: { id: 'latest' } });
     } catch {
-      setError('Erro ao processar análise. Tente novamente.');
+      setError('Não foi possível salvar o resultado. Tente novamente.');
       setIsProcessing(false);
     }
   };
 
-  const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
   // Chart detection error screen
   if (isChartDetectionError) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-md p-8 text-center space-y-6">
+      <div className="min-h-screen bg-black flex items-center justify-center p-4">
+        <Card className="w-full max-w-md p-8 text-center space-y-6 bg-zinc-900 border-zinc-800">
           <div className="flex justify-center">
-            <div className="w-20 h-20 rounded-full bg-orange-100 dark:bg-orange-950/30 flex items-center justify-center">
-              <ImageOff className="w-10 h-10 text-orange-500 dark:text-orange-400" />
+            <div className="w-20 h-20 rounded-full bg-orange-950/40 flex items-center justify-center">
+              <ImageOff className="w-10 h-10 text-orange-400" />
             </div>
           </div>
           <div>
-            <h2 className="text-2xl font-bold mb-3">Gráfico Não Identificado</h2>
-            <p className="text-muted-foreground">
+            <h2 className="text-2xl font-bold text-white mb-3">Gráfico Não Identificado</h2>
+            <p className="text-zinc-400">
               Não foi possível identificar o gráfico corretamente
             </p>
           </div>
-          <div className="p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg text-sm text-orange-800 dark:text-orange-200">
+          <div className="p-4 bg-orange-950/20 border border-orange-800/50 rounded-lg text-sm text-orange-200">
             Certifique-se de que o print contém um gráfico de candles visível com velas coloridas (verde/vermelho).
           </div>
           <Button
-            className="w-full gap-2"
+            className="w-full gap-2 bg-white text-black hover:bg-zinc-200"
             onClick={() => navigate({ to: '/analyze' })}
           >
             <RefreshCw className="w-4 h-4" />
@@ -164,19 +174,19 @@ export default function ProcessingScreen() {
   // Generic error screen
   if (error) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-md p-8 text-center space-y-6">
+      <div className="min-h-screen bg-black flex items-center justify-center p-4">
+        <Card className="w-full max-w-md p-8 text-center space-y-6 bg-zinc-900 border-zinc-800">
           <div className="flex justify-center">
-            <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center">
-              <AlertCircle className="w-10 h-10 text-destructive" />
+            <div className="w-20 h-20 rounded-full bg-red-950/30 flex items-center justify-center">
+              <AlertCircle className="w-10 h-10 text-red-400" />
             </div>
           </div>
           <div>
-            <h2 className="text-xl font-bold mb-2">Erro na Análise</h2>
-            <p className="text-muted-foreground text-sm">{error}</p>
+            <h2 className="text-xl font-bold text-white mb-2">Erro na Análise</h2>
+            <p className="text-zinc-400 text-sm">{error}</p>
           </div>
           <Button
-            className="w-full gap-2"
+            className="w-full gap-2 bg-white text-black hover:bg-zinc-200"
             onClick={() => navigate({ to: '/analyze' })}
           >
             <RefreshCw className="w-4 h-4" />
@@ -188,32 +198,46 @@ export default function ProcessingScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6">
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <h1 className="text-2xl font-bold">Analisando Gráfico</h1>
-          <p className="text-sm text-muted-foreground">
-            Detectando padrões de candle localmente...
-          </p>
+    <div className="min-h-screen bg-black flex items-center justify-center p-4">
+      <div className="w-full max-w-md space-y-8">
+
+        {/* Logo + Header */}
+        <div className="text-center space-y-4">
+          <div className="flex justify-center">
+            <img
+              src="/assets/generated/app-icon.dim_512x512.png"
+              alt="Logo"
+              className="w-16 h-16 rounded-2xl shadow-lg"
+            />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-4xl font-bold text-white tracking-tight">
+              Analisando Gráfico
+            </h1>
+            <p className="text-sm text-zinc-400">
+              Detectando padrões de velas localmente...
+            </p>
+          </div>
         </div>
 
-        {/* Processing stages */}
-        <Card className="p-6 space-y-4">
+        {/* Processing stages card */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl space-y-5">
           {stages.map((stage, index) => (
             <ProcessingStage
               key={stage.id}
               label={stage.label}
               isActive={currentStage === index && isProcessing}
               isComplete={currentStage > index}
+              duration={stage.duration}
             />
           ))}
-        </Card>
+        </div>
 
-        {/* Progress indicator */}
+        {/* Footer */}
         <div className="text-center">
-          <p className="text-xs text-muted-foreground">
-            Análise local — sem envio de dados externos
+          <p className="text-xs text-zinc-600">
+            Análise local —{' '}
+            <span className="text-zinc-500">sem envio de dados externos</span>
           </p>
         </div>
       </div>

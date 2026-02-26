@@ -1,149 +1,91 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-25T01:04:47.082Z",
+  "generatedAt": "2026-02-26T00:57:11.063Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 10,
-    "implemented": 9,
+    "total": 5,
+    "implemented": 4,
     "items": [
       {
-        "id": "REQ-87",
-        "summary": "Remove the entire external Gemini/API integration system from the frontend. Delete or disable frontend/src/services/analysisApi.ts, frontend/src/config/apiConfig.ts, and all API key validation logic. Remove the Gemini API key input field from the Settings page (frontend/src/pages/Settings.tsx) and all related hooks in frontend/src/hooks/useQueries.ts (getGeminiApiKey, setGeminiApiKey mutations). Remove API key validation from frontend/src/pages/ProcessingScreen.tsx. Keep all other settings controls (theme, AI sensitivity, timeframe, daily operation limit) intact.",
+        "id": "REQ-107",
+        "summary": "Redesign frontend/src/pages/ProcessingScreen.tsx layout to match the reference design (image-7.png): place the app logo/brand mark above the 'Analisando Gráfico' heading, followed by a subtitle line ('Detectando padrões de velas localmente...'). All four processing stages (Carregando imagem, Processando dados, Detectando padrões de candle, Gerando resultado) must be displayed in a card list below. Each stage row shows a circular status icon on the left (pending = dim circle, active = spinning ring, complete = filled green checkmark) and the stage label text on the right. Completed stages show the icon and label in green. The active stage shows the spinning ring with white/bold label. At the bottom of the screen display a small footer line reading 'Análise local — sem envio de dados externos'. Remove any horizontal colored progress bars from the stage rows.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/config/apiConfig.ts",
-          "frontend/src/services/analysisApi.ts",
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/pages/Settings.tsx"
+          "frontend/src/pages/ProcessingScreen.tsx",
+          "frontend/src/components/ProcessingStage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/config/apiConfig.ts",
-          "frontend/src/services/analysisApi.ts",
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/pages/Settings.tsx"
+          "frontend/src/pages/ProcessingScreen.tsx",
+          "frontend/src/components/ProcessingStage.tsx"
         ]
       },
       {
-        "id": "REQ-88",
-        "summary": "Remove backend Gemini API key storage from backend/main.mo. Delete the getGeminiApiKey and setGeminiApiKey functions and any associated stable storage for the API key. Ensure backward compatibility so existing analyses and other settings stored in the backend are unaffected.",
-        "status": "unknown",
-        "plannedFiles": [],
+        "id": "REQ-108",
+        "summary": "Replace the stage icon/status indicators in ProcessingScreen.tsx with animated horizontal loading bars styled in black and white. Each bar must animate from 0% to 100% fill while that stage is active. Display a small percentage counter (e.g., '47%') in a small font beside the right end of each bar, updating as the bar fills. The bars must use a black base track with a white fill that has a glowing/shining brightness effect (e.g., CSS box-shadow or filter: brightness glow on the white fill). Inactive/pending bars are shown as dim dark tracks with no fill. Completed bars remain fully filled in white.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/ProcessingStage.tsx",
+          "frontend/src/pages/ProcessingScreen.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/ProcessingStage.tsx",
+          "frontend/src/pages/ProcessingScreen.tsx"
+        ]
+      },
+      {
+        "id": "REQ-109",
+        "summary": "Update frontend/src/pages/AnalyzeChart.tsx to simplify the upload interface and ensure it accepts any image input method without restrictions. The page must support: file picker (any image type including screenshots and copies), camera capture, clipboard paste (Ctrl+V / mobile screenshot paste), and drag-and-drop. Remove any file format rejection logic that would block common screenshot formats. Accept PNG, JPG, JPEG, WebP, and any other common image MIME type. The UI must be clean and minimal with Portuguese labels. Do not display complex upload instructions — show a single prominent upload area with a brief label.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/AnalyzeChart.tsx",
+          "frontend/src/components/FileUpload.tsx",
+          "frontend/src/components/CameraCapture.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/AnalyzeChart.tsx",
+          "frontend/src/components/FileUpload.tsx"
+        ]
+      },
+      {
+        "id": "REQ-110",
+        "summary": "Update frontend/src/pages/Results.tsx to display the uploaded chart image as a minimized thumbnail. The thumbnail must be small (approximately 80×60px), positioned in a corner of the results layout (top-right or bottom-right), and must not dominate the results view. Retrieve the image data URL from sessionStorage using the 'chartImage' key. Style the thumbnail with a subtle border and rounded corners consistent with the active dark/light theme.",
+        "status": "missing",
+        "plannedFiles": [
+          "frontend/src/pages/Results.tsx"
+        ],
         "matchedFiles": []
       },
       {
-        "id": "REQ-89",
-        "summary": "Create a local candle analysis engine in frontend/src/services/localCandleAnalysis.ts that analyzes an uploaded chart image client-side without any external API calls. The engine must: (1) accept a File or Blob image input; (2) draw the image onto an HTML Canvas to read pixel data; (3) detect the candlestick chart region by scanning for alternating green/red vertical pixel columns against a dark or light background; (4) identify the last 5–7 visible candles by detecting their body color (green = bullish, red = bearish), body height, wick length, and relative position; (5) compute a next-candle probability score based on: trend direction across the detected candles (ascending tops/bottoms = ALTA, descending = BAIXA, otherwise LATERAL), last candle pattern (engulfing, hammer, shooting star, doji, pin bar detected from body-to-wick ratio and color), momentum (consecutive same-color candles increase confidence); (6) return a typed LocalAnalysisResult object containing: sinal ('COMPRA' | 'VENDA' | 'SEM ENTRADA'), tendencia ('ALTA' | 'BAIXA' | 'LATERAL'), confianca (number 0–100), probabilidade_alta (number 0–100), probabilidade_baixa (number 0–100), padroes (string[] in Portuguese), forca ('fraca' | 'média' | 'forte'), explicacao (one Portuguese sentence summarizing the prediction), and erro (optional string if chart region cannot be detected). The probabilities must sum to 100. If the chart region cannot be reliably detected, set erro to 'Não foi possível identificar o gráfico corretamente' and return a SEM ENTRADA signal.",
+        "id": "REQ-111",
+        "summary": "Apply a professional, premium visual polish to the ProcessingScreen. Use a fully dark background (#000 or near-black), large bold typography for the 'Analisando Gráfico' heading, and ensure spacing, padding, and layout proportions give the screen a high-quality trading app appearance. The stage card should have a slightly elevated dark surface (e.g., dark gray card on black background). All text must remain in Portuguese (Brazil).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/services/localCandleAnalysis.ts"
+          "frontend/src/pages/ProcessingScreen.tsx",
+          "frontend/src/index.css"
         ],
         "matchedFiles": [
-          "frontend/src/services/localCandleAnalysis.ts"
-        ]
-      },
-      {
-        "id": "REQ-90",
-        "summary": "Update frontend/src/types/apiTypes.ts (or create frontend/src/types/analysisTypes.ts) to define the LocalAnalysisResult interface with fields: sinal ('COMPRA' | 'VENDA' | 'SEM ENTRADA'), tendencia ('ALTA' | 'BAIXA' | 'LATERAL'), confianca (number), probabilidade_alta (number), probabilidade_baixa (number), padroes (string[]), forca ('fraca' | 'média' | 'forte'), explicacao (string), pontuacao (optional number), and erro (optional string). Add JSDoc comments explaining each field and note that all analysis is performed locally without external API calls.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/types/analysisTypes.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/types/analysisTypes.ts"
-        ]
-      },
-      {
-        "id": "REQ-91",
-        "summary": "Update frontend/src/pages/ProcessingScreen.tsx to use the local candle analysis engine instead of any external API. When analysis starts: (1) load the image from sessionStorage; (2) display the four sequential Portuguese stages (Carregando imagem → Processando dados → Detectando padrões → Gerando resultado) with animated indicators, advancing each stage on a short timeout to simulate processing steps; (3) call analyzeChartImage(file) from the local engine during the 'Detectando padrões' stage; (4) on success, store the result in sessionStorage and navigate to the Results page; (5) if the result contains an erro field, display the Portuguese error message 'Não foi possível identificar o gráfico corretamente' with a 'Tentar novamente' button that navigates back to AnalyzeChart; (6) remove all API key validation checks and HTTP error handling (404, 403, etc.) since no network calls are made.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/ProcessingScreen.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/ProcessingScreen.tsx"
-        ]
-      },
-      {
-        "id": "REQ-92",
-        "summary": "Update frontend/src/utils/mapApiResponse.ts (or create a new mapper) to map LocalAnalysisResult fields to the internal AnalysisResult format used by Results.tsx and history components. Preserve probabilidade_alta, probabilidade_baixa, forca, padroes, tendencia, confianca, sinal, and explicacao fields through the mapping so they are all available for rendering.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/utils/mapApiResponse.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/utils/mapApiResponse.ts"
-        ]
-      },
-      {
-        "id": "REQ-93",
-        "summary": "Update frontend/src/pages/Results.tsx to display the original uploaded screenshot as a small thumbnail (approximately 80×60 px) positioned beside the main analysis output area. Retrieve the image data URL from sessionStorage using the key used during upload. Style the thumbnail with a subtle border and rounded corners consistent with the active dark/light theme. The thumbnail must be visible alongside the results, not below them, serving as a visual reference for the analyzed chart.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/Results.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/Results.tsx"
-        ]
-      },
-      {
-        "id": "REQ-94",
-        "summary": "Update frontend/src/pages/Results.tsx to display a prominent probability sentence near the top of the results, immediately below the signal card. The sentence must read in Portuguese: '[XX]% de probabilidade de ALTA / [YY]% de BAIXA na próxima vela' where XX is probabilidade_alta and YY is probabilidade_baixa from the analysis result. Style the ALTA portion in green and the BAIXA portion in red. Also show two horizontal percentage bar indicators side by side (green bar for ALTA, red bar for BAIXA) filling proportionally to their values.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/Results.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/Results.tsx"
-        ]
-      },
-      {
-        "id": "REQ-95",
-        "summary": "Update frontend/src/pages/Results.tsx to display the candle analysis output fields in the following order with Portuguese labels: (1) Tendência (ALTA/BAIXA/LATERAL), (2) Padrões encontrados (list of detected patterns from padroes array), (3) Força (fraca/média/forte with color-coded badge: gray=fraca, amber=média, green=forte), (4) Confiança percentage, (5) Sinal (COMPRA ↑ / VENDA ↓ / SEM ENTRADA) with directional arrows and color coding, (6) Explicação (one-sentence Portuguese explanation from explicacao field). Ensure this order is consistent and all labels are in Portuguese (Brazil). If the result contains an erro field, display the Portuguese error message prominently instead of the results fields.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/Results.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/Results.tsx"
-        ]
-      },
-      {
-        "id": "REQ-96",
-        "summary": "Update the Settings page (frontend/src/pages/Settings.tsx) to remove the Gemini API key section entirely and replace it with a 'Configuração de Análise de Candles' section. This section must contain: (1) a read-only informational row labeled 'Motor de análise' showing the value 'Local (sem API externa)'; (2) the existing AI sensitivity slider labeled 'Sensibilidade da IA'; (3) the existing default timeframe selector (M1/M5/M10) labeled 'Timeframe padrão'; (4) the existing daily operation limit selector labeled 'Operações por dia'. All labels must be in Portuguese (Brazil). Keep all other existing settings (theme toggle, notifications) unchanged.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/Settings.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/Settings.tsx"
+          "frontend/src/pages/ProcessingScreen.tsx",
+          "frontend/src/index.css"
         ]
       }
     ]
   },
   "changedFiles": [
-    "backend/main.mo",
-    "backend/migration.mo",
     "build-request.json",
+    "build-template/README.md",
+    "caffeine.lock.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/backend.d.ts",
-    "frontend/src/backend.ts",
-    "frontend/src/config/apiConfig.ts",
-    "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/components/FileUpload.tsx",
+    "frontend/src/components/ProcessingStage.tsx",
+    "frontend/src/index.css",
+    "frontend/src/pages/AnalyzeChart.tsx",
     "frontend/src/pages/ProcessingScreen.tsx",
-    "frontend/src/pages/Results.tsx",
-    "frontend/src/pages/Settings.tsx",
-    "frontend/src/services/analysisApi.ts",
-    "frontend/src/services/localCandleAnalysis.ts",
-    "frontend/src/types/analysisTypes.ts",
-    "frontend/src/utils/mapApiResponse.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

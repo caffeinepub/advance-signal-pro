@@ -9,10 +9,10 @@ import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
-import Migration "migration";
+
 
 // Specify the data migration function in with-clause (see migration.mo)
-(with migration = Migration.run)
+
 actor {
   include MixinStorage();
 
