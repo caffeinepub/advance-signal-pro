@@ -1,18 +1,18 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-03-02T23:02:28.916Z",
+  "generatedAt": "2026-03-02T23:44:39.368Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 5,
-    "implemented": 5,
+    "total": 4,
+    "implemented": 4,
     "items": [
       {
-        "id": "REQ-134",
-        "summary": "Fix the timeframe display bug in the Results screen: the 'Time Frame' tile in the 2×2 info grid must display the timeframe actually selected by the user in Settings (M1, M3, or M5), not always default to M1. The timeframe must be read from the analysis result's 'timeframe' field (which is populated by localCandleAnalysis.ts reading from localStorage/settings). Additionally, update the countdown timer initialization so M1=60s, M3=180s, M5=300s — matching the selected timeframe exactly. The 'Entrar às HH:MM' static label must compute entry time as current time at page load plus the correct duration for the selected timeframe.",
+        "id": "REQ-142",
+        "summary": "Redesign frontend/src/pages/Results.tsx to exactly match the layout shown in image-13.png. The screen must have a dark background and display the following sections top to bottom: (1) A header row with back arrow, title 'Resultado da Análise', and subtitle 'Análise técnica de candles'; (2) Two side-by-side dark tiles — left tile shows a clock icon, 'TEMPO' label, the countdown timer in large bold white (e.g., '00:36'), and 'restante' subtitle; right tile shows a clock icon, 'ENTRAR ÀS' label, the entry time in large bold cyan/teal (e.g., '20:32'), and 'horário de entrada' subtitle; (3) A large full-width green banner for COMPRA (showing '↗ COMPRA' in large bold white text) or red banner for VENDA (showing '↙ VENDA'), with 'Tendência: ALTA • Confiança: 95%' on one line and a 'Força: forte' badge centered below it; (4) A 2×2 grid of dark tiles: top-left shows 'Tendência' label with a colored arrow icon and 'ALTA' value in green (or 'BAIXA' in red), top-right shows 'Precisão' label with a target icon and the precision percentage/value in cyan, bottom-left shows 'Volume' label with a bar chart icon and the volume value (e.g., 'Baixo') in purple, bottom-right shows 'Time Frame' label with a clock icon, the timeframe value (e.g., 'M1') in amber/orange bold, and a subtitle (e.g., '1 min/vela'); (5) Below the grid, display the uploaded chart image as a full-width (or near full-width) thumbnail with support/resistance overlay lines drawn on it. All text must be in Portuguese (Brazil).",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/pages/Results.tsx"
@@ -22,19 +22,8 @@
         ]
       },
       {
-        "id": "REQ-135",
-        "summary": "Fix the timeframe propagation in frontend/src/services/localCandleAnalysis.ts: when reading the user's selected timeframe from localStorage/settings, ensure the value is read at analysis execution time (not at module load time). The key used to read from localStorage must exactly match the key used by the Settings page to persist the timeframe. If the stored value is 'M3', 'M5', or 'M1', store it verbatim in the LocalAnalysisResult's 'timeframe' field. Never fall back to 'M1' unless no stored value exists.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/services/localCandleAnalysis.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/services/localCandleAnalysis.ts"
-        ]
-      },
-      {
-        "id": "REQ-136",
-        "summary": "Update the Results screen layout to match the reference design shown in image-11.png and image-12.png. The layout must show: (1) Two side-by-side tiles at the top — left tile shows 'TEMPO' label with countdown timer in large bold white (e.g., '00:29') and 'restante' subtitle; right tile shows 'ENTRAR ÀS' label with the entry time in cyan/teal (e.g., '19:10') and 'horário de entrada' subtitle; (2) A large full-width green banner for COMPRA (with '↗ COMPRA' text) or red for VENDA, showing 'Tendência: ALTA/BAIXA', 'Confiança: XX%', and a 'Força: forte/média/fraca' badge inline within the banner; (3) A 2×2 grid of dark tiles showing Tendência (with colored arrow), Precisão (with value), Volume (with value), Time Frame (with selected timeframe value); (4) The chart thumbnail displayed below the grid as a scrollable secondary section with support/resistance overlays.",
+        "id": "REQ-143",
+        "summary": "Update the chart thumbnail display in Results.tsx so the uploaded screenshot is shown as a large, full-width (or near full-width) image below the 2×2 info grid — matching the reference design in image-13.png where the chart occupies the lower portion of the screen. Remove any previous small corner thumbnail placement. Retrieve the image data URL from sessionStorage under the 'chartImage' key and render it with the ChartOverlay component so support (green dashed) and resistance (red dashed) lines are drawn on top.",
         "status": "implemented",
         "plannedFiles": [
           "frontend/src/pages/Results.tsx"
@@ -44,25 +33,25 @@
         ]
       },
       {
-        "id": "REQ-137",
-        "summary": "Fix the Settings page timeframe selector in frontend/src/pages/Settings.tsx to correctly persist the selected value (M1, M3, or M5) to localStorage and to the backend via the updateSettings mutation. Audit the localStorage key name used by Settings.tsx when saving the timeframe and ensure it is identical to the key read by localCandleAnalysis.ts. After saving, show the Portuguese success toast 'Configuração salva!'. Verify that selecting M3 or M5 and navigating away then returning to Settings still shows the previously saved value (not reverted to M1).",
+        "id": "REQ-144",
+        "summary": "Update the Tendência tile in the 2×2 grid of Results.tsx to display a colored upward/downward arrow icon inline with the ALTA or BAIXA label — green arrow for ALTA, red arrow for BAIXA — matching the visual style in image-13.png. Update the Precisão tile to display its value (percentage or Baixa/Média/Alta label) in cyan/teal text. Update the Volume tile to display its value in purple text. Update the Time Frame tile to display the timeframe value (M1/M3/M5) in amber/orange bold text with a subtitle line below it (e.g., '1 min/vela' for M1, '3 min/vela' for M3, '5 min/vela' for M5).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/Settings.tsx"
+          "frontend/src/pages/Results.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/Settings.tsx"
+          "frontend/src/pages/Results.tsx"
         ]
       },
       {
-        "id": "REQ-138",
-        "summary": "Ensure the analysis explanation text (explicacao field) generated by frontend/src/services/localCandleAnalysis.ts is unique per analysis and meaningfully references the specific detected patterns, trend direction, and candle characteristics found in the particular image being analyzed. Prevent generic or repetitive phrases from being reused across different chart analyses by incorporating the actual computed values (trend direction, pattern names, confidence score, momentum count) into the explanation template dynamically.",
+        "id": "REQ-145",
+        "summary": "Update the signal banner in Results.tsx to display inline within the banner: the signal arrow and label ('↗ COMPRA' or '↙ VENDA') in large bold white text, a middle line showing 'Tendência: [value] • Confiança: [XX]%', and a third line showing a centered pill badge 'Força: [forte/média/fraca]' — all within the green (COMPRA) or red (VENDA) full-width banner. This matches the layout visible in image-13.png. The banner must span the full width of the screen with generous vertical padding.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/services/localCandleAnalysis.ts"
+          "frontend/src/pages/Results.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/services/localCandleAnalysis.ts"
+          "frontend/src/pages/Results.tsx"
         ]
       }
     ]
@@ -73,8 +62,6 @@
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
     "frontend/src/pages/Results.tsx",
-    "frontend/src/pages/Settings.tsx",
-    "frontend/src/services/localCandleAnalysis.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

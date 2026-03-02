@@ -2,8 +2,8 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-fix-the-timeframe-display-bug-in-the-results-screen-the-time-frame-tile-in-the-2-2-info-grid-must-display-the-timeframe-actually-selected-by-the-user-in-settings-m1-m3-or-m5-not-always-default-to-m1-the-timeframe-must-be-read-from-the-analysis-result-s-timeframe-field-which-is-populated-by-localcandleanalysis-ts-reading-from-localstorage-settings-additionally-update-the-countdown-timer-initialization-so-m1-60s-m3-180s-m5-300s-matching-the-selected-timeframe-exactly-the-entrar-s-hh-mm-static-label-must-compute-entry-time-as-current-time-at-page-load-plus-the-correct-duration-for-the-selected-timeframe",
-      "featureTitle": "Fix the timeframe display bug in the Results screen: the 'Time Frame' tile in the 2×2 info grid must display the timeframe actually selected by the user in Settings (M1, M3, or M5), not always default to M1. The timeframe must be read from the analysis result's 'timeframe' field (which is populated by localCandleAnalysis.ts reading from localStorage/settings). Additionally, update the countdown timer initialization so M1=60s, M3=180s, M5=300s — matching the selected timeframe exactly. The 'Entrar às HH:MM' static label must compute entry time as current time at page load plus the correct duration for the selected timeframe.",
+      "featureId": "feature-redesign-frontend-src-pages-results-tsx-to-exactly-match-the-layout-shown-in-image-13-png-the-screen-must-have-a-dark-background-and-display-the-following-sections-top-to-bottom-1-a-header-row-with-back-arrow-title-resultado-da-an-lise-and-subtitle-an-lise-t-cnica-de-candles-2-two-side-by-side-dark-tiles-left-tile-shows-a-clock-icon-tempo-label-the-countdown-timer-in-large-bold-white-e-g-00-36-and-restante-subtitle-right-tile-shows-a-clock-icon-entrar-s-label-the-entry-time-in-large-bold-cyan-teal-e-g-20-32-and-hor-rio-de-entrada-subtitle-3-a-large-full-width-green-banner-for-compra-showing-compra-in-large-bold-white-text-or-red-banner-for-venda-showing-venda-with-tend-ncia-alta-confian-a-95-on-one-line-and-a-for-a-forte-badge-centered-below-it-4-a-2-2-grid-of-dark-tiles-top-left-shows-tend-ncia-label-with-a-colored-arrow-icon-and-alta-value-in-green-or-baixa-in-red-top-right-shows-precis-o-label-with-a-target-icon-and-the-precision-percentage-value-in-cyan-bottom-left-shows-volume-label-with-a-bar-chart-icon-and-the-volume-value-e-g-baixo-in-purple-bottom-right-shows-time-frame-label-with-a-clock-icon-the-timeframe-value-e-g-m1-in-amber-orange-bold-and-a-subtitle-e-g-1-min-vela-5-below-the-grid-display-the-uploaded-chart-image-as-a-full-width-or-near-full-width-thumbnail-with-support-resistance-overlay-lines-drawn-on-it-all-text-must-be-in-portuguese-brazil",
+      "featureTitle": "Redesign frontend/src/pages/Results.tsx to exactly match the layout shown in image-13.png. The screen must have a dark background and display the following sections top to bottom: (1) A header row with back arrow, title 'Resultado da Análise', and subtitle 'Análise técnica de candles'; (2) Two side-by-side dark tiles — left tile shows a clock icon, 'TEMPO' label, the countdown timer in large bold white (e.g., '00:36'), and 'restante' subtitle; right tile shows a clock icon, 'ENTRAR ÀS' label, the entry time in large bold cyan/teal (e.g., '20:32'), and 'horário de entrada' subtitle; (3) A large full-width green banner for COMPRA (showing '↗ COMPRA' in large bold white text) or red banner for VENDA (showing '↙ VENDA'), with 'Tendência: ALTA • Confiança: 95%' on one line and a 'Força: forte' badge centered below it; (4) A 2×2 grid of dark tiles: top-left shows 'Tendência' label with a colored arrow icon and 'ALTA' value in green (or 'BAIXA' in red), top-right shows 'Precisão' label with a target icon and the precision percentage/value in cyan, bottom-left shows 'Volume' label with a bar chart icon and the volume value (e.g., 'Baixo') in purple, bottom-right shows 'Time Frame' label with a clock icon, the timeframe value (e.g., 'M1') in amber/orange bold, and a subtitle (e.g., '1 min/vela'); (5) Below the grid, display the uploaded chart image as a full-width (or near full-width) thumbnail with support/resistance overlay lines drawn on it. All text must be in Portuguese (Brazil).",
       "files": [
         "frontend/src/pages/Results.tsx"
       ],
@@ -19,35 +19,13 @@
         "authorization@4.0.0"
       ],
       "testIds": [
-        "REQ-134"
+        "REQ-142"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-fix-the-timeframe-propagation-in-frontend-src-services-localcandleanalysis-ts-when-reading-the-user-s-selected-timeframe-from-localstorage-settings-ensure-the-value-is-read-at-analysis-execution-time-not-at-module-load-time-the-key-used-to-read-from-localstorage-must-exactly-match-the-key-used-by-the-settings-page-to-persist-the-timeframe-if-the-stored-value-is-m3-m5-or-m1-store-it-verbatim-in-the-localanalysisresult-s-timeframe-field-never-fall-back-to-m1-unless-no-stored-value-exists",
-      "featureTitle": "Fix the timeframe propagation in frontend/src/services/localCandleAnalysis.ts: when reading the user's selected timeframe from localStorage/settings, ensure the value is read at analysis execution time (not at module load time). The key used to read from localStorage must exactly match the key used by the Settings page to persist the timeframe. If the stored value is 'M3', 'M5', or 'M1', store it verbatim in the LocalAnalysisResult's 'timeframe' field. Never fall back to 'M1' unless no stored value exists.",
-      "files": [
-        "frontend/src/services/localCandleAnalysis.ts"
-      ],
-      "components": [
-        "blob-storage@4.0.0",
-        "camera@1.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "http-outcalls@3.0.0",
-        "authorization@4.0.0"
-      ],
-      "testIds": [
-        "REQ-135"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-update-the-results-screen-layout-to-match-the-reference-design-shown-in-image-11-png-and-image-12-png-the-layout-must-show-1-two-side-by-side-tiles-at-the-top-left-tile-shows-tempo-label-with-countdown-timer-in-large-bold-white-e-g-00-29-and-restante-subtitle-right-tile-shows-entrar-s-label-with-the-entry-time-in-cyan-teal-e-g-19-10-and-hor-rio-de-entrada-subtitle-2-a-large-full-width-green-banner-for-compra-with-compra-text-or-red-for-venda-showing-tend-ncia-alta-baixa-confian-a-xx-and-a-for-a-forte-m-dia-fraca-badge-inline-within-the-banner-3-a-2-2-grid-of-dark-tiles-showing-tend-ncia-with-colored-arrow-precis-o-with-value-volume-with-value-time-frame-with-selected-timeframe-value-4-the-chart-thumbnail-displayed-below-the-grid-as-a-scrollable-secondary-section-with-support-resistance-overlays",
-      "featureTitle": "Update the Results screen layout to match the reference design shown in image-11.png and image-12.png. The layout must show: (1) Two side-by-side tiles at the top — left tile shows 'TEMPO' label with countdown timer in large bold white (e.g., '00:29') and 'restante' subtitle; right tile shows 'ENTRAR ÀS' label with the entry time in cyan/teal (e.g., '19:10') and 'horário de entrada' subtitle; (2) A large full-width green banner for COMPRA (with '↗ COMPRA' text) or red for VENDA, showing 'Tendência: ALTA/BAIXA', 'Confiança: XX%', and a 'Força: forte/média/fraca' badge inline within the banner; (3) A 2×2 grid of dark tiles showing Tendência (with colored arrow), Precisão (with value), Volume (with value), Time Frame (with selected timeframe value); (4) The chart thumbnail displayed below the grid as a scrollable secondary section with support/resistance overlays.",
+      "featureId": "feature-update-the-chart-thumbnail-display-in-results-tsx-so-the-uploaded-screenshot-is-shown-as-a-large-full-width-or-near-full-width-image-below-the-2-2-info-grid-matching-the-reference-design-in-image-13-png-where-the-chart-occupies-the-lower-portion-of-the-screen-remove-any-previous-small-corner-thumbnail-placement-retrieve-the-image-data-url-from-sessionstorage-under-the-chartimage-key-and-render-it-with-the-chartoverlay-component-so-support-green-dashed-and-resistance-red-dashed-lines-are-drawn-on-top",
+      "featureTitle": "Update the chart thumbnail display in Results.tsx so the uploaded screenshot is shown as a large, full-width (or near full-width) image below the 2×2 info grid — matching the reference design in image-13.png where the chart occupies the lower portion of the screen. Remove any previous small corner thumbnail placement. Retrieve the image data URL from sessionStorage under the 'chartImage' key and render it with the ChartOverlay component so support (green dashed) and resistance (red dashed) lines are drawn on top.",
       "files": [
         "frontend/src/pages/Results.tsx"
       ],
@@ -63,15 +41,15 @@
         "authorization@4.0.0"
       ],
       "testIds": [
-        "REQ-136"
+        "REQ-143"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-fix-the-settings-page-timeframe-selector-in-frontend-src-pages-settings-tsx-to-correctly-persist-the-selected-value-m1-m3-or-m5-to-localstorage-and-to-the-backend-via-the-updatesettings-mutation-audit-the-localstorage-key-name-used-by-settings-tsx-when-saving-the-timeframe-and-ensure-it-is-identical-to-the-key-read-by-localcandleanalysis-ts-after-saving-show-the-portuguese-success-toast-configura-o-salva-verify-that-selecting-m3-or-m5-and-navigating-away-then-returning-to-settings-still-shows-the-previously-saved-value-not-reverted-to-m1",
-      "featureTitle": "Fix the Settings page timeframe selector in frontend/src/pages/Settings.tsx to correctly persist the selected value (M1, M3, or M5) to localStorage and to the backend via the updateSettings mutation. Audit the localStorage key name used by Settings.tsx when saving the timeframe and ensure it is identical to the key read by localCandleAnalysis.ts. After saving, show the Portuguese success toast 'Configuração salva!'. Verify that selecting M3 or M5 and navigating away then returning to Settings still shows the previously saved value (not reverted to M1).",
+      "featureId": "feature-update-the-tend-ncia-tile-in-the-2-2-grid-of-results-tsx-to-display-a-colored-upward-downward-arrow-icon-inline-with-the-alta-or-baixa-label-green-arrow-for-alta-red-arrow-for-baixa-matching-the-visual-style-in-image-13-png-update-the-precis-o-tile-to-display-its-value-percentage-or-baixa-m-dia-alta-label-in-cyan-teal-text-update-the-volume-tile-to-display-its-value-in-purple-text-update-the-time-frame-tile-to-display-the-timeframe-value-m1-m3-m5-in-amber-orange-bold-text-with-a-subtitle-line-below-it-e-g-1-min-vela-for-m1-3-min-vela-for-m3-5-min-vela-for-m5",
+      "featureTitle": "Update the Tendência tile in the 2×2 grid of Results.tsx to display a colored upward/downward arrow icon inline with the ALTA or BAIXA label — green arrow for ALTA, red arrow for BAIXA — matching the visual style in image-13.png. Update the Precisão tile to display its value (percentage or Baixa/Média/Alta label) in cyan/teal text. Update the Volume tile to display its value in purple text. Update the Time Frame tile to display the timeframe value (M1/M3/M5) in amber/orange bold text with a subtitle line below it (e.g., '1 min/vela' for M1, '3 min/vela' for M3, '5 min/vela' for M5).",
       "files": [
-        "frontend/src/pages/Settings.tsx"
+        "frontend/src/pages/Results.tsx"
       ],
       "components": [
         "blob-storage@4.0.0",
@@ -85,15 +63,15 @@
         "authorization@4.0.0"
       ],
       "testIds": [
-        "REQ-137"
+        "REQ-144"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-ensure-the-analysis-explanation-text-explicacao-field-generated-by-frontend-src-services-localcandleanalysis-ts-is-unique-per-analysis-and-meaningfully-references-the-specific-detected-patterns-trend-direction-and-candle-characteristics-found-in-the-particular-image-being-analyzed-prevent-generic-or-repetitive-phrases-from-being-reused-across-different-chart-analyses-by-incorporating-the-actual-computed-values-trend-direction-pattern-names-confidence-score-momentum-count-into-the-explanation-template-dynamically",
-      "featureTitle": "Ensure the analysis explanation text (explicacao field) generated by frontend/src/services/localCandleAnalysis.ts is unique per analysis and meaningfully references the specific detected patterns, trend direction, and candle characteristics found in the particular image being analyzed. Prevent generic or repetitive phrases from being reused across different chart analyses by incorporating the actual computed values (trend direction, pattern names, confidence score, momentum count) into the explanation template dynamically.",
+      "featureId": "feature-update-the-signal-banner-in-results-tsx-to-display-inline-within-the-banner-the-signal-arrow-and-label-compra-or-venda-in-large-bold-white-text-a-middle-line-showing-tend-ncia-value-confian-a-xx-and-a-third-line-showing-a-centered-pill-badge-for-a-forte-m-dia-fraca-all-within-the-green-compra-or-red-venda-full-width-banner-this-matches-the-layout-visible-in-image-13-png-the-banner-must-span-the-full-width-of-the-screen-with-generous-vertical-padding",
+      "featureTitle": "Update the signal banner in Results.tsx to display inline within the banner: the signal arrow and label ('↗ COMPRA' or '↙ VENDA') in large bold white text, a middle line showing 'Tendência: [value] • Confiança: [XX]%', and a third line showing a centered pill badge 'Força: [forte/média/fraca]' — all within the green (COMPRA) or red (VENDA) full-width banner. This matches the layout visible in image-13.png. The banner must span the full width of the screen with generous vertical padding.",
       "files": [
-        "frontend/src/services/localCandleAnalysis.ts"
+        "frontend/src/pages/Results.tsx"
       ],
       "components": [
         "blob-storage@4.0.0",
@@ -107,7 +85,7 @@
         "authorization@4.0.0"
       ],
       "testIds": [
-        "REQ-138"
+        "REQ-145"
       ],
       "confidence": "high"
     }

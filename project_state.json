@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 55,
+  "projectStateVersion": 59,
   "summary": "Advance Signal Pro: Mobile app (Android/iOS) for automated financial chart analysis using a local candle analysis engine. The results screen shows: a small thumbnail of the original screenshot, a prominent probability sentence (e.g., '70% de alta / 30% de baixa'), and a detailed quality analysis for the next candle direction. Analysis is slower/more deliberate for better UX. Features: AI-powered chart analysis with support/resistance detection, last two chart patterns identified, trend direction (ALTA/BAIXA), precision level (baixa/média/alta), volume indicator (baixo/alto), and auto-detected timeframe from user settings (M1/M5/M10). Dark/light themes, Portuguese (Brazil) interface, chart upload (camera/gallery/clipboard/drag-drop), analysis history, daily operation management (3/4/6/8 ops per day with midnight reset), operation confirmation buttons (green=followed, red=not followed).",
   "architectural_notes": [
     "Mobile-first architecture for Android and iOS platforms",
@@ -17,7 +17,8 @@
     "Analysis error: 'Erro ao processar análise. Tente novamente.' occurring when users attempt to analyze charts — local candle analysis engine failing to process uploaded image.",
     "Save result error: 'Não foi possível salvar o resultado' appears after successful local analysis — backend actor save call failing (timeout or incompatibility), causing 'ERRO NA ANALISE' to display instead of navigating to results.",
     "Timeframe display bug: Results screen shows M1 as the period even when user selected M5 or M10 in Settings — timeframe is not being read correctly from user configuration.",
-    "Settings page: timeframe selector not persisting/propagating selected value (M1/M3/M5); daily operation limit selector not displaying or functioning correctly with normal numbers."
+    "Settings page: timeframe selector not persisting/propagating selected value (M1/M3/M5); daily operation limit selector not displaying or functioning correctly with normal numbers.",
+    "Timeframe selector in Settings not updating the active value when user selects M3 or M5 — the displayed/active timeframe does not change after selection, persisting the old value instead of the newly chosen one."
   ],
   "isFixRequest": true,
   "existing_features": [
@@ -964,6 +965,46 @@
         "REQ-138"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-fix-the-timeframe-selector-in-frontend-src-pages-settings-tsx-so-that-when-the-user-selects-m3-or-m5-the-selection-is-immediately-reflected-in-the-ui-the-active-selected-value-updates-visually-persisted-to-localstorage-under-the-exact-key-that-localcandleanalysis-ts-reads-and-saved-to-the-backend-via-the-updatesettings-mutation-the-selector-must-not-revert-to-its-previous-value-after-selection-after-saving-display-the-portuguese-success-toast-configura-o-salva-on-page-reload-the-selector-must-restore-the-previously-saved-value-m1-m3-or-m5",
+      "title": "Fix the timeframe selector in frontend/src/pages/Settings.tsx so that when the user selects M3 or M5, the selection is immediately reflected in the UI (the active/selected value updates visually), persisted to localStorage under the exact key that localCandleAnalysis.ts reads, and saved to the backend via the updateSettings mutation. The selector must not revert to its previous value after selection. After saving, display the Portuguese success toast 'Configuração salva!'. On page reload, the selector must restore the previously saved value (M1, M3, or M5).",
+      "reqIds": [
+        "REQ-139"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-redesign-frontend-src-pages-results-tsx-to-exactly-match-the-layout-shown-in-image-13-png-the-screen-must-have-a-dark-background-and-display-the-following-sections-top-to-bottom-1-a-header-row-with-back-arrow-title-resultado-da-an-lise-and-subtitle-an-lise-t-cnica-de-candles-2-two-side-by-side-dark-tiles-left-tile-shows-a-clock-icon-tempo-label-the-countdown-timer-in-large-bold-white-e-g-00-36-and-restante-subtitle-right-tile-shows-a-clock-icon-entrar-s-label-the-entry-time-in-large-bold-cyan-teal-e-g-20-32-and-hor-rio-de-entrada-subtitle-3-a-large-full-width-green-banner-for-compra-showing-compra-in-large-bold-white-text-or-red-banner-for-venda-showing-venda-with-tend-ncia-alta-confian-a-95-on-one-line-and-a-for-a-forte-badge-centered-below-it-4-a-2-2-grid-of-dark-tiles-top-left-shows-tend-ncia-label-with-a-colored-arrow-icon-and-alta-value-in-green-or-baixa-in-red-top-right-shows-precis-o-label-with-a-target-icon-and-the-precision-percentage-value-in-cyan-bottom-left-shows-volume-label-with-a-bar-chart-icon-and-the-volume-value-e-g-baixo-in-purple-bottom-right-shows-time-frame-label-with-a-clock-icon-the-timeframe-value-e-g-m1-in-amber-orange-bold-and-a-subtitle-e-g-1-min-vela-5-below-the-grid-display-the-uploaded-chart-image-as-a-full-width-or-near-full-width-thumbnail-with-support-resistance-overlay-lines-drawn-on-it-all-text-must-be-in-portuguese-brazil",
+      "title": "Redesign frontend/src/pages/Results.tsx to exactly match the layout shown in image-13.png. The screen must have a dark background and display the following sections top to bottom: (1) A header row with back arrow, title 'Resultado da Análise', and subtitle 'Análise técnica de candles'; (2) Two side-by-side dark tiles — left tile shows a clock icon, 'TEMPO' label, the countdown timer in large bold white (e.g., '00:36'), and 'restante' subtitle; right tile shows a clock icon, 'ENTRAR ÀS' label, the entry time in large bold cyan/teal (e.g., '20:32'), and 'horário de entrada' subtitle; (3) A large full-width green banner for COMPRA (showing '↗ COMPRA' in large bold white text) or red banner for VENDA (showing '↙ VENDA'), with 'Tendência: ALTA • Confiança: 95%' on one line and a 'Força: forte' badge centered below it; (4) A 2×2 grid of dark tiles: top-left shows 'Tendência' label with a colored arrow icon and 'ALTA' value in green (or 'BAIXA' in red), top-right shows 'Precisão' label with a target icon and the precision percentage/value in cyan, bottom-left shows 'Volume' label with a bar chart icon and the volume value (e.g., 'Baixo') in purple, bottom-right shows 'Time Frame' label with a clock icon, the timeframe value (e.g., 'M1') in amber/orange bold, and a subtitle (e.g., '1 min/vela'); (5) Below the grid, display the uploaded chart image as a full-width (or near full-width) thumbnail with support/resistance overlay lines drawn on it. All text must be in Portuguese (Brazil).",
+      "reqIds": [
+        "REQ-142"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-chart-thumbnail-display-in-results-tsx-so-the-uploaded-screenshot-is-shown-as-a-large-full-width-or-near-full-width-image-below-the-2-2-info-grid-matching-the-reference-design-in-image-13-png-where-the-chart-occupies-the-lower-portion-of-the-screen-remove-any-previous-small-corner-thumbnail-placement-retrieve-the-image-data-url-from-sessionstorage-under-the-chartimage-key-and-render-it-with-the-chartoverlay-component-so-support-green-dashed-and-resistance-red-dashed-lines-are-drawn-on-top",
+      "title": "Update the chart thumbnail display in Results.tsx so the uploaded screenshot is shown as a large, full-width (or near full-width) image below the 2×2 info grid — matching the reference design in image-13.png where the chart occupies the lower portion of the screen. Remove any previous small corner thumbnail placement. Retrieve the image data URL from sessionStorage under the 'chartImage' key and render it with the ChartOverlay component so support (green dashed) and resistance (red dashed) lines are drawn on top.",
+      "reqIds": [
+        "REQ-143"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-tend-ncia-tile-in-the-2-2-grid-of-results-tsx-to-display-a-colored-upward-downward-arrow-icon-inline-with-the-alta-or-baixa-label-green-arrow-for-alta-red-arrow-for-baixa-matching-the-visual-style-in-image-13-png-update-the-precis-o-tile-to-display-its-value-percentage-or-baixa-m-dia-alta-label-in-cyan-teal-text-update-the-volume-tile-to-display-its-value-in-purple-text-update-the-time-frame-tile-to-display-the-timeframe-value-m1-m3-m5-in-amber-orange-bold-text-with-a-subtitle-line-below-it-e-g-1-min-vela-for-m1-3-min-vela-for-m3-5-min-vela-for-m5",
+      "title": "Update the Tendência tile in the 2×2 grid of Results.tsx to display a colored upward/downward arrow icon inline with the ALTA or BAIXA label — green arrow for ALTA, red arrow for BAIXA — matching the visual style in image-13.png. Update the Precisão tile to display its value (percentage or Baixa/Média/Alta label) in cyan/teal text. Update the Volume tile to display its value in purple text. Update the Time Frame tile to display the timeframe value (M1/M3/M5) in amber/orange bold text with a subtitle line below it (e.g., '1 min/vela' for M1, '3 min/vela' for M3, '5 min/vela' for M5).",
+      "reqIds": [
+        "REQ-144"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-signal-banner-in-results-tsx-to-display-inline-within-the-banner-the-signal-arrow-and-label-compra-or-venda-in-large-bold-white-text-a-middle-line-showing-tend-ncia-value-confian-a-xx-and-a-third-line-showing-a-centered-pill-badge-for-a-forte-m-dia-fraca-all-within-the-green-compra-or-red-venda-full-width-banner-this-matches-the-layout-visible-in-image-13-png-the-banner-must-span-the-full-width-of-the-screen-with-generous-vertical-padding",
+      "title": "Update the signal banner in Results.tsx to display inline within the banner: the signal arrow and label ('↗ COMPRA' or '↙ VENDA') in large bold white text, a middle line showing 'Tendência: [value] • Confiança: [XX]%', and a third line showing a centered pill badge 'Força: [forte/média/fraca]' — all within the green (COMPRA) or red (VENDA) full-width banner. This matches the layout visible in image-13.png. The banner must span the full width of the screen with generous vertical padding.",
+      "reqIds": [
+        "REQ-145"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -1304,6 +1345,22 @@
       "summary": "Audit frontend/src/hooks/useQueries.ts to verify the setDailyOperationLimit mutation and getDailyOperationProgress query are correctly wired to the backend actor. Confirm the Motoko function signatures in backend/main.mo match the frontend call signatures exactly (parameter types, return types). Fix any mismatches that cause the daily limit save or progress fetch to fail silently or return incorrect values.",
       "reqIds": [
         "REQ-133"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-86",
+      "summary": "Fix the timeframe propagation in frontend/src/services/localCandleAnalysis.ts to ensure the localStorage key used to read the timeframe is exactly identical to the key used by Settings.tsx to write it. The timeframe must be read at analysis execution time (not at module load time). If the stored value is 'M1', 'M3', or 'M5', it must be stored verbatim in the LocalAnalysisResult's timeframe field without any transformation or default override.",
+      "reqIds": [
+        "REQ-140"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-87",
+      "summary": "Fix the Results screen (frontend/src/pages/Results.tsx) so that the 'Time Frame' tile in the 2×2 info grid and the countdown timer duration both use the timeframe value from the analysis result's timeframe field. The timer duration must be: M1 = 60 seconds, M3 = 180 seconds, M5 = 300 seconds. The 'Entrar às HH:MM' entry time must be computed as the current time at page load plus the correct duration for the selected timeframe. The Time Frame tile must display 'M5' when the user selected M5, never defaulting to M1.",
+      "reqIds": [
+        "REQ-141"
       ],
       "status": "pending"
     }
