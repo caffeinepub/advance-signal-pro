@@ -2,16 +2,15 @@ import Map "mo:core/Map";
 import Array "mo:core/Array";
 import Text "mo:core/Text";
 import Time "mo:core/Time";
-import Runtime "mo:core/Runtime";
 import Order "mo:core/Order";
 import Principal "mo:core/Principal";
+
+import Runtime "mo:core/Runtime";
 import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 
-
-// Specify the data migration function in with-clause (see migration.mo)
 
 actor {
   include MixinStorage();
@@ -19,32 +18,16 @@ actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
+  public type UserId = Principal;
+
   public type UserProfile = {
     name : Text;
     email : ?Text;
   };
 
-  let userProfiles = Map.empty<Principal, UserProfile>();
-
-  public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can get profiles");
-    };
-    userProfiles.get(caller);
-  };
-
-  public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
-    if (caller != user and not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Can only view your own profile");
-    };
-    userProfiles.get(user);
-  };
-
-  public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can save profiles");
-    };
-    userProfiles.add(caller, profile);
+  public type StoreAnalysisResult = {
+    #success;
+    #anonymousNotPersisted;
   };
 
   public type AnalysisDirection = {
@@ -89,12 +72,14 @@ actor {
     stopExemplo : ?Float;
     alvoExemplo : ?Float;
     operationFollowed : ?Bool;
+    timeframe : Timeframe;
   };
 
   public type Timeframe = {
     #M1;
     #M5;
     #M10;
+    #M3;
   };
 
   public type UserSettings = {
@@ -106,28 +91,39 @@ actor {
     dailyOperationLimit : Nat;
   };
 
-  let analyses = Map.empty<Principal, [AnalysisResult]>();
-  let settings = Map.empty<Principal, UserSettings>();
+  let analyses = Map.empty<UserId, [AnalysisResult]>();
+  let userProfiles = Map.empty<UserId, UserProfile>();
+  let settings = Map.empty<UserId, UserSettings>();
 
-  public shared ({ caller }) func storeExternalAnalysis(result : AnalysisResult) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can store analyses");
-    };
+  public type IsNewUser = Bool;
 
+  // storeAnalysis is intentionally open to all callers including anonymous/guest principals.
+  // Per the application intent, anonymous saves must not cause fatal errors on the frontend.
+  // Anonymous callers are treated as guests and their data is stored keyed by their anonymous principal.
+  public shared ({ caller }) func storeAnalysis(result : AnalysisResult) : async {
+    isNewUser : IsNewUser;
+    legacyEntriesCount : Nat;
+  } {
+    var isNewUser = false;
     let userAnalyses = switch (analyses.get(caller)) {
-      case (null) { [] };
+      case (null) {
+        isNewUser := true;
+        [];
+      };
       case (?data) { data };
     };
 
     let newAnalyses = [result].concat(userAnalyses);
     analyses.add(caller, newAnalyses);
+
+    {
+      isNewUser;
+      legacyEntriesCount = userAnalyses.size();
+    };
   };
 
+  // Any caller (including guests) can read their own analyses.
   public query ({ caller }) func getAnalyses() : async [AnalysisResult] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can get analyses");
-    };
-
     let userAnalyses = switch (analyses.get(caller)) {
       case (null) { [] };
       case (?data) { data };
@@ -136,9 +132,10 @@ actor {
     userAnalyses.reverse();
   };
 
-  public query ({ caller }) func getAnalysisHistory() : async [AnalysisResult] {
+  // Returns all users' analyses — admin only.
+  public query ({ caller }) func getAnalysisHistory(_units : Nat) : async [AnalysisResult] {
     if (not (AccessControl.isAdmin(accessControlState, caller))) {
-      Runtime.trap("Unauthorized: Only admins can view all analysis history");
+      Runtime.trap("Unauthorized: Only admins can view full analysis history");
     };
 
     var result : [AnalysisResult] = [];
@@ -150,17 +147,18 @@ actor {
     result;
   };
 
+  // Modifies caller's own settings — requires authenticated user role.
   public shared ({ caller }) func updateSettings(newSettings : UserSettings) : async Text {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can update settings");
     };
 
     if (newSettings.aiSensitivity > 100) {
-      Runtime.trap("AI sensitivity must be between 0 and 100");
+      return "AI sensitivity must be between 0 and 100 (" # newSettings.aiSensitivity.toText() # ")";
     };
 
     if (newSettings.dailyOperationLimit < 3 or newSettings.dailyOperationLimit > 8) {
-      Runtime.trap("Daily operation limit must be 3, 4, 6, or 8");
+      return "Daily operation limit must be 3, 4, 6, or 8 (" # newSettings.dailyOperationLimit.toText() # ")";
     };
 
     let validDailyLimit = switch (newSettings.dailyOperationLimit) {
@@ -174,11 +172,8 @@ actor {
     "Settings updated successfully";
   };
 
+  // Any caller can read their own settings (returns defaults for guests).
   public query ({ caller }) func getSettings() : async UserSettings {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can get settings");
-    };
-
     switch (settings.get(caller)) {
       case (null) {
         {
@@ -194,6 +189,7 @@ actor {
     };
   };
 
+  // Returns static configuration — open to all callers.
   public query ({ caller }) func getCriteria() : async {
     bullishThreshold : Float;
     bearishThreshold : Float;
@@ -202,10 +198,6 @@ actor {
     supportResistancePadding : Float;
     patternRecognitionSensitivity : Nat;
   } {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can get criteria");
-    };
-
     {
       bullishThreshold = 1.5;
       bearishThreshold = -1.5;
@@ -216,9 +208,10 @@ actor {
     };
   };
 
+  // Aggregates resistance levels across all users — requires authenticated user role.
   public query ({ caller }) func getTopResistanceLevels() : async [ResistanceLevel] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can get resistance levels");
+      Runtime.trap("Unauthorized: Only users can view top resistance levels");
     };
 
     var allAnalyses : [AnalysisResult] = [];
@@ -234,11 +227,12 @@ actor {
     topLevelsIter.take(5).toArray();
   };
 
+  // Returns progress for a given userId — caller must be that user or an admin.
   public query ({ caller }) func getDailyOperationProgress(userId : Principal) : async {
     completedOperations : Nat;
     dailyLimit : Nat;
   } {
-    if (caller != userId and not AccessControl.isAdmin(accessControlState, caller)) {
+    if (caller != userId and not (AccessControl.isAdmin(accessControlState, caller))) {
       Runtime.trap("Unauthorized: Can only view your own daily operation progress");
     };
 
@@ -266,13 +260,14 @@ actor {
     };
   };
 
+  // Modifies caller's own daily operation limit — requires authenticated user role.
   public shared ({ caller }) func setDailyOperationLimit(limit : Nat) : async Text {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can set their daily operation limit");
+      Runtime.trap("Unauthorized: Only users can set daily operation limit");
     };
 
     if (limit != 3 and limit != 4 and limit != 6 and limit != 8) {
-      Runtime.trap("Daily operation limit must be 3, 4, 6, or 8");
+      return "Daily operation limit must be 3, 4, 6, or 8 (" # limit.toText() # ")";
     };
 
     let currentSettings : UserSettings = switch (settings.get(caller)) {
@@ -293,5 +288,29 @@ actor {
     settings.add(caller, updatedSettings);
 
     "Daily operation limit set to " # limit.toText();
+  };
+
+  // Returns the caller's own profile — requires authenticated user role.
+  public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can get their profile");
+    };
+    userProfiles.get(caller);
+  };
+
+  // Returns a specific user's profile — caller must be that user or an admin.
+  public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
+    if (caller != user and not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Can only view your own profile");
+    };
+    userProfiles.get(user);
+  };
+
+  // Saves the caller's own profile — requires authenticated user role.
+  public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can save their profile");
+    };
+    userProfiles.add(caller, profile);
   };
 };

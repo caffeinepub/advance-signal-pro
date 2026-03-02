@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 45,
-  "summary": "Advance Signal Pro: Mobile app (Android/iOS) for automated financial chart analysis. Removing the external Gemini API system entirely — analysis is now done locally using a candle analysis engine. The results screen shows: a small thumbnail of the original screenshot, a sentence showing % probability of next candle going up or down (e.g., '70% de alta / 30% de baixa'), and a quality candle-based analysis for the next candle direction. Features dark/light themes, Portuguese (Brazil) interface, chart upload (camera/gallery/clipboard/drag-drop), analysis history, daily operation management (3/4/6/8 ops per day with midnight reset), operation confirmation buttons (green=followed, red=not followed), and M1/M5/M10 timeframe support.",
+  "projectStateVersion": 55,
+  "summary": "Advance Signal Pro: Mobile app (Android/iOS) for automated financial chart analysis using a local candle analysis engine. The results screen shows: a small thumbnail of the original screenshot, a prominent probability sentence (e.g., '70% de alta / 30% de baixa'), and a detailed quality analysis for the next candle direction. Analysis is slower/more deliberate for better UX. Features: AI-powered chart analysis with support/resistance detection, last two chart patterns identified, trend direction (ALTA/BAIXA), precision level (baixa/média/alta), volume indicator (baixo/alto), and auto-detected timeframe from user settings (M1/M5/M10). Dark/light themes, Portuguese (Brazil) interface, chart upload (camera/gallery/clipboard/drag-drop), analysis history, daily operation management (3/4/6/8 ops per day with midnight reset), operation confirmation buttons (green=followed, red=not followed).",
   "architectural_notes": [
     "Mobile-first architecture for Android and iOS platforms",
     "Modular, clean, and scalable code structure",
@@ -10,12 +10,16 @@
     "Fast, lightweight performance optimized for small screens",
     "Navigation flow: Dashboard → Upload → Processing → Results → History/Settings",
     "Fast processing target: <3 seconds for analysis results",
-    "API system removed: no external Gemini/REST API calls. All chart analysis is performed locally using a candle analysis engine based on image processing and pattern rules."
+    "API system removed: no external Gemini/REST API calls. All chart analysis is performed locally using a candle analysis engine based on image processing and pattern rules.",
+    "Results screen must auto-read selected timeframe (M1/M5/M10) from user settings and display it alongside the analysis — no manual input required from the user."
   ],
   "known_issues": [
-    "Analysis error: 'Erro ao processar análise. Tente novamente.' occurring when users attempt to analyze charts — local candle analysis engine failing to process uploaded image."
+    "Analysis error: 'Erro ao processar análise. Tente novamente.' occurring when users attempt to analyze charts — local candle analysis engine failing to process uploaded image.",
+    "Save result error: 'Não foi possível salvar o resultado' appears after successful local analysis — backend actor save call failing (timeout or incompatibility), causing 'ERRO NA ANALISE' to display instead of navigating to results.",
+    "Timeframe display bug: Results screen shows M1 as the period even when user selected M5 or M10 in Settings — timeframe is not being read correctly from user configuration.",
+    "Settings page: timeframe selector not persisting/propagating selected value (M1/M3/M5); daily operation limit selector not displaying or functioning correctly with normal numbers."
   ],
-  "isFixRequest": false,
+  "isFixRequest": true,
   "existing_features": [
     {
       "id": "feature-create-a-dashboard-home-screen-with-four-primary-action-buttons-analyze-chart-analysis-history-settings-and-an-ai-status-indicator-showing-system-readiness-use-a-minimalist-black-white-and-gray-color-scheme-with-large-prominent-buttons-and-simple-iconography-in-a-professional-trading-app-style",
@@ -768,6 +772,198 @@
         "REQ-111"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-upgrade-the-local-candle-analysis-engine-in-frontend-src-services-localcandleanalysis-ts-to-produce-a-significantly-more-detailed-analysis-output-the-engine-must-1-analyze-the-last-5-7-candles-more-thoroughly-computing-individual-candle-body-wick-ratios-color-sequences-and-relative-sizes-2-detect-and-name-the-last-two-chart-patterns-present-e-g-engolfo-de-alta-martelo-estrela-cadente-doji-pin-bar-harami-pullback-rompimento-in-portuguese-and-return-them-in-the-padroes-array-3-detect-at-least-two-support-and-resistance-levels-by-scanning-for-horizontal-price-clusters-rows-of-pixels-with-recurring-red-green-activity-and-store-them-in-a-new-suportes-and-resistencias-array-of-pixel-percentage-values-4-compute-a-precision-level-baixa-m-dia-alta-based-on-pattern-clarity-and-trend-strength-and-include-it-in-a-new-precisao-field-5-compute-a-volume-indicator-baixo-m-dio-alto-by-measuring-average-candle-body-height-relative-to-image-height-and-include-it-in-a-new-volume-field-6-include-the-user-s-configured-timeframe-m1-m5-m10-read-from-localstorage-settings-in-a-timeframe-field-of-the-result-7-produce-a-richer-portuguese-explicacao-sentence-that-references-the-detected-patterns-trend-direction-and-entry-rationale-for-the-next-candle-8-all-existing-fields-sinal-tendencia-confianca-probabilidade-alta-probabilidade-baixa-forca-erro-must-continue-to-work-correctly-never-throw-always-return-a-valid-result",
+      "title": "Upgrade the local candle analysis engine in frontend/src/services/localCandleAnalysis.ts to produce a significantly more detailed analysis output. The engine must: (1) analyze the last 5–7 candles more thoroughly, computing individual candle body/wick ratios, color sequences, and relative sizes; (2) detect and name the last TWO chart patterns present (e.g., Engolfo de Alta, Martelo, Estrela Cadente, Doji, Pin Bar, Harami, Pullback, Rompimento) in Portuguese and return them in the padroes array; (3) detect at least two support and resistance levels by scanning for horizontal price clusters (rows of pixels with recurring red/green activity) and store them in a new suportes and resistencias array of pixel-percentage values; (4) compute a precision level ('Baixa' | 'Média' | 'Alta') based on pattern clarity and trend strength and include it in a new precisao field; (5) compute a volume indicator ('Baixo' | 'Médio' | 'Alto') by measuring average candle body height relative to image height and include it in a new volume field; (6) include the user's configured timeframe (M1/M5/M10) read from localStorage/settings in a timeframe field of the result; (7) produce a richer Portuguese explicacao sentence that references the detected patterns, trend direction, and entry rationale for the next candle; (8) all existing fields (sinal, tendencia, confianca, probabilidade_alta, probabilidade_baixa, forca, erro) must continue to work correctly. Never throw — always return a valid result.",
+      "reqIds": [
+        "REQ-112"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-localanalysisresult-typescript-interface-in-frontend-src-types-analysistypes-ts-to-add-the-following-new-fields-precisao-string-baixa-m-dia-alta-volume-string-baixo-m-dio-alto-timeframe-string-m1-m5-m10-suportes-optional-number-support-level-positions-as-percentage-of-image-height-resistencias-optional-number-resistance-level-positions-as-percentage-of-image-height-add-jsdoc-comments-for-each-new-field",
+      "title": "Update the LocalAnalysisResult TypeScript interface in frontend/src/types/analysisTypes.ts to add the following new fields: precisao (string: 'Baixa' | 'Média' | 'Alta'), volume (string: 'Baixo' | 'Médio' | 'Alto'), timeframe (string: 'M1' | 'M5' | 'M10'), suportes (optional number[]: support level positions as percentage of image height), resistencias (optional number[]: resistance level positions as percentage of image height). Add JSDoc comments for each new field.",
+      "reqIds": [
+        "REQ-113"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-utils-mapapiresponse-ts-to-pass-through-the-new-localanalysisresult-fields-precisao-volume-timeframe-suportes-resistencias-into-the-internal-analysisresult-format-so-they-are-available-for-rendering-in-results-tsx-and-other-components",
+      "title": "Update frontend/src/utils/mapApiResponse.ts to pass through the new LocalAnalysisResult fields (precisao, volume, timeframe, suportes, resistencias) into the internal AnalysisResult format so they are available for rendering in Results.tsx and other components.",
+      "reqIds": [
+        "REQ-114"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-redesign-the-results-screen-frontend-src-pages-results-tsx-to-match-the-layout-shown-in-the-reference-image-image-9-png-the-screen-must-display-1-a-large-countdown-style-timer-showing-00-58-styled-in-white-bold-at-the-top-followed-by-a-smaller-entrar-s-hh-mm-line-showing-the-entry-time-derived-from-the-current-time-plus-the-selected-timeframe-duration-m1-1min-m5-5min-m10-10min-2-a-large-full-width-colored-signal-banner-red-background-for-venda-with-a-downward-arrow-venda-green-background-for-compra-with-an-upward-arrow-compra-3-a-confian-a-label-with-a-horizontal-progress-bar-and-numeric-percentage-e-g-75-styled-in-cyan-teal-4-a-2-2-grid-of-info-tiles-below-showing-tend-ncia-alta-baixa-with-red-green-arrow-icon-precis-o-baixa-m-dia-alta-with-warning-icon-volume-baixo-m-dio-alto-with-lightning-icon-time-frame-m1-m5-m10-with-clock-icon-5-all-labels-in-portuguese-brazil-the-thumbnail-image-probability-bars-and-pattern-list-should-appear-below-this-primary-section-in-a-collapsible-or-secondary-card",
+      "title": "Redesign the Results screen (frontend/src/pages/Results.tsx) to match the layout shown in the reference image (image-9.png). The screen must display: (1) a large countdown-style timer showing '00:58' styled in white bold at the top, followed by a smaller 'Entrar às HH:MM' line showing the entry time derived from the current time plus the selected timeframe duration (M1=+1min, M5=+5min, M10=+10min); (2) a large full-width colored signal banner — red background for VENDA with a downward arrow '↓ VENDA', green background for COMPRA with an upward arrow '↑ COMPRA'; (3) a 'Confiança' label with a horizontal progress bar and numeric percentage (e.g., '75%') styled in cyan/teal; (4) a 2×2 grid of info tiles below showing: Tendência (ALTA↑/BAIXA↓ with red/green arrow icon), Precisão (Baixa/Média/Alta with warning icon), Volume (Baixo/Médio/Alto with lightning icon), Time Frame (M1/M5/M10 with clock icon); (5) all labels in Portuguese (Brazil). The thumbnail image, probability bars, and pattern list should appear below this primary section in a collapsible or secondary card.",
+      "reqIds": [
+        "REQ-115"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-countdown-timer-component-to-the-results-screen-on-arrival-at-the-results-page-start-a-countdown-timer-initialized-to-the-duration-of-the-selected-timeframe-m1-60-seconds-m5-300-seconds-m10-600-seconds-display-the-timer-in-large-bold-white-mm-ss-format-at-the-top-of-the-results-e-g-00-58-below-the-timer-display-a-static-entrar-s-hh-mm-line-showing-the-computed-entry-time-current-time-at-page-load-timeframe-duration-the-timer-counts-down-to-00-00-and-stops",
+      "title": "Add a countdown timer component to the Results screen. On arrival at the results page, start a countdown timer initialized to the duration of the selected timeframe: M1 = 60 seconds, M5 = 300 seconds, M10 = 600 seconds. Display the timer in large bold white MM:SS format at the top of the results (e.g., '00:58'). Below the timer display a static 'Entrar às HH:MM' line showing the computed entry time (current time at page load + timeframe duration). The timer counts down to 00:00 and stops.",
+      "reqIds": [
+        "REQ-116"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-slow-down-the-processing-animation-in-frontend-src-pages-processingscreen-tsx-so-each-stage-takes-noticeably-longer-to-advance-giving-a-more-deliberate-premium-feel-each-loading-bar-animation-should-take-approximately-3-5-seconds-to-fill-from-0-to-100-instead-of-the-current-fast-fill-the-actual-analyzechartimage-call-should-be-triggered-during-the-third-stage-detectando-padr-es-de-candle-and-the-fourth-stage-gerando-resultado-should-only-advance-after-the-analysis-call-completes-maintain-the-black-background-white-glowing-bars-and-percentage-counter-design-already-in-place",
+      "title": "Slow down the processing animation in frontend/src/pages/ProcessingScreen.tsx so each stage takes noticeably longer to advance, giving a more deliberate, premium feel. Each loading bar animation should take approximately 3–5 seconds to fill from 0% to 100% (instead of the current fast fill). The actual analyzeChartImage() call should be triggered during the third stage ('Detectando padrões de candle'), and the fourth stage ('Gerando resultado') should only advance after the analysis call completes. Maintain the black background, white glowing bars, and percentage counter design already in place.",
+      "reqIds": [
+        "REQ-117"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-components-chartoverlay-tsx-or-create-a-new-overlay-component-to-draw-the-detected-support-and-resistance-levels-as-horizontal-dashed-lines-on-the-chart-thumbnail-displayed-in-results-tsx-use-the-suportes-and-resistencias-arrays-from-the-analysis-result-each-value-is-a-percentage-of-image-height-to-position-the-lines-draw-support-lines-in-green-and-resistance-lines-in-red-also-draw-a-short-directional-arrow-on-the-right-edge-of-the-chart-thumbnail-indicating-the-predicted-next-candle-direction-up-arrow-for-compra-down-arrow-for-venda",
+      "title": "Update frontend/src/components/ChartOverlay.tsx (or create a new overlay component) to draw the detected support and resistance levels as horizontal dashed lines on the chart thumbnail displayed in Results.tsx. Use the suportes and resistencias arrays from the analysis result — each value is a percentage of image height — to position the lines. Draw support lines in green and resistance lines in red. Also draw a short directional arrow on the right edge of the chart thumbnail indicating the predicted next candle direction (up arrow for COMPRA, down arrow for VENDA).",
+      "reqIds": [
+        "REQ-118"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-detailed-next-candle-guidance-section-to-the-results-screen-in-frontend-src-pages-results-tsx-displayed-as-a-card-below-the-2-2-grid-this-section-must-show-1-the-last-two-detected-chart-patterns-listed-under-the-heading-padr-es-detectados-2-a-portuguese-explanation-paragraph-from-the-explicacao-field-describing-the-next-candle-entry-rationale-3-a-probability-row-showing-probabilidade-de-alta-xx-in-green-and-probabilidade-de-baixa-yy-in-red-with-horizontal-bars-4-the-signal-compra-venda-sem-entrada-in-large-color-coded-text-all-labels-in-portuguese-brazil",
+      "title": "Add a detailed next-candle guidance section to the Results screen in frontend/src/pages/Results.tsx, displayed as a card below the 2×2 grid. This section must show: (1) the last two detected chart patterns listed under the heading 'Padrões Detectados'; (2) a Portuguese explanation paragraph from the explicacao field describing the next candle entry rationale; (3) a probability row showing 'Probabilidade de ALTA: XX%' in green and 'Probabilidade de BAIXA: YY%' in red with horizontal bars; (4) the signal (COMPRA ↑ / VENDA ↓ / SEM ENTRADA) in large color-coded text. All labels in Portuguese (Brazil).",
+      "reqIds": [
+        "REQ-119"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-pages-processingscreen-tsx-so-that-after-the-local-candle-analysis-succeeds-the-result-is-stored-in-sessionstorage-and-the-app-navigates-to-results-immediately-regardless-of-whether-the-backend-save-call-succeeds-or-fails-the-backend-save-storeanalysis-must-be-attempted-as-a-non-blocking-fire-and-forget-operation-wrap-it-in-its-own-try-catch-log-any-failure-to-the-console-but-never-show-an-error-screen-or-block-navigation-remove-any-code-path-that-displays-erro-na-an-lise-or-n-o-foi-poss-vel-salvar-o-resultado-when-the-save-fails",
+      "title": "Update frontend/src/pages/ProcessingScreen.tsx so that after the local candle analysis succeeds, the result is stored in sessionStorage and the app navigates to /results immediately — regardless of whether the backend save call succeeds or fails. The backend save (storeAnalysis) must be attempted as a non-blocking fire-and-forget operation: wrap it in its own try/catch, log any failure to the console, but never show an error screen or block navigation. Remove any code path that displays 'Erro na Análise' or 'Não foi possível salvar o resultado' when the save fails.",
+      "reqIds": [
+        "REQ-120"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-timeframe-propagation-bug-so-the-local-candle-analysis-engine-in-frontend-src-services-localcandleanalysis-ts-reads-the-user-s-selected-timeframe-m1-m5-m10-from-localstorage-settings-at-analysis-time-and-stores-it-in-the-timeframe-field-of-the-localanalysisresult-ensure-the-results-screen-reads-this-timeframe-field-and-uses-it-for-1-the-time-frame-tile-in-the-2-2-info-grid-2-the-countdown-timer-duration-m1-60s-m5-300s-m10-600s-and-3-the-entrar-s-hh-mm-entry-time-calculation-the-timeframe-must-never-default-to-m1-if-the-user-selected-m5-or-m10",
+      "title": "Fix the timeframe propagation bug so the local candle analysis engine in frontend/src/services/localCandleAnalysis.ts reads the user's selected timeframe (M1/M5/M10) from localStorage/settings at analysis time and stores it in the 'timeframe' field of the LocalAnalysisResult. Ensure the Results screen reads this timeframe field and uses it for: (1) the 'Time Frame' tile in the 2×2 info grid, (2) the countdown timer duration (M1=60s, M5=300s, M10=600s), and (3) the 'Entrar às HH:MM' entry time calculation. The timeframe must never default to M1 if the user selected M5 or M10.",
+      "reqIds": [
+        "REQ-122"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-countdown-timer-initialization-in-frontend-src-pages-results-tsx-and-frontend-src-hooks-usecountdowntimer-ts-so-the-initial-duration-is-determined-exclusively-by-the-timeframe-value-stored-in-the-analysis-result-or-read-from-settings-as-fallback-m1-60-seconds-m5-300-seconds-m10-600-seconds-the-entrar-s-hh-mm-static-label-must-also-reflect-the-correct-entry-time-computed-as-current-time-at-page-load-plus-the-timeframe-duration",
+      "title": "Update the countdown timer initialization in frontend/src/pages/Results.tsx and frontend/src/hooks/useCountdownTimer.ts so the initial duration is determined exclusively by the timeframe value stored in the analysis result (or read from settings as fallback): M1 → 60 seconds, M5 → 300 seconds, M10 → 600 seconds. The 'Entrar às HH:MM' static label must also reflect the correct entry time computed as current time at page load plus the timeframe duration.",
+      "reqIds": [
+        "REQ-123"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-rewrite-the-explicacao-text-generation-in-frontend-src-services-localcandleanalysis-ts-to-produce-professional-detailed-technical-trading-language-in-portuguese-brazil-the-explanation-must-reference-the-detected-trend-direction-alta-baixa-lateral-the-specific-pattern-names-found-e-g-engolfo-de-alta-martelo-doji-the-momentum-strength-the-support-resistance-proximity-and-a-clear-rationale-for-the-predicted-next-candle-direction-the-text-should-read-like-a-professional-trading-analyst-commentary-not-a-simple-one-line-summary",
+      "title": "Rewrite the 'explicacao' text generation in frontend/src/services/localCandleAnalysis.ts to produce professional, detailed technical trading language in Portuguese Brazil. The explanation must reference: the detected trend direction (ALTA/BAIXA/LATERAL), the specific pattern names found (e.g., 'Engolfo de Alta', 'Martelo', 'Doji'), the momentum strength, the support/resistance proximity, and a clear rationale for the predicted next candle direction. The text should read like a professional trading analyst commentary, not a simple one-line summary.",
+      "reqIds": [
+        "REQ-124"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-recommendation-phrase-below-the-alta-baixa-probability-bars-on-the-results-screen-in-frontend-src-pages-results-tsx-the-phrase-must-evaluate-the-analysis-conditions-and-display-one-of-the-following-portuguese-messages-boa-oportunidade-para-operar-shown-in-green-when-confianca-65-and-forca-is-forte-or-m-dia-or-aguarde-melhor-momento-shown-in-amber-yellow-when-confianca-is-between-45-and-64-or-n-o-recomendado-operar-agora-shown-in-red-gray-when-confianca-45-or-sinal-is-sem-entrada-display-this-phrase-as-a-clearly-visible-text-line-immediately-below-the-probability-bars",
+      "title": "Add a recommendation phrase below the ALTA/BAIXA probability bars on the Results screen in frontend/src/pages/Results.tsx. The phrase must evaluate the analysis conditions and display one of the following Portuguese messages: 'Boa oportunidade para operar ✓' (shown in green) when confianca >= 65 and forca is 'forte' or 'média', or 'Aguarde melhor momento ⚠' (shown in amber/yellow) when confianca is between 45 and 64, or 'Não recomendado operar agora ✗' (shown in red/gray) when confianca < 45 or sinal is 'SEM ENTRADA'. Display this phrase as a clearly visible text line immediately below the probability bars.",
+      "reqIds": [
+        "REQ-125"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-win-loss-feedback-buttons-at-the-bottom-of-the-results-screen-in-frontend-src-pages-results-tsx-visible-when-the-user-scrolls-down-past-the-main-analysis-content-display-a-green-button-labeled-win-and-a-red-button-labeled-loss-side-by-side-when-the-user-taps-win-or-loss-call-the-existing-useupdateoperationfollowed-mutation-passing-the-analysis-id-and-true-for-win-false-for-loss-after-selection-disable-both-buttons-and-display-the-portuguese-confirmation-text-resultado-registrado-the-selected-state-must-be-visually-indicated-filled-highlighted-button",
+      "title": "Add WIN/LOSS feedback buttons at the bottom of the Results screen in frontend/src/pages/Results.tsx, visible when the user scrolls down past the main analysis content. Display a green button labeled 'WIN ✓' and a red button labeled 'LOSS ✗' side by side. When the user taps WIN or LOSS, call the existing useUpdateOperationFollowed mutation (passing the analysis ID and true for WIN, false for LOSS). After selection, disable both buttons and display the Portuguese confirmation text 'Resultado registrado!'. The selected state must be visually indicated (filled/highlighted button).",
+      "reqIds": [
+        "REQ-126"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-pages-history-tsx-and-frontend-src-components-historylistitem-tsx-to-display-win-loss-status-for-each-history-entry-if-operationfollowed-is-true-show-a-green-win-badge-if-false-show-a-red-loss-badge-if-null-undefined-show-no-badge-ensure-the-badge-styling-is-compact-and-does-not-disrupt-the-list-item-layout",
+      "title": "Update frontend/src/pages/History.tsx and frontend/src/components/HistoryListItem.tsx to display WIN/LOSS status for each history entry. If operationFollowed is true, show a green 'WIN' badge; if false, show a red 'LOSS' badge; if null/undefined, show no badge. Ensure the badge styling is compact and does not disrupt the list item layout.",
+      "reqIds": [
+        "REQ-127"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-timeframe-options-in-the-settings-page-frontend-src-pages-settings-tsx-to-offer-exactly-three-choices-m1-1-minuto-m3-3-minutos-and-m5-5-minutos-remove-m10-from-all-timeframe-selectors-set-m1-as-the-default-if-no-value-is-currently-persisted-ensure-selecting-any-option-immediately-persists-the-value-via-the-backend-mutation-updatesettings-and-shows-a-portuguese-success-toast-configura-o-salva",
+      "title": "Update the timeframe options in the Settings page (frontend/src/pages/Settings.tsx) to offer exactly three choices: M1 (1 minuto), M3 (3 minutos), and M5 (5 minutos). Remove M10 from all timeframe selectors. Set M1 as the default if no value is currently persisted. Ensure selecting any option immediately persists the value via the backend mutation (updateSettings) and shows a Portuguese success toast 'Configuração salva!'.",
+      "reqIds": [
+        "REQ-128"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-localanalysisresult-typescript-interface-in-frontend-src-types-analysistypes-ts-to-change-the-timeframe-field-type-from-m1-m5-m10-to-m1-m3-m5-update-all-places-in-frontend-src-services-localcandleanalysis-ts-that-read-or-write-the-timeframe-field-to-recognise-m3-as-a-valid-value-reading-from-localstorage-settings-update-frontend-src-utils-mapapiresponse-ts-to-pass-m3-through-correctly",
+      "title": "Update the LocalAnalysisResult TypeScript interface in frontend/src/types/analysisTypes.ts to change the timeframe field type from 'M1' | 'M5' | 'M10' to 'M1' | 'M3' | 'M5'. Update all places in frontend/src/services/localCandleAnalysis.ts that read or write the timeframe field to recognise M3 as a valid value (reading from localStorage/settings). Update frontend/src/utils/mapApiResponse.ts to pass M3 through correctly.",
+      "reqIds": [
+        "REQ-129"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-countdown-timer-durations-in-frontend-src-pages-results-tsx-and-frontend-src-hooks-usecountdowntimer-ts-to-support-the-m3-timeframe-m1-60-seconds-m3-180-seconds-m5-300-seconds-the-entrar-s-hh-mm-entry-time-calculation-must-also-use-the-correct-duration-for-m3-the-time-frame-tile-in-the-2-2-info-grid-must-display-m3-when-the-analysis-result-contains-timeframe-m3",
+      "title": "Update the countdown timer durations in frontend/src/pages/Results.tsx and frontend/src/hooks/useCountdownTimer.ts to support the M3 timeframe: M1 = 60 seconds, M3 = 180 seconds, M5 = 300 seconds. The 'Entrar às HH:MM' entry time calculation must also use the correct duration for M3. The Time Frame tile in the 2×2 info grid must display 'M3' when the analysis result contains timeframe='M3'.",
+      "reqIds": [
+        "REQ-130"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-audit-and-fix-the-daily-operation-limit-selector-in-frontend-src-pages-settings-tsx-so-it-displays-and-functions-correctly-with-plain-numbers-3-4-6-8-the-selector-must-1-load-the-currently-persisted-limit-from-the-backend-via-usegetsettings-or-getdailyoperationprogress-2-display-the-options-as-plain-integers-3-4-6-8-with-no-extra-formatting-3-on-change-immediately-call-the-setdailyoperationlimit-mutation-with-the-selected-number-4-show-a-portuguese-success-toast-limite-di-rio-atualizado-on-success-5-show-the-current-daily-progress-below-the-selector-as-hoje-x-y-opera-es-realizadas",
+      "title": "Audit and fix the daily operation limit selector in frontend/src/pages/Settings.tsx so it displays and functions correctly with plain numbers (3, 4, 6, 8). The selector must: (1) load the currently persisted limit from the backend via useGetSettings or getDailyOperationProgress; (2) display the options as plain integers '3', '4', '6', '8' with no extra formatting; (3) on change, immediately call the setDailyOperationLimit mutation with the selected number; (4) show a Portuguese success toast 'Limite diário atualizado!' on success; (5) show the current daily progress below the selector as 'Hoje: X/Y operações realizadas'.",
+      "reqIds": [
+        "REQ-132"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-timeframe-display-bug-in-the-results-screen-the-time-frame-tile-in-the-2-2-info-grid-must-display-the-timeframe-actually-selected-by-the-user-in-settings-m1-m3-or-m5-not-always-default-to-m1-the-timeframe-must-be-read-from-the-analysis-result-s-timeframe-field-which-is-populated-by-localcandleanalysis-ts-reading-from-localstorage-settings-additionally-update-the-countdown-timer-initialization-so-m1-60s-m3-180s-m5-300s-matching-the-selected-timeframe-exactly-the-entrar-s-hh-mm-static-label-must-compute-entry-time-as-current-time-at-page-load-plus-the-correct-duration-for-the-selected-timeframe",
+      "title": "Fix the timeframe display bug in the Results screen: the 'Time Frame' tile in the 2×2 info grid must display the timeframe actually selected by the user in Settings (M1, M3, or M5), not always default to M1. The timeframe must be read from the analysis result's 'timeframe' field (which is populated by localCandleAnalysis.ts reading from localStorage/settings). Additionally, update the countdown timer initialization so M1=60s, M3=180s, M5=300s — matching the selected timeframe exactly. The 'Entrar às HH:MM' static label must compute entry time as current time at page load plus the correct duration for the selected timeframe.",
+      "reqIds": [
+        "REQ-134"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-timeframe-propagation-in-frontend-src-services-localcandleanalysis-ts-when-reading-the-user-s-selected-timeframe-from-localstorage-settings-ensure-the-value-is-read-at-analysis-execution-time-not-at-module-load-time-the-key-used-to-read-from-localstorage-must-exactly-match-the-key-used-by-the-settings-page-to-persist-the-timeframe-if-the-stored-value-is-m3-m5-or-m1-store-it-verbatim-in-the-localanalysisresult-s-timeframe-field-never-fall-back-to-m1-unless-no-stored-value-exists",
+      "title": "Fix the timeframe propagation in frontend/src/services/localCandleAnalysis.ts: when reading the user's selected timeframe from localStorage/settings, ensure the value is read at analysis execution time (not at module load time). The key used to read from localStorage must exactly match the key used by the Settings page to persist the timeframe. If the stored value is 'M3', 'M5', or 'M1', store it verbatim in the LocalAnalysisResult's 'timeframe' field. Never fall back to 'M1' unless no stored value exists.",
+      "reqIds": [
+        "REQ-135"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-results-screen-layout-to-match-the-reference-design-shown-in-image-11-png-and-image-12-png-the-layout-must-show-1-two-side-by-side-tiles-at-the-top-left-tile-shows-tempo-label-with-countdown-timer-in-large-bold-white-e-g-00-29-and-restante-subtitle-right-tile-shows-entrar-s-label-with-the-entry-time-in-cyan-teal-e-g-19-10-and-hor-rio-de-entrada-subtitle-2-a-large-full-width-green-banner-for-compra-with-compra-text-or-red-for-venda-showing-tend-ncia-alta-baixa-confian-a-xx-and-a-for-a-forte-m-dia-fraca-badge-inline-within-the-banner-3-a-2-2-grid-of-dark-tiles-showing-tend-ncia-with-colored-arrow-precis-o-with-value-volume-with-value-time-frame-with-selected-timeframe-value-4-the-chart-thumbnail-displayed-below-the-grid-as-a-scrollable-secondary-section-with-support-resistance-overlays",
+      "title": "Update the Results screen layout to match the reference design shown in image-11.png and image-12.png. The layout must show: (1) Two side-by-side tiles at the top — left tile shows 'TEMPO' label with countdown timer in large bold white (e.g., '00:29') and 'restante' subtitle; right tile shows 'ENTRAR ÀS' label with the entry time in cyan/teal (e.g., '19:10') and 'horário de entrada' subtitle; (2) A large full-width green banner for COMPRA (with '↗ COMPRA' text) or red for VENDA, showing 'Tendência: ALTA/BAIXA', 'Confiança: XX%', and a 'Força: forte/média/fraca' badge inline within the banner; (3) A 2×2 grid of dark tiles showing Tendência (with colored arrow), Precisão (with value), Volume (with value), Time Frame (with selected timeframe value); (4) The chart thumbnail displayed below the grid as a scrollable secondary section with support/resistance overlays.",
+      "reqIds": [
+        "REQ-136"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-settings-page-timeframe-selector-in-frontend-src-pages-settings-tsx-to-correctly-persist-the-selected-value-m1-m3-or-m5-to-localstorage-and-to-the-backend-via-the-updatesettings-mutation-audit-the-localstorage-key-name-used-by-settings-tsx-when-saving-the-timeframe-and-ensure-it-is-identical-to-the-key-read-by-localcandleanalysis-ts-after-saving-show-the-portuguese-success-toast-configura-o-salva-verify-that-selecting-m3-or-m5-and-navigating-away-then-returning-to-settings-still-shows-the-previously-saved-value-not-reverted-to-m1",
+      "title": "Fix the Settings page timeframe selector in frontend/src/pages/Settings.tsx to correctly persist the selected value (M1, M3, or M5) to localStorage and to the backend via the updateSettings mutation. Audit the localStorage key name used by Settings.tsx when saving the timeframe and ensure it is identical to the key read by localCandleAnalysis.ts. After saving, show the Portuguese success toast 'Configuração salva!'. Verify that selecting M3 or M5 and navigating away then returning to Settings still shows the previously saved value (not reverted to M1).",
+      "reqIds": [
+        "REQ-137"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-ensure-the-analysis-explanation-text-explicacao-field-generated-by-frontend-src-services-localcandleanalysis-ts-is-unique-per-analysis-and-meaningfully-references-the-specific-detected-patterns-trend-direction-and-candle-characteristics-found-in-the-particular-image-being-analyzed-prevent-generic-or-repetitive-phrases-from-being-reused-across-different-chart-analyses-by-incorporating-the-actual-computed-values-trend-direction-pattern-names-confidence-score-momentum-count-into-the-explanation-template-dynamically",
+      "title": "Ensure the analysis explanation text (explicacao field) generated by frontend/src/services/localCandleAnalysis.ts is unique per analysis and meaningfully references the specific detected patterns, trend direction, and candle characteristics found in the particular image being analyzed. Prevent generic or repetitive phrases from being reused across different chart analyses by incorporating the actual computed values (trend direction, pattern names, confidence score, momentum count) into the explanation template dynamically.",
+      "reqIds": [
+        "REQ-138"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -1024,6 +1220,90 @@
       "summary": "Update frontend/src/pages/Results.tsx to display the uploaded chart image as a minimized thumbnail. The thumbnail must be small (approximately 80×60px), positioned in a corner of the results layout (top-right or bottom-right), and must not dominate the results view. Retrieve the image data URL from sessionStorage using the 'chartImage' key. Style the thumbnail with a subtle border and rounded corners consistent with the active dark/light theme.",
       "reqIds": [
         "REQ-110"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-67",
+      "summary": "Slow down the processing/loading animation stages for a more deliberate, premium feel (each stage should take longer to advance)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-68",
+      "summary": "Detailed next-candle analysis: after loading the chart screenshot, detect which candle the chart is currently on and which timeframe (M1/M5/M10) the user selected in settings — auto-read from configuration. Display analysis explaining what action to take for the next candle entry based on the detected candle and selected timeframe.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-69",
+      "summary": "AI-powered chart analysis: detect support and resistance levels, identify the last two chart patterns visible in the chart, and display them in the results after the loading completes.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-70",
+      "summary": "Results screen: show directional guidance section with trend direction (ALTA/BAIXA), precision level (Baixa/Média/Alta), and volume indicator (Baixo/Alto) — all in Portuguese. Auto-detect and display the timeframe from the user's settings configuration.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-72",
+      "summary": "Audit backend/main.mo to ensure the storeAnalysis function (or equivalent) does not reject calls from anonymous principals or return hard errors that cause the frontend to treat the save as a fatal failure. If the function currently requires authentication and the caller may be anonymous, add a graceful fallback: either allow anonymous saves with a generated ID or return a success variant even when the caller is not authenticated, so the frontend never receives an unhandled error from a save attempt.",
+      "reqIds": [
+        "REQ-121"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-73",
+      "summary": "Fix timeframe display in Results: the 'Período de Tempo' shown in results must reflect the timeframe actually selected by the user in Settings (M1/M5/M10), not default to M1. Read the selected timeframe from settings/localStorage and use it as both the countdown timer duration and the displayed timeframe value.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-74",
+      "summary": "Make countdown timer duration match selected timeframe: M1=1 minute operation, M5=5 minutes operation, M10=10 minutes operation. The timer on the results screen must count down the full duration of the selected timeframe candle.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-75",
+      "summary": "Improve the next-candle analysis explanation text (below 'Padrões Detectados') to be more professional and detailed — use proper technical trading language in Portuguese Brazil.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-76",
+      "summary": "Add a recommendation phrase below the probability bars (ALTA/BAIXA) indicating whether conditions are favorable to trade or not — e.g., 'Boa oportunidade para operar' or 'Aguarde melhor momento' in Portuguese.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-77",
+      "summary": "Add WIN/LOSS feedback buttons at the bottom of the Results screen (when scrolled down). Green 'WIN' button for profit and red 'LOSS' button for loss. Record the outcome in the analysis history so each past operation shows WIN or LOSS status.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-78",
+      "summary": "Fix Settings page timeframe selector to work correctly when M1, M3, or M5 is selected (add M3 as new option replacing M10), persist the selection, and ensure it propagates to analysis results. Fix daily operation limit selector to display and function with normal numbers (3, 4, 6, 8).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-82",
+      "summary": "Update the backend actor in backend/main.mo to accept 'M3' as a valid timeframe value in the user settings record and in stored analysis records. Ensure existing stored data with M1, M5, or M10 remains backward compatible and is not corrupted.",
+      "reqIds": [
+        "REQ-131"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-84",
+      "summary": "Audit frontend/src/hooks/useQueries.ts to verify the setDailyOperationLimit mutation and getDailyOperationProgress query are correctly wired to the backend actor. Confirm the Motoko function signatures in backend/main.mo match the frontend call signatures exactly (parameter types, return types). Fix any mismatches that cause the daily limit save or progress fetch to fail silently or return incorrect values.",
+      "reqIds": [
+        "REQ-133"
       ],
       "status": "pending"
     }

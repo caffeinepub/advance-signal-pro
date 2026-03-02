@@ -1,6 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import type { AnalysisResult, UserSettings } from '../backend';
+import { AnalysisResult, UserSettings } from '../backend';
 import { useInternetIdentity } from './useInternetIdentity';
 
 export function useGetAnalyses() {
@@ -27,7 +27,37 @@ export function useAnalyzeChart() {
   return useMutation({
     mutationFn: async (result: AnalysisResult) => {
       if (!actor) throw new Error('Actor not initialized');
-      return await actor.storeExternalAnalysis(result);
+      return await actor.storeAnalysis(result);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['analyses'] });
+    },
+  });
+}
+
+// Alias kept for any code that imports useStoreAnalysis
+export const useStoreAnalysis = useAnalyzeChart;
+
+export function useUpdateOperationFollowed() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      analysisIndex,
+      followed,
+    }: {
+      analysisIndex: number;
+      followed: boolean;
+    }) => {
+      if (!actor) throw new Error('Actor not available');
+      const analyses = await actor.getAnalyses();
+      if (analysisIndex < 0 || analysisIndex >= analyses.length) {
+        throw new Error('Analysis index out of range');
+      }
+      const target = analyses[analysisIndex];
+      const updated: AnalysisResult = { ...target, operationFollowed: followed };
+      return actor.storeAnalysis(updated);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['analyses'] });

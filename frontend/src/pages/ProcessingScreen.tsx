@@ -1,33 +1,42 @@
-import { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { AlertCircle, RefreshCw, ImageOff } from 'lucide-react';
+import { ImageOff, RefreshCw } from 'lucide-react';
 import ProcessingStage from '../components/ProcessingStage';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ExternalBlob } from '../backend';
-import { analyzeChartImage } from '../services/localCandleAnalysis';
-import { mapApiResponseToAnalysisResult } from '../utils/mapApiResponse';
+import { ExternalBlob, Timeframe } from '../backend';
+import { analyzeChartLocally } from '../services/localCandleAnalysis';
+import { mapLocalAnalysisResult } from '../utils/mapApiResponse';
 import { dataUrlToFile } from '../utils/dataUrlToFile';
 import { useAnalyzeChart } from '../hooks/useQueries';
 import { useActor } from '../hooks/useActor';
 
-const stages = [
-  { id: 1, label: 'Carregando imagem', duration: 600 },
-  { id: 2, label: 'Processando dados', duration: 700 },
-  { id: 3, label: 'Detectando padrões de candle', duration: 800 },
-  { id: 4, label: 'Gerando resultado', duration: 500 },
+const STAGES = [
+  { label: 'Carregando imagem do gráfico', duration: 3500 },
+  { label: 'Identificando candles e estrutura', duration: 4000 },
+  { label: 'Detectando padrões de candle', duration: 4500 },
+  { label: 'Gerando resultado da análise', duration: 3000 },
 ];
 
 const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
+function mapTimeframe(tf: 'M1' | 'M3' | 'M5'): Timeframe {
+  if (tf === 'M3') return Timeframe.M3;
+  if (tf === 'M5') return Timeframe.M5;
+  return Timeframe.M1;
+}
+
 export default function ProcessingScreen() {
   const navigate = useNavigate();
   const { actor } = useActor();
-  const [currentStage, setCurrentStage] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isChartDetectionError, setIsChartDetectionError] = useState(false);
   const analyzeChart = useAnalyzeChart();
+
+  const [currentStage, setCurrentStage] = useState(0);
+  const [completedStages, setCompletedStages] = useState<boolean[]>([false, false, false, false]);
+  const [error, setError] = useState<string | null>(null);
+  const [isChartDetectionError, setIsChartDetectionError] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(true);
+
   const hasStarted = useRef(false);
 
   useEffect(() => {
@@ -37,6 +46,14 @@ export default function ProcessingScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const markComplete = (stageIndex: number) => {
+    setCompletedStages((prev) => {
+      const next = [...prev];
+      next[stageIndex] = true;
+      return next;
+    });
+  };
+
   const startAnalysis = async () => {
     setIsProcessing(true);
     setError(null);
@@ -44,7 +61,7 @@ export default function ProcessingScreen() {
 
     // ── Stage 0: Load image ──
     setCurrentStage(0);
-    await delay(stages[0].duration);
+    await delay(STAGES[0].duration);
 
     let imageData: string | null = null;
     try {
@@ -78,69 +95,82 @@ export default function ProcessingScreen() {
       return;
     }
 
+    markComplete(0);
+
     // ── Stage 1: Process data ──
     setCurrentStage(1);
-    await delay(stages[1].duration);
+    await delay(STAGES[1].duration);
+    markComplete(1);
 
     // ── Stage 2: Detect patterns ──
     setCurrentStage(2);
 
-    let localResult;
-    try {
-      localResult = await analyzeChartImage(imageFile);
-    } catch {
-      setError('Não foi possível processar a imagem. Tente novamente.');
-      setIsProcessing(false);
-      return;
-    }
+    const [localResult] = await Promise.all([
+      analyzeChartLocally(imageFile),
+      delay(STAGES[2].duration),
+    ]);
 
-    if (localResult.erro && localResult.confianca === 0) {
+    // Only treat as chart detection error if confianca is 0 and sinal is SEM ENTRADA
+    if (localResult.sinal === 'SEM ENTRADA' && localResult.confianca === 0) {
       setIsChartDetectionError(true);
       setIsProcessing(false);
       return;
     }
 
+    markComplete(2);
+
     // ── Stage 3: Generate result ──
     setCurrentStage(3);
-    await delay(stages[3].duration);
+    await delay(STAGES[3].duration);
+    markComplete(3);
 
+    let mappedResult: ReturnType<typeof mapLocalAnalysisResult>;
     try {
-      const mappedResult = mapApiResponseToAnalysisResult(localResult, imageBlob);
+      mappedResult = mapLocalAnalysisResult(localResult);
       sessionStorage.setItem('latestAnalysis', JSON.stringify(mappedResult));
+    } catch {
+      setError('Não foi possível processar o resultado. Tente novamente.');
+      setIsProcessing(false);
+      return;
+    }
 
-      if (actor) {
+    // ── Backend save: non-blocking, best-effort ──
+    if (actor) {
+      Promise.resolve().then(async () => {
         try {
           await analyzeChart.mutateAsync({
-            direction: mappedResult.direction,
-            resistanceLevels: mappedResult.resistanceLevels,
-            candlestickPatterns: mappedResult.candlestickPatterns,
-            pullbacks: mappedResult.pullbacks,
-            breakouts: mappedResult.breakouts,
-            trendStrength: mappedResult.trendStrength,
-            confidencePercentage: mappedResult.confidencePercentage,
-            timestamp: mappedResult.timestamp,
+            direction:
+              localResult.sinal === 'COMPRA'
+                ? ({ bullish: null } as any)
+                : localResult.sinal === 'VENDA'
+                ? ({ bearish: null } as any)
+                : ({ sideways: null } as any),
+            resistanceLevels: [],
+            candlestickPatterns: [],
+            pullbacks: false,
+            breakouts: false,
+            trendStrength: BigInt(Math.floor(localResult.confianca * 0.8)),
+            confidencePercentage: BigInt(Math.floor(localResult.confianca)),
+            timestamp: BigInt(Date.now() * 1_000_000),
             image: imageBlob,
-            probabilidadeAlta: localResult.probabilidade_alta,
-            probabilidadeBaixa: localResult.probabilidade_baixa,
+            probabilidadeAlta: localResult.probAlta,
+            probabilidadeBaixa: localResult.probBaixa,
             acaoSugerida: localResult.sinal,
             operationFollowed: undefined,
             entradaExemplo: undefined,
             stopExemplo: undefined,
             alvoExemplo: undefined,
+            timeframe: mapTimeframe(localResult.timeframe),
           });
-        } catch {
-          // Backend storage is best-effort; continue to results
+        } catch (err) {
+          console.warn('[ProcessingScreen] Backend save skipped:', err);
         }
-      }
-
-      navigate({ to: '/results/$id', params: { id: 'latest' } });
-    } catch {
-      setError('Não foi possível salvar o resultado. Tente novamente.');
-      setIsProcessing(false);
+      });
     }
+
+    navigate({ to: '/results/$id', params: { id: 'latest' } });
   };
 
-  // Chart detection error screen
   if (isChartDetectionError) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center p-4">
@@ -157,7 +187,8 @@ export default function ProcessingScreen() {
             </p>
           </div>
           <div className="p-4 bg-orange-950/20 border border-orange-800/50 rounded-lg text-sm text-orange-200">
-            Certifique-se de que o print contém um gráfico de candles visível com velas coloridas (verde/vermelho).
+            Certifique-se de que o print contém um gráfico de candles visível com velas coloridas
+            (verde/vermelho).
           </div>
           <Button
             className="w-full gap-2 bg-white text-black hover:bg-zinc-200"
@@ -171,14 +202,13 @@ export default function ProcessingScreen() {
     );
   }
 
-  // Generic error screen
   if (error) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center p-4">
         <Card className="w-full max-w-md p-8 text-center space-y-6 bg-zinc-900 border-zinc-800">
           <div className="flex justify-center">
             <div className="w-20 h-20 rounded-full bg-red-950/30 flex items-center justify-center">
-              <AlertCircle className="w-10 h-10 text-red-400" />
+              <ImageOff className="w-10 h-10 text-red-400" />
             </div>
           </div>
           <div>
@@ -197,50 +227,45 @@ export default function ProcessingScreen() {
     );
   }
 
+  const overallProgress = Math.round(
+    (completedStages.filter(Boolean).length / STAGES.length) * 100
+  );
+
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-8">
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center px-4 py-8">
+      <div className="mb-8 flex flex-col items-center">
+        <img
+          src="/assets/generated/app-icon.dim_512x512.png"
+          alt="Logo"
+          className="w-14 h-14 rounded-2xl mb-4 shadow-lg"
+          style={{ filter: 'drop-shadow(0 0 12px rgba(255,255,255,0.18))' }}
+        />
+        <h1 className="text-white text-2xl font-bold tracking-tight">Analisando Gráfico</h1>
+        <p className="text-zinc-500 text-sm mt-1">Processamento local com IA</p>
+      </div>
 
-        {/* Logo + Header */}
-        <div className="text-center space-y-4">
-          <div className="flex justify-center">
-            <img
-              src="/assets/generated/app-icon.dim_512x512.png"
-              alt="Logo"
-              className="w-16 h-16 rounded-2xl shadow-lg"
-            />
-          </div>
-          <div className="space-y-2">
-            <h1 className="text-4xl font-bold text-white tracking-tight">
-              Analisando Gráfico
-            </h1>
-            <p className="text-sm text-zinc-400">
-              Detectando padrões de velas localmente...
-            </p>
-          </div>
-        </div>
-
-        {/* Processing stages card */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl space-y-5">
-          {stages.map((stage, index) => (
+      <div className="w-full max-w-sm bg-zinc-900 rounded-2xl p-6 shadow-2xl border border-zinc-800">
+        <div className="space-y-5">
+          {STAGES.map((stage, idx) => (
             <ProcessingStage
-              key={stage.id}
+              key={idx}
               label={stage.label}
-              isActive={currentStage === index && isProcessing}
-              isComplete={currentStage > index}
               duration={stage.duration}
+              isActive={currentStage === idx && isProcessing && !completedStages[idx]}
+              isComplete={completedStages[idx]}
             />
           ))}
         </div>
 
-        {/* Footer */}
-        <div className="text-center">
-          <p className="text-xs text-zinc-600">
-            Análise local —{' '}
-            <span className="text-zinc-500">sem envio de dados externos</span>
-          </p>
+        <div className="mt-6 pt-4 border-t border-zinc-800 flex items-center justify-between">
+          <span className="text-zinc-500 text-xs">Progresso total</span>
+          <span className="text-white text-sm font-bold">{overallProgress}%</span>
         </div>
       </div>
+
+      <p className="text-zinc-600 text-xs mt-8 text-center max-w-xs">
+        Análise realizada localmente. Não constitui recomendação financeira.
+      </p>
     </div>
   );
 }

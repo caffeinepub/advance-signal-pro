@@ -29,6 +29,12 @@ export const AnalysisDirection = IDL.Variant({
   'sideways' : IDL.Null,
   'bearish' : IDL.Null,
 });
+export const Timeframe = IDL.Variant({
+  'M1' : IDL.Null,
+  'M3' : IDL.Null,
+  'M5' : IDL.Null,
+  'M10' : IDL.Null,
+});
 export const CandlestickPattern = IDL.Variant({
   'shootingStar' : IDL.Null,
   'doji' : IDL.Null,
@@ -44,6 +50,7 @@ export const ExternalBlob = IDL.Vec(IDL.Nat8);
 export const AnalysisResult = IDL.Record({
   'direction' : AnalysisDirection,
   'stopExemplo' : IDL.Opt(IDL.Float64),
+  'timeframe' : Timeframe,
   'trendStrength' : IDL.Nat,
   'candlestickPatterns' : IDL.Vec(CandlestickPattern),
   'acaoSugerida' : IDL.Opt(IDL.Text),
@@ -63,11 +70,6 @@ export const UserProfile = IDL.Record({
   'name' : IDL.Text,
   'email' : IDL.Opt(IDL.Text),
 });
-export const Timeframe = IDL.Variant({
-  'M1' : IDL.Null,
-  'M5' : IDL.Null,
-  'M10' : IDL.Null,
-});
 export const UserSettings = IDL.Record({
   'theme' : IDL.Text,
   'signalNotifications' : IDL.Bool,
@@ -76,6 +78,7 @@ export const UserSettings = IDL.Record({
   'defaultTimeframe' : Timeframe,
   'dailyOperationLimit' : IDL.Nat,
 });
+export const IsNewUser = IDL.Bool;
 
 export const idlService = IDL.Service({
   '_caffeineStorageBlobIsLive' : IDL.Func(
@@ -107,7 +110,11 @@ export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'getAnalyses' : IDL.Func([], [IDL.Vec(AnalysisResult)], ['query']),
-  'getAnalysisHistory' : IDL.Func([], [IDL.Vec(AnalysisResult)], ['query']),
+  'getAnalysisHistory' : IDL.Func(
+      [IDL.Nat],
+      [IDL.Vec(AnalysisResult)],
+      ['query'],
+    ),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getCriteria' : IDL.Func(
@@ -143,7 +150,11 @@ export const idlService = IDL.Service({
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'setDailyOperationLimit' : IDL.Func([IDL.Nat], [IDL.Text], []),
-  'storeExternalAnalysis' : IDL.Func([AnalysisResult], [], []),
+  'storeAnalysis' : IDL.Func(
+      [AnalysisResult],
+      [IDL.Record({ 'isNewUser' : IsNewUser, 'legacyEntriesCount' : IDL.Nat })],
+      [],
+    ),
   'updateSettings' : IDL.Func([UserSettings], [IDL.Text], []),
 });
 
@@ -171,6 +182,12 @@ export const idlFactory = ({ IDL }) => {
     'sideways' : IDL.Null,
     'bearish' : IDL.Null,
   });
+  const Timeframe = IDL.Variant({
+    'M1' : IDL.Null,
+    'M3' : IDL.Null,
+    'M5' : IDL.Null,
+    'M10' : IDL.Null,
+  });
   const CandlestickPattern = IDL.Variant({
     'shootingStar' : IDL.Null,
     'doji' : IDL.Null,
@@ -186,6 +203,7 @@ export const idlFactory = ({ IDL }) => {
   const AnalysisResult = IDL.Record({
     'direction' : AnalysisDirection,
     'stopExemplo' : IDL.Opt(IDL.Float64),
+    'timeframe' : Timeframe,
     'trendStrength' : IDL.Nat,
     'candlestickPatterns' : IDL.Vec(CandlestickPattern),
     'acaoSugerida' : IDL.Opt(IDL.Text),
@@ -205,11 +223,6 @@ export const idlFactory = ({ IDL }) => {
     'name' : IDL.Text,
     'email' : IDL.Opt(IDL.Text),
   });
-  const Timeframe = IDL.Variant({
-    'M1' : IDL.Null,
-    'M5' : IDL.Null,
-    'M10' : IDL.Null,
-  });
   const UserSettings = IDL.Record({
     'theme' : IDL.Text,
     'signalNotifications' : IDL.Bool,
@@ -218,6 +231,7 @@ export const idlFactory = ({ IDL }) => {
     'defaultTimeframe' : Timeframe,
     'dailyOperationLimit' : IDL.Nat,
   });
+  const IsNewUser = IDL.Bool;
   
   return IDL.Service({
     '_caffeineStorageBlobIsLive' : IDL.Func(
@@ -249,7 +263,11 @@ export const idlFactory = ({ IDL }) => {
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'getAnalyses' : IDL.Func([], [IDL.Vec(AnalysisResult)], ['query']),
-    'getAnalysisHistory' : IDL.Func([], [IDL.Vec(AnalysisResult)], ['query']),
+    'getAnalysisHistory' : IDL.Func(
+        [IDL.Nat],
+        [IDL.Vec(AnalysisResult)],
+        ['query'],
+      ),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getCriteria' : IDL.Func(
@@ -290,7 +308,16 @@ export const idlFactory = ({ IDL }) => {
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'setDailyOperationLimit' : IDL.Func([IDL.Nat], [IDL.Text], []),
-    'storeExternalAnalysis' : IDL.Func([AnalysisResult], [], []),
+    'storeAnalysis' : IDL.Func(
+        [AnalysisResult],
+        [
+          IDL.Record({
+            'isNewUser' : IsNewUser,
+            'legacyEntriesCount' : IDL.Nat,
+          }),
+        ],
+        [],
+      ),
     'updateSettings' : IDL.Func([UserSettings], [IDL.Text], []),
   });
 };

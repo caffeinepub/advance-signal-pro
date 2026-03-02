@@ -9,19 +9,48 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTheme } from '../context/ThemeContext';
 import { useSettings } from '../hooks/useSettings';
-import { useSetDailyOperationLimit } from '../hooks/useQueries';
+import { useSetDailyOperationLimit, useGetDailyOperationProgress } from '../hooks/useQueries';
 import { Timeframe } from '../backend';
+import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { toast } from 'sonner';
+
+// Unified localStorage key — must match localCandleAnalysis.ts
+const SETTINGS_STORAGE_KEY = 'userSettings';
+
+function persistTimeframeToLocalStorage(timeframe: string) {
+  try {
+    const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    const existing = raw ? JSON.parse(raw) : {};
+    existing.defaultTimeframe = timeframe;
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(existing));
+  } catch {
+    // ignore storage errors
+  }
+}
+
+function persistSensitivityToLocalStorage(sensitivity: number) {
+  try {
+    const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    const existing = raw ? JSON.parse(raw) : {};
+    existing.aiSensitivity = sensitivity;
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(existing));
+  } catch {
+    // ignore storage errors
+  }
+}
 
 export default function Settings() {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
   const { settings, isLoading: isLoadingSettings, updateSettings, isUpdating } = useSettings();
   const setDailyLimitMutation = useSetDailyOperationLimit();
+  const { identity } = useInternetIdentity();
+  const { data: dailyProgress } = useGetDailyOperationProgress();
 
   const handleSensitivityChange = async (value: number[]) => {
     if (!settings) return;
     try {
+      persistSensitivityToLocalStorage(value[0]);
       await updateSettings({
         ...settings,
         aiSensitivity: BigInt(value[0]),
@@ -34,11 +63,13 @@ export default function Settings() {
   const handleTimeframeChange = async (value: string) => {
     if (!settings) return;
     try {
+      // Persist to localStorage immediately so localCandleAnalysis reads the correct value
+      persistTimeframeToLocalStorage(value);
       await updateSettings({
         ...settings,
         defaultTimeframe: value as Timeframe,
       });
-      toast.success('Timeframe padrão atualizado');
+      toast.success('Configuração salva!');
     } catch {
       toast.error('Erro ao salvar timeframe');
     }
@@ -59,7 +90,7 @@ export default function Settings() {
   const handleDailyLimitChange = async (value: string) => {
     try {
       await setDailyLimitMutation.mutateAsync(BigInt(value));
-      toast.success('Limite diário atualizado');
+      toast.success('Limite diário atualizado!');
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : '';
       if (msg.includes('must be 3, 4, 6, or 8')) {
@@ -77,6 +108,19 @@ export default function Settings() {
       updateSettings({ ...settings, theme: newTheme }).catch(() => {});
     }
   };
+
+  // Determine the current timeframe value, defaulting to M1 if M10 or undefined
+  const currentTimeframe = (() => {
+    const tf = settings?.defaultTimeframe;
+    if (tf === Timeframe.M1 || tf === Timeframe.M3 || tf === Timeframe.M5) return tf;
+    return Timeframe.M1;
+  })();
+
+  // Daily progress display values
+  const completedOps = dailyProgress ? Number(dailyProgress.completedOperations) : 0;
+  const dailyLimit = dailyProgress
+    ? Number(dailyProgress.dailyLimit)
+    : Number(settings?.dailyOperationLimit ?? 3);
 
   return (
     <div className="min-h-screen bg-background">
@@ -149,48 +193,22 @@ export default function Settings() {
                 )}
               </div>
 
-              {/* Default Timeframe */}
+              {/* Default Timeframe — M1, M3, M5 only */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Timeframe padrão</Label>
                 <p className="text-xs text-muted-foreground">
-                  Escolha o período de tempo para análise
+                  Escolha o período de tempo para análise e contagem regressiva
                 </p>
                 {isLoadingSettings ? (
                   <Skeleton className="h-10 w-full" />
                 ) : (
                   <Select
-                    value={settings?.defaultTimeframe ?? Timeframe.M1}
+                    value={currentTimeframe}
                     onValueChange={handleTimeframeChange}
                     disabled={isUpdating}
                   >
                     <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={Timeframe.M1}>M1 (1 minuto)</SelectItem>
-                      <SelectItem value={Timeframe.M5}>M5 (5 minutos)</SelectItem>
-                      <SelectItem value={Timeframe.M10}>M10 (10 minutos)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
-
-              {/* Daily Operation Limit */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Operações por dia</Label>
-                <p className="text-xs text-muted-foreground">
-                  Número máximo de análises por dia
-                </p>
-                {isLoadingSettings ? (
-                  <Skeleton className="h-10 w-full" />
-                ) : (
-                  <Select
-                    value={String(settings?.dailyOperationLimit ?? 3)}
-                    onValueChange={handleDailyLimitChange}
-                    disabled={setDailyLimitMutation.isPending}
-                  >
-                    <SelectTrigger>
-                      {setDailyLimitMutation.isPending ? (
+                      {isUpdating ? (
                         <span className="flex items-center gap-2">
                           <Loader2 className="w-4 h-4 animate-spin" />
                           Salvando...
@@ -200,12 +218,60 @@ export default function Settings() {
                       )}
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="3">3 operações por dia</SelectItem>
-                      <SelectItem value="4">4 operações por dia</SelectItem>
-                      <SelectItem value="6">6 operações por dia</SelectItem>
-                      <SelectItem value="8">8 operações por dia</SelectItem>
+                      <SelectItem value={Timeframe.M1}>M1 — 1 minuto</SelectItem>
+                      <SelectItem value={Timeframe.M3}>M3 — 3 minutos</SelectItem>
+                      <SelectItem value={Timeframe.M5}>M5 — 5 minutos</SelectItem>
                     </SelectContent>
                   </Select>
+                )}
+                {!isLoadingSettings && (
+                  <p className="text-xs text-muted-foreground">
+                    Selecionado:{' '}
+                    <span className="font-semibold text-foreground">{currentTimeframe}</span>
+                    {' '}— contagem regressiva de{' '}
+                    {currentTimeframe === 'M1' ? '1 min' : currentTimeframe === 'M3' ? '3 min' : '5 min'}
+                  </p>
+                )}
+              </div>
+
+              {/* Daily Operation Limit — plain numbers */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Operações por dia</Label>
+                <p className="text-xs text-muted-foreground">
+                  Número máximo de análises por dia
+                </p>
+                {isLoadingSettings ? (
+                  <Skeleton className="h-10 w-full" />
+                ) : (
+                  <>
+                    <Select
+                      value={String(settings?.dailyOperationLimit ?? 3)}
+                      onValueChange={handleDailyLimitChange}
+                      disabled={setDailyLimitMutation.isPending}
+                    >
+                      <SelectTrigger>
+                        {setDailyLimitMutation.isPending ? (
+                          <span className="flex items-center gap-2">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Salvando...
+                          </span>
+                        ) : (
+                          <SelectValue />
+                        )}
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="3">3</SelectItem>
+                        <SelectItem value="4">4</SelectItem>
+                        <SelectItem value="6">6</SelectItem>
+                        <SelectItem value="8">8</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {identity && (
+                      <p className="text-xs text-muted-foreground pt-1">
+                        Hoje: {completedOps}/{dailyLimit} operações realizadas
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
             </div>

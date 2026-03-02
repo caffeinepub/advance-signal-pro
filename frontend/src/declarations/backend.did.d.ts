@@ -16,6 +16,7 @@ export type AnalysisDirection = { 'bullish' : null } |
 export interface AnalysisResult {
   'direction' : AnalysisDirection,
   'stopExemplo' : [] | [number],
+  'timeframe' : Timeframe,
   'trendStrength' : bigint,
   'candlestickPatterns' : Array<CandlestickPattern>,
   'acaoSugerida' : [] | [string],
@@ -37,8 +38,10 @@ export type CandlestickPattern = { 'shootingStar' : null } |
   { 'hammer' : null } |
   { 'engulfing' : null };
 export type ExternalBlob = Uint8Array;
+export type IsNewUser = boolean;
 export interface ResistanceLevel { 'strength' : bigint, 'price' : number }
 export type Timeframe = { 'M1' : null } |
+  { 'M3' : null } |
   { 'M5' : null } |
   { 'M10' : null };
 export interface UserProfile { 'name' : string, 'email' : [] | [string] }
@@ -83,7 +86,7 @@ export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'getAnalyses' : ActorMethod<[], Array<AnalysisResult>>,
-  'getAnalysisHistory' : ActorMethod<[], Array<AnalysisResult>>,
+  'getAnalysisHistory' : ActorMethod<[bigint], Array<AnalysisResult>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getCriteria' : ActorMethod<
@@ -107,7 +110,10 @@ export interface _SERVICE {
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'setDailyOperationLimit' : ActorMethod<[bigint], string>,
-  'storeExternalAnalysis' : ActorMethod<[AnalysisResult], undefined>,
+  'storeAnalysis' : ActorMethod<
+    [AnalysisResult],
+    { 'isNewUser' : IsNewUser, 'legacyEntriesCount' : bigint }
+  >,
   'updateSettings' : ActorMethod<[UserSettings], string>,
 }
 export declare const idlService: IDL.ServiceClass;

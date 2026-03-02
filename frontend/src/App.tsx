@@ -30,6 +30,7 @@ const processingRoute = createRoute({
   component: ProcessingScreen,
 });
 
+// Route without param — used by the new Results page (data via sessionStorage)
 const resultsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/results/$id',

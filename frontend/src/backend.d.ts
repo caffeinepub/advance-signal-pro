@@ -18,6 +18,7 @@ export interface ResistanceLevel {
     strength: bigint;
     price: number;
 }
+export type IsNewUser = boolean;
 export interface UserSettings {
     theme: string;
     signalNotifications: boolean;
@@ -29,6 +30,7 @@ export interface UserSettings {
 export interface AnalysisResult {
     direction: AnalysisDirection;
     stopExemplo?: number;
+    timeframe: Timeframe;
     trendStrength: bigint;
     candlestickPatterns: Array<CandlestickPattern>;
     acaoSugerida?: string;
@@ -62,6 +64,7 @@ export enum CandlestickPattern {
 }
 export enum Timeframe {
     M1 = "M1",
+    M3 = "M3",
     M5 = "M5",
     M10 = "M10"
 }
@@ -73,7 +76,7 @@ export enum UserRole {
 export interface backendInterface {
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     getAnalyses(): Promise<Array<AnalysisResult>>;
-    getAnalysisHistory(): Promise<Array<AnalysisResult>>;
+    getAnalysisHistory(_units: bigint): Promise<Array<AnalysisResult>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getCriteria(): Promise<{
@@ -94,6 +97,9 @@ export interface backendInterface {
     isCallerAdmin(): Promise<boolean>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     setDailyOperationLimit(limit: bigint): Promise<string>;
-    storeExternalAnalysis(result: AnalysisResult): Promise<void>;
+    storeAnalysis(result: AnalysisResult): Promise<{
+        isNewUser: IsNewUser;
+        legacyEntriesCount: bigint;
+    }>;
     updateSettings(newSettings: UserSettings): Promise<string>;
 }

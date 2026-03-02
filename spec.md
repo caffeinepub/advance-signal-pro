@@ -1,13 +1,15 @@
 # Specification
 
 ## Summary
-**Goal:** Redesign the ProcessingScreen layout, add animated black-and-white progress bars with percentage counters, simplify the upload interface, minimize the chart image on the Results screen, and apply premium dark visual polish throughout.
+**Goal:** Fix the timeframe display bug in the Results screen, update the Results screen layout to match the reference design, fix timeframe persistence in Settings, and make analysis explanation texts unique per analysis.
 
 **Planned changes:**
-- **ProcessingScreen.tsx**: Redesign layout to match reference (image-7.png) — place app logo above the "Analisando Gráfico" heading, add subtitle "Detectando padrões de velas localmente...", display four processing stages (Carregando imagem, Processando dados, Detectando padrões de candle, Gerando resultado) in a dark elevated card panel, with circular status icons (pending = dim gray, active = spinning ring, complete = filled green checkmark) and matching text colors
-- **ProcessingScreen.tsx**: Replace stage status indicators with animated horizontal progress bars in black-and-white; active bar animates from 0% to 100% with a white fill and CSS glow/shine effect on a dark track; a small live percentage counter (e.g., "47%") appears beside each bar; completed bars stay at 100% white; pending bars are dark/empty
-- **ProcessingScreen.tsx**: Add footer line "Análise local — sem envio de dados externos" at the bottom of the screen; apply fully dark background (#000 or near-black), large bold heading typography, and premium spacing/proportions
-- **AnalyzeChart.tsx**: Simplify the upload UI to a single minimal upload area with Portuguese labels; support file picker (PNG, JPG, JPEG, WebP, and all common screenshot types), camera capture, clipboard paste (Ctrl+V), and drag-and-drop; remove any file format rejection logic for common image types
-- **Results.tsx**: Display the uploaded chart image as a small thumbnail (~80×60px) in a corner (top-right or bottom-right) retrieved from sessionStorage key `chartImage`, styled with subtle border and rounded corners matching the active theme
+- Fix `localCandleAnalysis.ts` to read the timeframe from localStorage at call time (not at module load), using the exact same key as `Settings.tsx`, and store the value verbatim (`M1`, `M3`, or `M5`) in the result's `timeframe` field
+- Fix the Results screen `Time Frame` tile to display the timeframe from the analysis result (`M1`, `M3`, or `M5`) instead of always defaulting to `M1`
+- Update countdown timer initialization so M1=60s, M3=180s, M5=300s based on the selected timeframe
+- Update the `Entrar às HH:MM` label to compute entry time as current time at page load plus the correct duration for the selected timeframe
+- Redesign the Results screen layout to match the reference (image-11.png / image-12.png): two side-by-side top tiles (TEMPO countdown and ENTRAR ÀS entry time), a full-width green/red signal banner with Tendência, Confiança, and Força badge inline, a 2×2 info grid (Tendência, Precisão, Volume, Time Frame), and a scrollable chart thumbnail section below
+- Fix `Settings.tsx` to correctly persist the selected timeframe (`M1`, `M3`, `M5`) to localStorage under the unified key and show the toast `Configuração salva!` after saving; ensure the saved value is restored when returning to Settings
+- Update `localCandleAnalysis.ts` to generate unique `explicacao` texts per analysis by dynamically incorporating detected pattern names, trend direction, confidence score, and momentum values into the explanation
 
-**User-visible outcome:** The processing screen now shows a polished dark layout with the app logo, animated black-and-white glowing progress bars with live percentage counters, and a privacy footer. The upload page accepts any image input method without errors. The results screen shows the analyzed chart as a small corner thumbnail without dominating the view.
+**User-visible outcome:** The Results screen correctly shows the user-selected timeframe (M1/M3/M5), displays a countdown matching the selected timeframe duration, shows the correct entry time, matches the reference layout with TEMPO/ENTRAR ÀS tiles and signal banner, and produces unique technical analysis explanations per chart. Settings correctly saves and restores the selected timeframe.

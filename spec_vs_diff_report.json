@@ -1,35 +1,33 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-26T00:57:11.055Z",
-  "summary": "The diff implements most of the requested requirements. REQ-108 (animated horizontal progress bars with percentage counter, glow effects) is largely implemented. REQ-109 (simplified upload with all input methods) is implemented. REQ-110 (thumbnail in Results.tsx) appears implemented per the file summary but no direct diff content for Results.tsx is shown. REQ-111 (dark premium polish) is implemented. REQ-107 has a conflict: the spec says to use circular status icons and remove horizontal progress bars, but REQ-108 says to replace those icons with horizontal bars. The implementation provides both icons AND bars. The main gap is that REQ-107 specifically calls for a footer line and app logo which are mentioned in the file summary but not directly visible in the truncated diff.",
+  "generatedAt": "2026-03-02T23:02:28.902Z",
+  "summary": "The diff implements most requirements across REQ-134 through REQ-138. REQ-134, REQ-135, REQ-136, and REQ-137 appear well-covered. REQ-138 (unique explicacao text) is partially visible but truncated, making full verification uncertain. A minor hallucination exists: M10 support in the timeframe duration function was added but not requested.",
   "missing_requirements": [
     {
-      "id": "REQ-107",
-      "requirement": "App logo/brand mark must appear above the 'Analisando Gráfico' heading",
-      "reason": "The file summary for ProcessingScreen.tsx mentions the app logo is present, but the truncated diff does not directly show the logo element. Cannot fully confirm from diff evidence alone.",
+      "id": "REQ-138",
+      "requirement": "Ensure the analysis explanation text (explicacao field) is unique per analysis and dynamically references specific detected patterns, trend direction, candle characteristics, confidence score, and momentum count. No hardcoded static string should be returned.",
+      "reason": "The localCandleAnalysis.ts diff is truncated and does not show the explicacao generation logic. It is impossible to confirm from the visible diff that the explicacao field is dynamically constructed with pattern names, trend direction, confidence, and momentum values rather than a static or semi-static string.",
       "evidence": [
-        "frontend/src/pages/ProcessingScreen.tsx"
+        "frontend/src/services/localCandleAnalysis.ts"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "ProcessingStage component includes both circular status icons (spinning ring, green checkmark, dim circle) AND horizontal progress bars simultaneously in each stage row",
-      "reason": "REQ-107 asked for circular icons and removal of horizontal bars, while REQ-108 asked to replace the icons with horizontal bars. The implementation keeps both icons and bars together, which is a hybrid not explicitly requested by either requirement individually.",
+      "description": "Support for M10 timeframe (600 seconds) in getTimeframeDuration in Results.tsx",
+      "reason": "The build request explicitly restricts the timeframe selector to M1/M3/M5 only and states 'Do not add new settings options beyond the existing M1/M3/M5 timeframe selector'. The M10 case (return 600) was added to Results.tsx but was never requested.",
       "evidence": [
-        "frontend/src/components/ProcessingStage.tsx"
+        "frontend/src/pages/Results.tsx"
       ]
     }
   ],
   "confidence": 0.72,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/components/FileUpload.tsx",
-    "frontend/src/components/ProcessingStage.tsx",
-    "frontend/src/index.css",
-    "frontend/src/pages/AnalyzeChart.tsx",
-    "frontend/src/pages/ProcessingScreen.tsx",
+    "frontend/src/pages/Results.tsx",
+    "frontend/src/pages/Settings.tsx",
+    "frontend/src/services/localCandleAnalysis.ts",
     "project_state.json"
   ]
 }

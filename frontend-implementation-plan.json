@@ -1,125 +1,102 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Redesign ProcessingScreen layout with logo, animated progress bars with % counter, and simplified upload",
+  "title": "Fix timeframe display bug and results screen layout matching reference design",
   "requirements": [
     {
-      "id": "REQ-107",
-      "summary": "Redesign ProcessingScreen layout to match reference design with logo placement, subtitle, circular status icons, and footer disclaimer",
+      "id": "REQ-134",
+      "summary": "Fix the timeframe display bug in the Results screen: the 'Time Frame' tile must display the user-selected timeframe (M1, M3, or M5) instead of always defaulting to M1. Update the countdown timer initialization to match the selected timeframe exactly (M1=60s, M3=180s, M5=300s). Compute the 'Entrar às HH:MM' entry time based on the selected timeframe duration.",
       "acceptanceCriteria": [
-        "App logo appears above the 'Analisando Gráfico' title",
-        "Subtitle 'Detectando padrões de velas localmente...' appears below the title",
-        "Four stage rows are displayed in a dark card/panel",
-        "Completed stages have filled green circle checkmark icons and green text",
-        "Active stage has spinning ring icon and white bold text",
-        "Pending stages have dim/gray circle icons and gray text",
-        "Footer 'Análise local — sem envio de dados externos' is visible at the bottom"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/ProcessingScreen.tsx",
-          "operation": "modify",
-          "description": "Restructure the page layout to place the generated app logo (frontend/public/assets/generated/app-icon.dim_512x512.png) above the 'Analisando Gráfico' heading, add subtitle 'Detectando padrões de velas localmente...' below the heading, wrap all four processing stages in a dark elevated card container, and add footer text 'Análise local — sem envio de dados externos' at the bottom. Replace existing horizontal progress bars with circular status icons: pending stages show dim gray circles, active stage shows a spinning ring loader, completed stages show filled green checkmark circles. Update stage text colors: completed in green, active in white/bold, pending in gray. Maintain all existing error handling logic and stage progression."
-        },
-        {
-          "path": "frontend/src/components/ProcessingStage.tsx",
-          "operation": "modify",
-          "description": "Replace the current status indicator implementation with circular icon variants. For pending state: render a dim gray outlined circle. For active state: render a spinning ring loader animation (CSS-based or SVG spinner). For complete state: render a filled green circle with a white checkmark icon inside. Update text styling: completed stages use green color, active stage uses white bold text, pending stages use gray text. Remove any horizontal progress bar elements from this component."
-        }
-      ]
-    },
-    {
-      "id": "REQ-108",
-      "summary": "Replace stage status indicators with animated horizontal loading bars in black and white with glow effect and live percentage counter",
-      "acceptanceCriteria": [
-        "Each stage row contains an animated horizontal progress bar",
-        "Active stage bar animates smoothly from 0% to 100%",
-        "A small percentage label (e.g., '73%') is displayed beside the bar and updates in real time",
-        "Bar fill color is white with a visible glow/shine CSS effect",
-        "Bar track background is dark/black",
-        "Completed stage bars remain filled at 100% in white",
-        "Pending stage bars are shown as dark empty tracks"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/ProcessingStage.tsx",
-          "operation": "modify",
-          "description": "Replace the circular status icons implemented in REQ-107 with horizontal animated loading bars. Each bar consists of a black/dark track background and a white fill that animates from 0% to 100% width when the stage is active. Apply a CSS glow effect (box-shadow or filter: brightness) to the white fill for a shining appearance. Display a small percentage counter (e.g., '47%') beside the right end of each bar, updating in real-time as the bar fills. Pending bars render as empty dark tracks. Completed bars remain filled at 100% in white. Add state and useEffect logic to animate the percentage from 0 to 100 over the stage duration."
-        },
-        {
-          "path": "frontend/src/pages/ProcessingScreen.tsx",
-          "operation": "modify",
-          "description": "Update stage state management to pass current progress percentage (0-100) to each ProcessingStage component. Ensure the active stage receives animated percentage updates during its execution. Adjust stage timing logic if needed to support smooth percentage animation (e.g., use setInterval or animation frame callbacks to increment percentage state). Ensure completed stages pass 100% and pending stages pass 0%."
-        }
-      ]
-    },
-    {
-      "id": "REQ-109",
-      "summary": "Simplify AnalyzeChart page upload interface to accept any image input method without format restrictions",
-      "acceptanceCriteria": [
-        "File picker accepts PNG, JPG, JPEG, WebP, and screenshot file types",
-        "Camera capture option is available",
-        "Clipboard paste (Ctrl+V) works to capture a copied screenshot",
-        "Drag-and-drop upload is supported",
-        "No format rejection errors appear for common screenshot files",
-        "Upload UI is minimal with Portuguese labels only"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/AnalyzeChart.tsx",
-          "operation": "modify",
-          "description": "Simplify the upload interface and remove all file format rejection logic that blocks common screenshot formats. Ensure the file picker accepts any image MIME type including image/png, image/jpeg, image/jpg, image/webp, and any screenshot file type. Integrate camera capture using the camera component (verify the component's usage instructions before implementing). Ensure clipboard paste (useClipboard hook) works for copied screenshots. Verify drag-and-drop via FileUpload component accepts all image formats. Simplify UI text to minimal Portuguese labels without verbose instructions. Remove any HEIC/HEIF rejection toasts or validation that would block user images."
-        },
-        {
-          "path": "frontend/src/components/FileUpload.tsx",
-          "operation": "modify",
-          "description": "Remove or relax file format validation logic that currently rejects HEIC/HEIF files. Update the accept attribute and validation to accept any common image MIME type (image/png, image/jpeg, image/jpg, image/webp, image/heic, image/heif). Remove error toasts for file format rejection. Keep the 10MB size limit but ensure all image formats are accepted. Simplify drag-and-drop UI text to minimal Portuguese."
-        },
-        {
-          "path": "frontend/src/components/CameraCapture.tsx",
-          "operation": "modify",
-          "description": "Ensure the camera capture component integrates seamlessly into the AnalyzeChart page. Verify the useCamera hook is used correctly (check camera/useCamera.ts usage instructions). Ensure all UI text remains in Portuguese. Confirm camera preview has stable non-zero dimensions and aspect ratio. Ensure capture button is only clickable when camera is fully initialized. Display camera errors gracefully. Ensure captured photo is returned as a File and passed to the upload flow."
-        }
-      ]
-    },
-    {
-      "id": "REQ-110",
-      "summary": "Display uploaded chart image as a minimized thumbnail in Results page corner",
-      "acceptanceCriteria": [
-        "Chart thumbnail is rendered at approximately 80×60px",
-        "Thumbnail is positioned in the corner of the results layout (not dominating the view)",
-        "Image is retrieved from sessionStorage 'chartImage' key",
-        "Thumbnail has a subtle border and rounded corners",
-        "Thumbnail respects the active dark/light theme"
+        "When user selects M5 in Settings, Results screen shows 'M5' in the Time Frame tile",
+        "When user selects M3 in Settings, Results screen shows 'M3' in the Time Frame tile",
+        "When user selects M1 in Settings, Results screen shows 'M1' in the Time Frame tile",
+        "Countdown timer starts at 300 seconds (05:00) when M5 is selected",
+        "Countdown timer starts at 180 seconds (03:00) when M3 is selected",
+        "Countdown timer starts at 60 seconds (01:00) when M1 is selected",
+        "'Entrar às HH:MM' label shows correct entry time based on selected timeframe duration"
       ],
       "file_operations": [
         {
           "path": "frontend/src/pages/Results.tsx",
           "operation": "modify",
-          "description": "Add a minimized chart thumbnail to the Results page layout. Retrieve the chart image data URL from sessionStorage using the 'chartImage' key. Render the thumbnail at approximately 80×60px size in a corner of the layout (top-right or bottom-right, whichever fits the existing design better). Apply subtle border and rounded corners (e.g., rounded-md border border-border). Ensure the thumbnail styling respects the active theme using Tailwind theme tokens (e.g., border-border, bg-card). Position the thumbnail absolutely or within a flex/grid layout so it does not dominate the results view. Do not modify the main results content layout or existing signal cards."
+          "description": "Modify the Results component to read the actual timeframe value from analysisResult.timeframe (which comes from localStorage via localCandleAnalysis). Update the countdown timer initialization logic to use a timeframe-to-seconds map: M1=60, M3=180, M5=300. Update the 'Time Frame' tile display to show the correct timeframe value from analysisResult.timeframe instead of hardcoded 'M1'. Compute the entry time ('Entrar às') by adding the timeframe duration in seconds to the current time at page load. Ensure the 'TEMPO' tile displays the countdown in MM:SS format with 'restante' label, and 'ENTRAR ÀS' tile displays the entry time in HH:MM format in cyan/teal with 'horário de entrada' label."
         }
       ]
     },
     {
-      "id": "REQ-111",
-      "summary": "Apply professional premium visual polish to ProcessingScreen with dark background, large bold typography, and elevated card styling",
+      "id": "REQ-135",
+      "summary": "Fix the timeframe propagation in localCandleAnalysis.ts: read the user's selected timeframe from localStorage at analysis execution time (not at module load time). Ensure the localStorage key matches exactly the key used by Settings.tsx. Store the retrieved value ('M3', 'M5', or 'M1') verbatim in the result.timeframe field, defaulting to 'M1' only if no value exists.",
       "acceptanceCriteria": [
-        "ProcessingScreen background is fully dark (black or near-black)",
-        "Heading typography is large and bold",
-        "Stage list is contained in a dark elevated card panel",
-        "Spacing and proportions feel premium and professional",
-        "All text labels are in Portuguese (Brazil)"
+        "localCandleAnalysis.ts reads timeframe from localStorage at call time, not at import time",
+        "The localStorage key used in localCandleAnalysis.ts matches exactly the key used in Settings.tsx to persist the timeframe",
+        "result.timeframe is 'M5' when user had M5 selected in Settings",
+        "result.timeframe is 'M3' when user had M3 selected in Settings",
+        "result.timeframe is 'M1' when user had M1 selected in Settings",
+        "result.timeframe defaults to 'M1' only if no value is found in localStorage"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/ProcessingScreen.tsx",
+          "path": "frontend/src/services/localCandleAnalysis.ts",
           "operation": "modify",
-          "description": "Apply premium visual polish to the ProcessingScreen. Set the page background to fully dark (bg-black or bg-zinc-950). Increase the 'Analisando Gráfico' heading to large bold typography (text-4xl or text-5xl font-bold). Wrap the stage list in a dark elevated card with subtle shadow and border (bg-card border border-border shadow-lg rounded-lg). Adjust spacing and padding for professional proportions (generous padding around heading, subtitle, and stage card; consistent internal padding in the card). Ensure all text remains in Portuguese (Brazil). Use Tailwind theme tokens for colors to respect dark/light theme."
-        },
+          "description": "Modify the analyzeChartLocally function to read the timeframe value from localStorage at execution time (inside the function body) instead of at module load. Identify the correct localStorage key by cross-referencing Settings.tsx (likely 'defaultTimeframe' or 'userSettings.defaultTimeframe'). Parse the stored value and assign it to result.timeframe verbatim ('M1', 'M3', or 'M5'). If no value is found or the key does not exist, default to 'M1'. Ensure this change does not affect any other parts of the analysis logic."
+        }
+      ]
+    },
+    {
+      "id": "REQ-136",
+      "summary": "Update the Results screen layout to match the reference design (image-11.png, image-12.png). Display two side-by-side tiles at the top: 'TEMPO' countdown (left) and 'ENTRAR ÀS' entry time (right). Show a full-width green banner for COMPRA (red for VENDA) with Tendência, Confiança percentage, and Força badge inline. Display a 2×2 info grid (Tendência, Precisão, Volume, Time Frame). Show the chart thumbnail below the grid as a scrollable secondary section with support/resistance overlays.",
+      "acceptanceCriteria": [
+        "Top section shows two dark tiles side by side: TEMPO countdown and ENTRAR ÀS time",
+        "TEMPO tile displays MM:SS countdown in large bold white text with 'restante' label below",
+        "ENTRAR ÀS tile displays entry time in cyan/teal with 'horário de entrada' label below",
+        "Signal banner is full-width green for COMPRA, red for VENDA",
+        "Signal banner displays Tendência, Confiança percentage, and Força badge inline",
+        "2×2 info grid shows Tendência, Precisão, Volume, and Time Frame tiles",
+        "Time Frame tile reflects the user-selected timeframe (M1/M3/M5)",
+        "Layout matches the reference screenshots (image-11.png, image-12.png)"
+      ],
+      "file_operations": [
         {
-          "path": "frontend/src/index.css",
+          "path": "frontend/src/pages/Results.tsx",
           "operation": "modify",
-          "description": "If additional global CSS adjustments are needed for premium typography or spacing on the ProcessingScreen (e.g., custom heading line-height, letter-spacing, or glow effects for the loading bars), add them here using the existing CSS custom properties. Ensure changes are scoped or use utility classes to avoid affecting other pages. Keep all theme tokens consistent with the existing light/dark mode definitions."
+          "description": "Restructure the Results component layout to match the reference design. At the top, create a flex container with two equally-sized dark tiles: left tile shows 'TEMPO' label, countdown timer in large bold white (e.g., '00:29'), and 'restante' subtitle; right tile shows 'ENTRAR ÀS' label, entry time in cyan/teal (e.g., '19:10'), and 'horário de entrada' subtitle. Below that, render a full-width signal banner (green for COMPRA, red for VENDA) displaying '↗ COMPRA' or '↘ VENDA', 'Tendência: ALTA/BAIXA', 'Confiança: XX%', and a 'Força: forte/média/fraca' badge inline within the banner. Below the banner, create a 2×2 grid of dark tiles showing: (1) Tendência with colored arrow, (2) Precisão with value, (3) Volume with value, (4) Time Frame with the selected timeframe (M1/M3/M5). Below the grid, display the chart thumbnail as a scrollable secondary section using the ChartOverlay component with support/resistance overlays. Apply dark theme styling, rounded corners, and spacing matching the reference screenshots. Ensure all labels are in Portuguese."
+        }
+      ]
+    },
+    {
+      "id": "REQ-137",
+      "summary": "Fix the Settings page timeframe selector to correctly persist the selected value (M1, M3, or M5) to localStorage and to the backend via updateSettings mutation. Audit the localStorage key name to ensure it matches the key read by localCandleAnalysis.ts. Show the Portuguese success toast 'Configuração salva!' after saving. Verify that the saved value persists across navigation.",
+      "acceptanceCriteria": [
+        "Selecting M5 in Settings and saving stores 'M5' in localStorage under the correct key",
+        "Selecting M3 in Settings and saving stores 'M3' in localStorage under the correct key",
+        "Navigating away and returning to Settings shows the previously selected timeframe",
+        "Toast 'Configuração salva!' appears after each successful save",
+        "The localStorage key in Settings.tsx exactly matches the key read in localCandleAnalysis.ts"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/Settings.tsx",
+          "operation": "modify",
+          "description": "Modify the Settings component to ensure the timeframe selector (radio buttons or select input for M1/M3/M5) correctly persists the selected value to localStorage and to the backend via the updateSettings mutation from useUpdateSettings. Audit the localStorage key used (likely 'defaultTimeframe' or within a 'userSettings' object) and ensure it matches exactly the key read by localCandleAnalysis.ts. When the user selects a timeframe and saves, write the selected value ('M1', 'M3', or 'M5') to localStorage and call the mutation. On successful save, display a toast with the Portuguese message 'Configuração salva!'. Ensure the component reads the current value from localStorage or the settings query on mount, so returning to Settings displays the previously saved value. Verify the timeframe is included in the UserSettings payload sent to the backend."
+        }
+      ]
+    },
+    {
+      "id": "REQ-138",
+      "summary": "Ensure the analysis explanation text (explicacao field) generated by localCandleAnalysis.ts is unique per analysis and meaningfully references the specific detected patterns, trend direction, candle characteristics, confidence score, and momentum count. Prevent generic or repetitive phrases by incorporating computed values into the explanation template dynamically.",
+      "acceptanceCriteria": [
+        "Two different chart images analyzed back-to-back produce different explicacao texts",
+        "The explicacao text references the specific detected pattern names (e.g., 'Engolfo de Alta', 'Martelo')",
+        "The explicacao text references the detected trend direction (ALTA/BAIXA/LATERAL)",
+        "The explicacao text references the computed confidence or momentum value",
+        "The explicacao text uses professional Portuguese trading analyst language",
+        "No hardcoded static string is returned regardless of input — the text varies with analysis results"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/services/localCandleAnalysis.ts",
+          "operation": "modify",
+          "description": "Modify the analyzeChartLocally function to generate a dynamic, unique explanation text (explicacao field) for each analysis. Instead of returning a static or generic string, construct the explicacao using a template that incorporates the computed values: detected pattern names (e.g., 'Engolfo de Alta', 'Martelo', 'Doji'), trend direction ('ALTA', 'BAIXA', 'LATERAL'), confidence score, momentum count, and any other relevant computed metrics. Use professional Portuguese trading analyst language. For example: 'A análise identificou um padrão de [pattern name] com tendência [ALTA/BAIXA/LATERAL]. A confiança da análise é de [confidence]% com força [forte/média/fraca]. Foram detectados [momentum count] momentos de alta pressão compradora/vendedora.' Ensure each analysis produces a unique text by varying the content based on the actual detected features in the chart."
         }
       ]
     }
