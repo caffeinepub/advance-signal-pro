@@ -1,15 +1,15 @@
 # Specification
 
 ## Summary
-**Goal:** Recreate the Results screen (`Results.tsx`) to exactly match the reference design in image-13.png.
+**Goal:** Fix the timeframe propagation bug so that the timeframe selected in Settings is correctly reflected throughout the app — in localStorage, in analysis results, and in the Results screen UI.
 
 **Planned changes:**
-- Redesign the Results page layout with a dark background, structured top-to-bottom as described below
-- Add a header row with a back arrow, title "Resultado da Análise", and subtitle "Análise técnica de candles"
-- Add two side-by-side dark tiles: left tile shows TEMPO with large white countdown timer and "restante" subtitle; right tile shows ENTRAR ÀS with large cyan entry time and "horário de entrada" subtitle; entry time is computed as current time plus the timeframe duration (M1=60s, M3=180s, M5=300s)
-- Add a full-width signal banner: green for COMPRA (↗), red for VENDA (↙), with large bold white signal label on the first line, "Tendência: [value] • Confiança: [XX]%" on the second line, and a centered "Força: [forte/média/fraca]" pill badge on the third line
-- Add a 2×2 info grid: Tendência tile with colored arrow (green ↗ ALTA / red ↘ BAIXA), Precisão tile with value in cyan, Volume tile with value in purple, Time Frame tile with value in amber/orange bold and subtitle ("1 min/vela", "3 min/vela", or "5 min/vela")
-- Display the uploaded chart image (from `sessionStorage` key `chartImage`) as a full-width section below the grid, rendered via the existing `ChartOverlay` component with green dashed support lines and red dashed resistance lines, plus a directional arrow on the right edge
-- Remove any previous small corner thumbnail placement
+- Unify the localStorage key for timeframe between `Settings.tsx` and `localCandleAnalysis.ts` using a single shared constant (e.g., `'settings_timeframe'`)
+- Fix `Settings.tsx` timeframe selector so selecting M1, M3, or M5 immediately updates the UI, persists to localStorage, calls the `updateSettings` mutation, and shows a `'Configuração salva!'` toast; restores the saved value on page reload
+- Fix `localCandleAnalysis.ts` to read the timeframe from localStorage at the moment `analyzeChartImage()` is called (not at module load time), and populate `LocalAnalysisResult.timeframe` accordingly
+- Fix `Results.tsx` countdown timer to use the timeframe from the analysis result: M1 = 60s, M3 = 180s, M5 = 300s
+- Fix the Time Frame tile in the 2×2 info grid to display the value from the analysis result's timeframe field (e.g., `'M5'`) with the correct subtitle (`'5 min/vela'`, `'3 min/vela'`, `'1 min/vela'`)
+- Fix `'Entrar às HH:MM'` entry time to be computed as current time plus the correct timeframe duration
+- Update `useCountdownTimer.ts` to accept the timeframe-derived duration correctly
 
-**User-visible outcome:** The Results screen now matches the reference design — users see a polished dark UI with the timer tiles, prominent signal banner, color-coded info grid, and a large full-width chart with overlay lines all in Portuguese (Brazil).
+**User-visible outcome:** After selecting M5 (or M3) in Settings, the Results screen will show the correct countdown timer (5:00 or 3:00), the correct Time Frame tile value, and the correct entry time — matching whatever timeframe the user configured.

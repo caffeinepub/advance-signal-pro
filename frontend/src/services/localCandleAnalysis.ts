@@ -1,38 +1,23 @@
 import { LocalAnalysisResult } from '../types/analysisTypes';
 
-// Unified localStorage key — must match Settings.tsx
-const SETTINGS_STORAGE_KEY = 'userSettings';
+type TimeframeStr = 'M1' | 'M3' | 'M5';
 
-// Read user settings from localStorage at call time (not at module load)
-function getUserSettings(): { timeframe: 'M1' | 'M3' | 'M5'; sensitivity: number } {
+const SETTINGS_KEY = 'userSettings';
+
+// Read timeframe from localStorage at call time (not at module load time)
+function getCurrentTimeframe(): TimeframeStr {
   try {
-    const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    const raw = localStorage.getItem(SETTINGS_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      const tf = parsed.defaultTimeframe;
-      let timeframe: 'M1' | 'M3' | 'M5' = 'M1';
-      if (tf === 'M5') timeframe = 'M5';
-      else if (tf === 'M3') timeframe = 'M3';
-      else if (tf === 'M1') timeframe = 'M1';
-      const sensitivity =
-        typeof parsed.aiSensitivity === 'number'
-          ? parsed.aiSensitivity
-          : typeof parsed.aiSensitivity === 'bigint'
-          ? Number(parsed.aiSensitivity)
-          : 50;
-      return { timeframe, sensitivity };
+      if (parsed.defaultTimeframe === 'M3' || parsed.defaultTimeframe === 'M5') {
+        return parsed.defaultTimeframe as TimeframeStr;
+      }
     }
   } catch {
     // ignore
   }
-  return { timeframe: 'M1', sensitivity: 50 };
-}
-
-interface ColumnScan {
-  bullish: number;
-  bearish: number;
-  neutral: number;
-  avgBrightness: number;
+  return 'M1';
 }
 
 interface PixelData {
@@ -56,6 +41,13 @@ function isBullishColor(pixel: PixelData): boolean {
 
 function isBearishColor(pixel: PixelData): boolean {
   return pixel.r > pixel.g + 30 && pixel.r > pixel.b + 20 && pixel.r > 80;
+}
+
+interface ColumnScan {
+  bullish: number;
+  bearish: number;
+  neutral: number;
+  avgBrightness: number;
 }
 
 function scanCandleColumns(
@@ -132,7 +124,6 @@ function detectSupportResistance(
     }
   }
 
-  // Cluster nearby rows
   const clustered: number[] = [];
   let lastRow = -20;
   for (const row of significantRows) {
@@ -164,7 +155,6 @@ function detectPatterns(columns: ColumnScan[]): string[] {
   const prev = columns[len - 2];
   const prev2 = columns[len - 3];
 
-  // Engulfing bullish
   if (
     prev.bearish > prev.bullish &&
     last.bullish > last.bearish &&
@@ -173,7 +163,6 @@ function detectPatterns(columns: ColumnScan[]): string[] {
     patterns.push('Engolfo de Alta');
   }
 
-  // Engulfing bearish
   if (
     prev.bullish > prev.bearish &&
     last.bearish > last.bullish &&
@@ -182,7 +171,6 @@ function detectPatterns(columns: ColumnScan[]): string[] {
     patterns.push('Engolfo de Baixa');
   }
 
-  // Hammer
   if (
     last.bullish > last.bearish * 1.5 &&
     prev.bearish > prev.bullish &&
@@ -191,7 +179,6 @@ function detectPatterns(columns: ColumnScan[]): string[] {
     patterns.push('Martelo');
   }
 
-  // Shooting star
   if (
     last.bearish > last.bullish * 1.5 &&
     prev.bullish > prev.bearish &&
@@ -200,7 +187,6 @@ function detectPatterns(columns: ColumnScan[]): string[] {
     patterns.push('Estrela Cadente');
   }
 
-  // Doji
   const lastTotal = last.bullish + last.bearish;
   if (lastTotal > 0) {
     const ratio = Math.abs(last.bullish - last.bearish) / lastTotal;
@@ -209,7 +195,6 @@ function detectPatterns(columns: ColumnScan[]): string[] {
     }
   }
 
-  // Three white soldiers
   if (
     columns[len - 1].bullish > columns[len - 1].bearish &&
     columns[len - 2].bullish > columns[len - 2].bearish &&
@@ -218,7 +203,6 @@ function detectPatterns(columns: ColumnScan[]): string[] {
     patterns.push('Três Soldados Brancos');
   }
 
-  // Three black crows
   if (
     columns[len - 1].bearish > columns[len - 1].bullish &&
     columns[len - 2].bearish > columns[len - 2].bullish &&
@@ -252,13 +236,13 @@ function generateProfessionalExplanation(
   precisao: number,
   bullishRatio: number,
   bearishRatio: number,
-  momentumCount: number
+  momentumCount: number,
+  timeframe: TimeframeStr
 ): string {
   const patternNames = patterns.join(' e ');
   const forcaText =
     forca === 'forte' ? 'elevada' : forca === 'média' ? 'moderada' : 'reduzida';
 
-  // Volume context
   const volumeContext =
     volume === 'alto'
       ? 'O volume elevado confirma a força do movimento.'
@@ -266,17 +250,15 @@ function generateProfessionalExplanation(
       ? 'O volume moderado sugere participação razoável do mercado.'
       : 'O volume reduzido indica menor convicção no movimento atual.';
 
-  // Support/resistance context
   let srContext = '';
   if (suportes.length > 0 && resistencias.length > 0) {
     srContext = ` O ativo está posicionado entre ${suportes.length} nível(is) de suporte e ${resistencias.length} de resistência, reforçando a validade do setup.`;
   } else if (suportes.length > 0) {
-    srContext = ` Identificado(s) ${suportes.length} nível(is) de suporte próximo(s) ao preço atual, oferecendo base técnica para a operação.`;
+    srContext = ` Identificado(s) ${suportes.length} nível(is) de suporte próximo(s) ao preço atual.`;
   } else if (resistencias.length > 0) {
-    srContext = ` Detectada(s) ${resistencias.length} resistência(s) acima do preço atual — monitorar como alvo potencial.`;
+    srContext = ` Detectada(s) ${resistencias.length} resistência(s) acima do preço atual.`;
   }
 
-  // Momentum description
   const momentumDesc =
     momentumCount >= 5
       ? `${momentumCount} zonas de pressão intensa detectadas`
@@ -284,33 +266,28 @@ function generateProfessionalExplanation(
       ? `${momentumCount} zonas de pressão identificadas`
       : `pressão de mercado limitada (${momentumCount} zona(s))`;
 
-  // Precision qualifier
   const precisaoDesc =
-    precisao >= 80
-      ? 'alta precisão'
-      : precisao >= 60
-      ? 'precisão razoável'
-      : 'precisão moderada';
+    precisao >= 80 ? 'alta precisão' : precisao >= 60 ? 'precisão razoável' : 'precisão moderada';
 
   let rationale = '';
 
   if (sinal === 'COMPRA') {
     rationale =
-      `A análise identificou o padrão ${patternNames} com tendência de ${tendencia}. ` +
+      `[${timeframe}] A análise identificou o padrão ${patternNames} com tendência de ${tendencia}. ` +
       `A pressão compradora representa ${(bullishRatio * 100).toFixed(1)}% dos pixels analisados, ` +
       `com ${momentumDesc}. Confiança ${forcaText} de ${confianca}% (${precisaoDesc}) ` +
       `e probabilidade de ${probAlta.toFixed(0)}% de continuidade ascendente. ` +
       `${volumeContext}${srContext}`;
   } else if (sinal === 'VENDA') {
     rationale =
-      `A análise identificou o padrão ${patternNames} com tendência de ${tendencia}. ` +
+      `[${timeframe}] A análise identificou o padrão ${patternNames} com tendência de ${tendencia}. ` +
       `A pressão vendedora representa ${(bearishRatio * 100).toFixed(1)}% dos pixels analisados, ` +
       `com ${momentumDesc}. Confiança ${forcaText} de ${confianca}% (${precisaoDesc}) ` +
       `e probabilidade de ${probBaixa.toFixed(0)}% de movimento descendente. ` +
       `${volumeContext}${srContext}`;
   } else {
     rationale =
-      `O padrão ${patternNames} identificado em tendência ${tendencia} não apresenta direcionalidade clara. ` +
+      `[${timeframe}] O padrão ${patternNames} identificado em tendência ${tendencia} não apresenta direcionalidade clara. ` +
       `Pressão compradora: ${(bullishRatio * 100).toFixed(1)}% | Vendedora: ${(bearishRatio * 100).toFixed(1)}%. ` +
       `Com ${momentumDesc} e probabilidades equilibradas (Alta: ${probAlta.toFixed(0)}% / Baixa: ${probBaixa.toFixed(0)}%), ` +
       `recomenda-se aguardar confirmação antes de posicionar. ${volumeContext}${srContext}`;
@@ -319,15 +296,17 @@ function generateProfessionalExplanation(
   return rationale;
 }
 
-function getFallbackResult(timeframe: 'M1' | 'M3' | 'M5'): LocalAnalysisResult {
+function getFallbackResult(timeframe: TimeframeStr): LocalAnalysisResult {
   return {
     tendencia: 'LATERAL',
-    sinal: 'SEM ENTRADA',
+    sinal: 'NEUTRO',
     confianca: 40,
     forca: 'fraca',
     padroes: ['Consolidação Lateral'],
     explicacao:
-      'Não foi possível identificar padrões técnicos conclusivos no gráfico enviado. O mercado apresenta movimento lateral sem direcionalidade definida. Recomenda-se aguardar a formação de um padrão mais claro antes de posicionar.',
+      `[${timeframe}] Não foi possível identificar padrões técnicos conclusivos no gráfico enviado. ` +
+      'O mercado apresenta movimento lateral sem direcionalidade definida. ' +
+      'Recomenda-se aguardar a formação de um padrão mais claro antes de posicionar.',
     probAlta: 50,
     probBaixa: 50,
     suportes: [],
@@ -338,9 +317,9 @@ function getFallbackResult(timeframe: 'M1' | 'M3' | 'M5'): LocalAnalysisResult {
   };
 }
 
-export async function analyzeChartLocally(imageFile: File): Promise<LocalAnalysisResult> {
-  // Read settings at call time — not at module load — so the latest localStorage value is used
-  const { timeframe, sensitivity } = getUserSettings();
+export async function analyzeChartImage(imageFile: File): Promise<LocalAnalysisResult> {
+  // Read timeframe at call time — always reflects the latest localStorage value
+  const timeframe = getCurrentTimeframe();
 
   return new Promise((resolve) => {
     const img = new Image();
@@ -381,7 +360,6 @@ export async function analyzeChartLocally(imageFile: File): Promise<LocalAnalysi
 
         const patterns = detectPatterns(columns);
 
-        // Compute overall trend from recent columns
         const recentColumns = columns.slice(-8);
         const totalBullish = recentColumns.reduce((s, c) => s + c.bullish, 0);
         const totalBearish = recentColumns.reduce((s, c) => s + c.bearish, 0);
@@ -390,19 +368,17 @@ export async function analyzeChartLocally(imageFile: File): Promise<LocalAnalysi
         const bullishRatio = totalBullish / totalPixels;
         const bearishRatio = totalBearish / totalPixels;
 
-        // Count momentum zones (columns where one side dominates strongly)
         const momentumCount = columns.filter((c) => {
           const tot = c.bullish + c.bearish + 1;
           return Math.abs(c.bullish - c.bearish) / tot > 0.3;
         }).length;
 
         let tendencia: 'ALTA' | 'BAIXA' | 'LATERAL';
-        let sinal: 'COMPRA' | 'VENDA' | 'NEUTRO' | 'SEM ENTRADA';
+        let sinal: 'COMPRA' | 'VENDA' | 'NEUTRO';
         let probAlta: number;
         let probBaixa: number;
 
-        const sensitivityFactor = sensitivity / 100;
-        const threshold = 0.05 + (1 - sensitivityFactor) * 0.1;
+        const threshold = 0.05;
 
         if (bullishRatio > bearishRatio + threshold) {
           tendencia = 'ALTA';
@@ -421,7 +397,6 @@ export async function analyzeChartLocally(imageFile: File): Promise<LocalAnalysi
           probBaixa = 100 - probAlta;
         }
 
-        // Confidence calculation
         const diff = Math.abs(bullishRatio - bearishRatio);
         const baseConfianca = Math.round(50 + diff * 200);
         const confianca = Math.min(95, Math.max(30, baseConfianca));
@@ -431,7 +406,6 @@ export async function analyzeChartLocally(imageFile: File): Promise<LocalAnalysi
         else if (confianca >= 50) forca = 'média';
         else forca = 'fraca';
 
-        // Volume estimation from brightness variance
         const brightnessValues = columns.map((c) => c.avgBrightness);
         const avgBrightness =
           brightnessValues.reduce((s, v) => s + v, 0) / brightnessValues.length;
@@ -443,10 +417,8 @@ export async function analyzeChartLocally(imageFile: File): Promise<LocalAnalysi
         else if (variance > 400) volume = 'médio';
         else volume = 'baixo';
 
-        // Precision based on signal clarity
         const precisao = Math.min(95, Math.max(40, Math.round(50 + diff * 150)));
 
-        // Generate unique, dynamic explanation using all computed values
         const explicacao = generateProfessionalExplanation(
           tendencia,
           sinal,
@@ -461,7 +433,8 @@ export async function analyzeChartLocally(imageFile: File): Promise<LocalAnalysi
           precisao,
           bullishRatio,
           bearishRatio,
-          momentumCount
+          momentumCount,
+          timeframe
         );
 
         resolve({
@@ -494,5 +467,5 @@ export async function analyzeChartLocally(imageFile: File): Promise<LocalAnalysi
   });
 }
 
-// Keep backward-compatible alias used by ProcessingScreen
-export const analyzeChartImage = analyzeChartLocally;
+// Backward-compatible alias
+export const analyzeChartLocally = analyzeChartImage;

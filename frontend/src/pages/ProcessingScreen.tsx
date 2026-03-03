@@ -5,7 +5,7 @@ import ProcessingStage from '../components/ProcessingStage';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ExternalBlob, Timeframe } from '../backend';
-import { analyzeChartLocally } from '../services/localCandleAnalysis';
+import { analyzeChartImage } from '../services/localCandleAnalysis';
 import { mapLocalAnalysisResult } from '../utils/mapApiResponse';
 import { dataUrlToFile } from '../utils/dataUrlToFile';
 import { useAnalyzeChart } from '../hooks/useQueries';
@@ -106,12 +106,12 @@ export default function ProcessingScreen() {
     setCurrentStage(2);
 
     const [localResult] = await Promise.all([
-      analyzeChartLocally(imageFile),
+      analyzeChartImage(imageFile),
       delay(STAGES[2].duration),
     ]);
 
-    // Only treat as chart detection error if confianca is 0 and sinal is SEM ENTRADA
-    if (localResult.sinal === 'SEM ENTRADA' && localResult.confianca === 0) {
+    // Treat as chart detection error only if confidence is very low and signal is NEUTRO
+    if (localResult.sinal === 'NEUTRO' && localResult.confianca < 35) {
       setIsChartDetectionError(true);
       setIsProcessing(false);
       return;
@@ -153,8 +153,8 @@ export default function ProcessingScreen() {
             confidencePercentage: BigInt(Math.floor(localResult.confianca)),
             timestamp: BigInt(Date.now() * 1_000_000),
             image: imageBlob,
-            probabilidadeAlta: localResult.probAlta,
-            probabilidadeBaixa: localResult.probBaixa,
+            probabilidadeAlta: localResult.probAlta / 100,
+            probabilidadeBaixa: localResult.probBaixa / 100,
             acaoSugerida: localResult.sinal,
             operationFollowed: undefined,
             entradaExemplo: undefined,

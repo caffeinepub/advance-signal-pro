@@ -1,22 +1,35 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-03-02T23:44:39.357Z",
-  "summary": "The diff modifies frontend/src/pages/Results.tsx to implement the redesign requested in REQ-142 through REQ-145. The file summary confirms the new layout with all major sections: header, side-by-side tiles, signal banner, 2x2 grid, and ChartOverlay. However, due to truncation, some acceptance criteria cannot be fully verified. Overall, the implementation appears largely complete with one hallucinated feature noted.",
-  "missing_requirements": [],
-  "hallucinated_features": [
+  "generatedAt": "2026-03-03T00:04:26.056Z",
+  "summary": "The diff implements fixes across Settings.tsx, localCandleAnalysis.ts, and Results.tsx for the timeframe propagation bug. Most requirements are addressed. Both files use the same key 'userSettings' with a JSON object containing 'defaultTimeframe', which is functionally consistent between the two files, but deviates from the spec's instruction to unify to a single constant key (e.g., 'settings_timeframe') storing the raw string value directly. REQ-147 is well-covered with immediate UI updates, localStorage persistence, mutation call, and Portuguese toast. REQ-148 is well-covered with duration mapping, tile label functions, and entry time computation.",
+  "missing_requirements": [
     {
-      "description": "M10 timeframe support (600 seconds duration and '10 min/vela' subtitle) added in Results.tsx",
-      "reason": "The build request only mentions M1, M3, and M5 timeframes in REQ-144 and throughout the requirements. M10 was not requested in any requirement.",
+      "id": "REQ-146",
+      "requirement": "Unify localStorage key to a single constant (e.g., 'settings_timeframe') storing the raw timeframe string directly, not nested in a JSON object.",
+      "reason": "Both Settings.tsx and localCandleAnalysis.ts use the key 'userSettings' with a JSON object containing 'defaultTimeframe', rather than a flat constant like 'settings_timeframe' storing the raw value. The spec explicitly says to unify to a single constant key. While both files are consistent with each other fixing the functional bug, the implementation does not match the specified approach.",
       "evidence": [
-        "frontend/src/pages/Results.tsx"
+        "frontend/src/pages/Settings.tsx",
+        "frontend/src/services/localCandleAnalysis.ts"
       ]
     }
   ],
-  "confidence": 0.75,
+  "hallucinated_features": [
+    {
+      "description": "When backend save fails, the Settings page shows 'Timeframe salvo localmente.' toast instead of 'Configuração salva!'.",
+      "reason": "The spec only specifies showing the Portuguese success toast 'Configuração salva!' after successful save. Showing a different toast message 'Timeframe salvo localmente.' on error was not requested.",
+      "evidence": [
+        "frontend/src/pages/Settings.tsx"
+      ]
+    }
+  ],
+  "confidence": 0.72,
   "changed_files": [
     "frontend-file-summaries.txt",
+    "frontend/src/pages/ProcessingScreen.tsx",
     "frontend/src/pages/Results.tsx",
+    "frontend/src/pages/Settings.tsx",
+    "frontend/src/services/localCandleAnalysis.ts",
     "project_state.json"
   ]
 }

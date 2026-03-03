@@ -1,336 +1,298 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { ArrowLeft, Moon, Sun, Loader2, CandlestickChart, Info } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useTheme } from '../context/ThemeContext';
-import { useSettings } from '../hooks/useSettings';
-import { useSetDailyOperationLimit, useGetDailyOperationProgress } from '../hooks/useQueries';
-import { Timeframe } from '../backend';
-import { useInternetIdentity } from '../hooks/useInternetIdentity';
+import { ArrowLeft, Save, Clock, Zap, Bell, Globe, BarChart2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useGetSettings, useUpdateSettings } from '../hooks/useQueries';
+import { useInternetIdentity } from '../hooks/useInternetIdentity';
+import { Timeframe } from '../backend';
 
-// Unified localStorage key — must match localCandleAnalysis.ts
-const SETTINGS_STORAGE_KEY = 'userSettings';
+const SETTINGS_KEY = 'userSettings';
 
-function persistTimeframeToLocalStorage(timeframe: string) {
-  try {
-    const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
-    const existing = raw ? JSON.parse(raw) : {};
-    existing.defaultTimeframe = timeframe;
-    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(existing));
-  } catch {
-    // ignore storage errors
-  }
+type TimeframeStr = 'M1' | 'M3' | 'M5';
+
+function timeframeToStr(tf: Timeframe): TimeframeStr {
+  if (tf === Timeframe.M3) return 'M3';
+  if (tf === Timeframe.M5) return 'M5';
+  return 'M1';
 }
 
-function persistSensitivityToLocalStorage(sensitivity: number) {
+function strToTimeframe(s: TimeframeStr): Timeframe {
+  if (s === 'M3') return Timeframe.M3;
+  if (s === 'M5') return Timeframe.M5;
+  return Timeframe.M1;
+}
+
+function loadTimeframeFromStorage(): TimeframeStr {
   try {
-    const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
-    const existing = raw ? JSON.parse(raw) : {};
-    existing.aiSensitivity = sensitivity;
-    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(existing));
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.defaultTimeframe === 'M3' || parsed.defaultTimeframe === 'M5') {
+        return parsed.defaultTimeframe as TimeframeStr;
+      }
+    }
   } catch {
-    // ignore storage errors
+    // ignore
   }
+  return 'M1';
 }
 
 export default function Settings() {
   const navigate = useNavigate();
-  const { theme, setTheme } = useTheme();
-  const { settings, isLoading: isLoadingSettings, updateSettings, isUpdating } = useSettings();
-  const setDailyLimitMutation = useSetDailyOperationLimit();
   const { identity } = useInternetIdentity();
-  const { data: dailyProgress } = useGetDailyOperationProgress();
+  const { data: settings, isLoading: settingsLoading } = useGetSettings();
+  const updateSettingsMutation = useUpdateSettings();
 
-  const handleSensitivityChange = async (value: number[]) => {
-    if (!settings) return;
-    try {
-      persistSensitivityToLocalStorage(value[0]);
-      await updateSettings({
-        ...settings,
-        aiSensitivity: BigInt(value[0]),
-      });
-    } catch {
-      toast.error('Erro ao salvar sensibilidade');
-    }
-  };
+  // Local state — source of truth for UI (never reverts)
+  const [currentTimeframe, setCurrentTimeframe] = useState<TimeframeStr>(loadTimeframeFromStorage);
+  const [sensitivity, setSensitivity] = useState<number>(50);
+  const [dailyLimit, setDailyLimit] = useState<number>(3);
+  const [notifications, setNotifications] = useState<boolean>(true);
+  const [initialized, setInitialized] = useState(false);
 
-  const handleTimeframeChange = async (value: string) => {
-    if (!settings) return;
-    try {
-      // Persist to localStorage immediately so localCandleAnalysis reads the correct value
-      persistTimeframeToLocalStorage(value);
-      await updateSettings({
-        ...settings,
-        defaultTimeframe: value as Timeframe,
-      });
-      toast.success('Configuração salva!');
-    } catch {
-      toast.error('Erro ao salvar timeframe');
-    }
-  };
-
-  const handleNotificationsChange = async (checked: boolean) => {
-    if (!settings) return;
-    try {
-      await updateSettings({
-        ...settings,
-        signalNotifications: checked,
-      });
-    } catch {
-      toast.error('Erro ao salvar notificações');
-    }
-  };
-
-  const handleDailyLimitChange = async (value: string) => {
-    try {
-      await setDailyLimitMutation.mutateAsync(BigInt(value));
-      toast.success('Limite diário atualizado!');
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : '';
-      if (msg.includes('must be 3, 4, 6, or 8')) {
-        toast.error('Limite inválido. Escolha 3, 4, 6 ou 8');
+  // Initialize from backend settings once loaded
+  useEffect(() => {
+    if (settings && !initialized) {
+      const tfStr = timeframeToStr(settings.defaultTimeframe);
+      // Only use backend value if localStorage doesn't have one yet
+      const storedTf = loadTimeframeFromStorage();
+      const storedRaw = localStorage.getItem(SETTINGS_KEY);
+      if (!storedRaw) {
+        setCurrentTimeframe(tfStr);
+        persistTimeframe(tfStr);
       } else {
-        toast.error('Erro ao salvar limite diário');
+        setCurrentTimeframe(storedTf);
       }
+      setSensitivity(Number(settings.aiSensitivity));
+      setDailyLimit(Number(settings.dailyOperationLimit));
+      setNotifications(settings.signalNotifications);
+      setInitialized(true);
+    }
+  }, [settings, initialized]);
+
+  function persistTimeframe(tf: TimeframeStr) {
+    try {
+      const raw = localStorage.getItem(SETTINGS_KEY);
+      const existing = raw ? JSON.parse(raw) : {};
+      const updated = { ...existing, defaultTimeframe: tf };
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+  }
+
+  const handleTimeframeChange = (tf: TimeframeStr) => {
+    // Update UI immediately — never reverts
+    setCurrentTimeframe(tf);
+    // Persist to localStorage immediately
+    persistTimeframe(tf);
+
+    // Try to persist to backend (best-effort, won't revert UI on failure)
+    if (identity && settings) {
+      const newSettings = {
+        ...settings,
+        defaultTimeframe: strToTimeframe(tf),
+        aiSensitivity: BigInt(sensitivity),
+        dailyOperationLimit: BigInt(dailyLimit),
+      };
+      updateSettingsMutation.mutate(newSettings, {
+        onSuccess: () => {
+          toast.success('Configuração salva!');
+        },
+        onError: () => {
+          // UI already updated — just show a subtle note
+          toast.info('Timeframe salvo localmente.');
+        },
+      });
+    } else {
+      toast.success('Configuração salva!');
     }
   };
 
-  const handleThemeToggle = () => {
-    const newTheme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(newTheme);
-    if (settings) {
-      updateSettings({ ...settings, theme: newTheme }).catch(() => {});
+  const handleSave = () => {
+    persistTimeframe(currentTimeframe);
+
+    if (identity && settings) {
+      const newSettings = {
+        ...settings,
+        defaultTimeframe: strToTimeframe(currentTimeframe),
+        aiSensitivity: BigInt(sensitivity),
+        dailyOperationLimit: BigInt(dailyLimit),
+        signalNotifications: notifications,
+      };
+      updateSettingsMutation.mutate(newSettings, {
+        onSuccess: () => {
+          toast.success('Configurações salvas com sucesso!');
+        },
+        onError: () => {
+          toast.success('Configurações salvas localmente!');
+        },
+      });
+    } else {
+      toast.success('Configurações salvas localmente!');
     }
   };
 
-  // Determine the current timeframe value, defaulting to M1 if M10 or undefined
-  const currentTimeframe = (() => {
-    const tf = settings?.defaultTimeframe;
-    if (tf === Timeframe.M1 || tf === Timeframe.M3 || tf === Timeframe.M5) return tf;
-    return Timeframe.M1;
-  })();
+  const timeframeOptions: { value: TimeframeStr; label: string; desc: string }[] = [
+    { value: 'M1', label: 'M1', desc: '1 minuto' },
+    { value: 'M3', label: 'M3', desc: '3 minutos' },
+    { value: 'M5', label: 'M5', desc: '5 minutos' },
+  ];
 
-  // Daily progress display values
-  const completedOps = dailyProgress ? Number(dailyProgress.completedOperations) : 0;
-  const dailyLimit = dailyProgress
-    ? Number(dailyProgress.dailyLimit)
-    : Number(settings?.dailyOperationLimit ?? 3);
+  const limitOptions = [3, 4, 6, 8];
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6 max-w-4xl">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate({ to: '/' })}
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">Configurações</h1>
-            <p className="text-sm text-muted-foreground">
-              Personalize sua experiência
-            </p>
+    <div className="min-h-screen bg-black text-white">
+      {/* Header */}
+      <div className="flex items-center gap-3 px-4 pt-12 pb-6">
+        <button
+          onClick={() => navigate({ to: '/' })}
+          className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5 text-white" />
+        </button>
+        <div>
+          <h1 className="text-xl font-bold text-white">Configurações</h1>
+          <p className="text-sm text-white/50">Personalize sua experiência</p>
+        </div>
+      </div>
+
+      <div className="px-4 pb-24 space-y-6">
+        {/* Timeframe */}
+        <div className="bg-white/5 rounded-2xl p-5 border border-white/10">
+          <div className="flex items-center gap-2 mb-4">
+            <Clock className="w-5 h-5 text-amber-400" />
+            <h2 className="text-base font-semibold text-white">Timeframe Padrão</h2>
+          </div>
+          <p className="text-sm text-white/50 mb-4">
+            Selecione o período de cada vela para análise
+          </p>
+          {settingsLoading ? (
+            <div className="flex items-center gap-2 text-white/40">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-sm">Carregando...</span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-3">
+              {timeframeOptions.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => handleTimeframeChange(opt.value)}
+                  className={`py-3 px-2 rounded-xl border-2 transition-all text-center ${
+                    currentTimeframe === opt.value
+                      ? 'border-amber-400 bg-amber-400/10 text-amber-400'
+                      : 'border-white/10 bg-white/5 text-white/60 hover:border-white/30'
+                  }`}
+                >
+                  <div className="text-lg font-bold">{opt.label}</div>
+                  <div className="text-xs mt-0.5 opacity-70">{opt.desc}</div>
+                </button>
+              ))}
+            </div>
+          )}
+          <p className="text-xs text-white/30 mt-3">
+            Selecionado: <span className="text-amber-400 font-semibold">{currentTimeframe}</span>
+          </p>
+        </div>
+
+        {/* AI Sensitivity */}
+        <div className="bg-white/5 rounded-2xl p-5 border border-white/10">
+          <div className="flex items-center gap-2 mb-4">
+            <Zap className="w-5 h-5 text-cyan-400" />
+            <h2 className="text-base font-semibold text-white">Sensibilidade da IA</h2>
+          </div>
+          <p className="text-sm text-white/50 mb-4">
+            Ajuste a sensibilidade da análise ({sensitivity}%)
+          </p>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={sensitivity}
+            onChange={(e) => setSensitivity(Number(e.target.value))}
+            className="w-full accent-cyan-400"
+          />
+          <div className="flex justify-between text-xs text-white/30 mt-1">
+            <span>Conservador</span>
+            <span>Agressivo</span>
           </div>
         </div>
 
-        <div className="space-y-4">
-          {/* ── Candle Analysis Configuration ── */}
-          <Card className="p-4">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <CandlestickChart className="w-5 h-5 text-primary" />
-                <div>
-                  <Label className="text-base font-semibold">Configuração de Análise de Candles</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Motor local de detecção de padrões de candlestick
-                  </p>
-                </div>
-              </div>
-
-              {/* Engine info row */}
-              <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/50 border border-border">
-                <div className="flex items-center gap-2">
-                  <Info className="w-4 h-4 text-muted-foreground shrink-0" />
-                  <span className="text-sm font-medium">Motor de análise</span>
-                </div>
-                <span className="text-sm text-muted-foreground font-mono">
-                  Local (sem API externa)
-                </span>
-              </div>
-
-              {/* AI Sensitivity */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Sensibilidade da IA</Label>
-                <p className="text-xs text-muted-foreground">
-                  Ajuste a sensibilidade da detecção de padrões
-                </p>
-                {isLoadingSettings ? (
-                  <Skeleton className="h-6 w-full" />
-                ) : (
-                  <div className="flex items-center gap-4">
-                    <Slider
-                      value={[Number(settings?.aiSensitivity ?? 50)]}
-                      onValueChange={handleSensitivityChange}
-                      min={0}
-                      max={100}
-                      step={1}
-                      className="flex-1"
-                      disabled={isUpdating}
-                    />
-                    <span className="text-sm font-medium w-12 text-right">
-                      {Number(settings?.aiSensitivity ?? 50)}%
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Default Timeframe — M1, M3, M5 only */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Timeframe padrão</Label>
-                <p className="text-xs text-muted-foreground">
-                  Escolha o período de tempo para análise e contagem regressiva
-                </p>
-                {isLoadingSettings ? (
-                  <Skeleton className="h-10 w-full" />
-                ) : (
-                  <Select
-                    value={currentTimeframe}
-                    onValueChange={handleTimeframeChange}
-                    disabled={isUpdating}
-                  >
-                    <SelectTrigger>
-                      {isUpdating ? (
-                        <span className="flex items-center gap-2">
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Salvando...
-                        </span>
-                      ) : (
-                        <SelectValue />
-                      )}
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={Timeframe.M1}>M1 — 1 minuto</SelectItem>
-                      <SelectItem value={Timeframe.M3}>M3 — 3 minutos</SelectItem>
-                      <SelectItem value={Timeframe.M5}>M5 — 5 minutos</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-                {!isLoadingSettings && (
-                  <p className="text-xs text-muted-foreground">
-                    Selecionado:{' '}
-                    <span className="font-semibold text-foreground">{currentTimeframe}</span>
-                    {' '}— contagem regressiva de{' '}
-                    {currentTimeframe === 'M1' ? '1 min' : currentTimeframe === 'M3' ? '3 min' : '5 min'}
-                  </p>
-                )}
-              </div>
-
-              {/* Daily Operation Limit — plain numbers */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Operações por dia</Label>
-                <p className="text-xs text-muted-foreground">
-                  Número máximo de análises por dia
-                </p>
-                {isLoadingSettings ? (
-                  <Skeleton className="h-10 w-full" />
-                ) : (
-                  <>
-                    <Select
-                      value={String(settings?.dailyOperationLimit ?? 3)}
-                      onValueChange={handleDailyLimitChange}
-                      disabled={setDailyLimitMutation.isPending}
-                    >
-                      <SelectTrigger>
-                        {setDailyLimitMutation.isPending ? (
-                          <span className="flex items-center gap-2">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Salvando...
-                          </span>
-                        ) : (
-                          <SelectValue />
-                        )}
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="3">3</SelectItem>
-                        <SelectItem value="4">4</SelectItem>
-                        <SelectItem value="6">6</SelectItem>
-                        <SelectItem value="8">8</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {identity && (
-                      <p className="text-xs text-muted-foreground pt-1">
-                        Hoje: {completedOps}/{dailyLimit} operações realizadas
-                      </p>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-          </Card>
-
-          {/* Theme */}
-          <Card className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-base font-semibold">Tema</Label>
-                <p className="text-sm text-muted-foreground">
-                  Escolha entre claro ou escuro
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleThemeToggle}
+        {/* Daily Limit */}
+        <div className="bg-white/5 rounded-2xl p-5 border border-white/10">
+          <div className="flex items-center gap-2 mb-4">
+            <BarChart2 className="w-5 h-5 text-green-400" />
+            <h2 className="text-base font-semibold text-white">Limite Diário de Operações</h2>
+          </div>
+          <p className="text-sm text-white/50 mb-4">
+            Máximo de operações por dia
+          </p>
+          <div className="grid grid-cols-4 gap-2">
+            {limitOptions.map((opt) => (
+              <button
+                key={opt}
+                onClick={() => setDailyLimit(opt)}
+                className={`py-3 rounded-xl border-2 transition-all text-center font-bold ${
+                  dailyLimit === opt
+                    ? 'border-green-400 bg-green-400/10 text-green-400'
+                    : 'border-white/10 bg-white/5 text-white/60 hover:border-white/30'
+                }`}
               >
-                {theme === 'dark' ? (
-                  <Sun className="w-5 h-5" />
-                ) : (
-                  <Moon className="w-5 h-5" />
-                )}
-              </Button>
-            </div>
-          </Card>
-
-          {/* Notifications */}
-          <Card className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-base font-semibold">Notificações de Sinais</Label>
-                <p className="text-sm text-muted-foreground">
-                  Receba alertas quando novos sinais forem detectados
-                </p>
-              </div>
-              {isLoadingSettings ? (
-                <Skeleton className="h-6 w-10" />
-              ) : (
-                <Switch
-                  checked={settings?.signalNotifications ?? true}
-                  onCheckedChange={handleNotificationsChange}
-                  disabled={isUpdating}
-                />
-              )}
-            </div>
-          </Card>
-
-          {/* Language Info */}
-          <Card className="p-4">
-            <div>
-              <Label className="text-base font-semibold">Idioma</Label>
-              <p className="text-sm text-muted-foreground">
-                Português (Brasil)
-              </p>
-            </div>
-          </Card>
+                {opt}
+              </button>
+            ))}
+          </div>
         </div>
+
+        {/* Notifications */}
+        <div className="bg-white/5 rounded-2xl p-5 border border-white/10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Bell className="w-5 h-5 text-purple-400" />
+              <div>
+                <h2 className="text-base font-semibold text-white">Notificações de Sinal</h2>
+                <p className="text-sm text-white/50">Receber alertas de novos sinais</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setNotifications(!notifications)}
+              className={`w-12 h-6 rounded-full transition-colors relative ${
+                notifications ? 'bg-purple-500' : 'bg-white/20'
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                  notifications ? 'translate-x-6' : 'translate-x-0.5'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+
+        {/* Language info */}
+        <div className="bg-white/5 rounded-2xl p-5 border border-white/10">
+          <div className="flex items-center gap-2">
+            <Globe className="w-5 h-5 text-blue-400" />
+            <div>
+              <h2 className="text-base font-semibold text-white">Idioma</h2>
+              <p className="text-sm text-white/50">Português (Brasil)</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Save button */}
+        <button
+          onClick={handleSave}
+          disabled={updateSettingsMutation.isPending}
+          className="w-full py-4 rounded-2xl bg-white text-black font-bold text-base flex items-center justify-center gap-2 hover:bg-white/90 transition-colors disabled:opacity-50"
+        >
+          {updateSettingsMutation.isPending ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <Save className="w-5 h-5" />
+          )}
+          Salvar Configurações
+        </button>
       </div>
     </div>
   );

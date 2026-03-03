@@ -1,81 +1,72 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Recreate Results screen to match reference design (image-13.png)",
+  "title": "Fix timeframe propagation bug: Settings selection not reflected in Results screen",
   "requirements": [
     {
-      "id": "REQ-142",
-      "summary": "Redesign Results.tsx layout to match image-13.png with dark background, header, two-tile timer section, full-width signal banner, 2×2 info grid, and chart thumbnail",
+      "id": "REQ-146",
+      "summary": "Fix localStorage key mismatch between Settings.tsx and localCandleAnalysis.ts to ensure consistent timeframe storage and retrieval",
       "acceptanceCriteria": [
-        "Header displays back arrow, 'Resultado da Análise' title, and 'Análise técnica de candles' subtitle",
-        "Two side-by-side tiles at the top: left tile shows TEMPO with countdown timer in large white, right tile shows ENTRAR ÀS with entry time in large cyan/teal",
-        "Large full-width signal banner is green for COMPRA or red for VENDA with arrow symbol, trend, confidence, and força badge",
-        "2×2 info grid shows Tendência (colored arrow + value), Precisão (value in cyan), Volume (value in purple), Time Frame (value in amber with subtitle)",
-        "Chart thumbnail displayed below the grid at full or near-full width with support/resistance dashed lines overlaid",
-        "All text labels are in Portuguese (Brazil)",
-        "Dark background (#000 or near-black) used throughout",
-        "Countdown timer duration matches selected timeframe: M1=60s, M3=180s, M5=300s",
-        "Entry time ('ENTRAR ÀS') is computed as current time at page load plus the timeframe duration"
+        "The localStorage key used to save the timeframe in Settings.tsx is identical to the key used to read it in localCandleAnalysis.ts",
+        "Selecting M5 in Settings persists 'M5' to localStorage under the unified key",
+        "Selecting M3 in Settings persists 'M3' to localStorage under the unified key",
+        "localCandleAnalysis.ts reads the timeframe at the moment analyzeChartImage() is called, not at import/module load time",
+        "The LocalAnalysisResult.timeframe field contains 'M5' when user had M5 selected, 'M3' when M3 was selected, 'M1' when M1 was selected"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/Results.tsx",
+          "path": "frontend/src/pages/Settings.tsx",
           "operation": "modify",
-          "description": "Restructure the entire Results page layout to match image-13.png reference. Replace the existing layout with: (1) A header section displaying a back arrow button (navigate back), title 'Resultado da Análise', and subtitle 'Análise técnica de candles'; (2) A two-tile horizontal row at the top showing TEMPO (countdown timer in large bold white text, e.g., '00:36', with 'restante' label) on the left and ENTRAR ÀS (entry time in large bold cyan/teal, e.g., '20:32', with 'horário de entrada' label) on the right, each tile having a dark background and a clock icon; (3) A large full-width signal banner (green for COMPRA, red for VENDA) displaying the arrow and signal label (e.g., '↗ COMPRA') in large bold white, a line showing 'Tendência: [value] • Confiança: [XX]%', and a centered pill badge 'Força: [forte/média/fraca]'; (4) A 2×2 grid of dark tiles below the banner: top-left tile labeled 'Tendência' with a colored arrow icon and value, top-right tile labeled 'Precisão' with a target icon and value in cyan, bottom-left tile labeled 'Volume' with a bar chart icon and value in purple, bottom-right tile labeled 'Time Frame' with a clock icon, the timeframe value (M1/M3/M5) in amber/orange bold, and a subtitle line (e.g., '1 min/vela'); (5) A large chart thumbnail section below the grid displaying the uploaded chart image at full or near-full width with ChartOverlay component to render support/resistance lines and directional arrow. Use the useCountdownTimer hook to compute and display the remaining time. Compute the entry time as Date.now() plus the timeframe duration in milliseconds. Retrieve the analysis result from sessionStorage key 'currentResult'. Ensure all tiles and the banner have rounded corners, consistent padding, and use a near-black dark background. All text must be in Portuguese. The countdown timer must initialize with the correct duration based on the selected timeframe (M1=60s, M3=180s, M5=300s). Verify the ChartOverlay component's usage instructions before implementing."
+          "description": "Update the timeframe selection handler to write the selected timeframe value ('M1', 'M3', or 'M5') to localStorage using a unified constant key 'settings_timeframe'. Ensure the value is persisted immediately on selection change before calling the updateSettings mutation. Verify that the same key constant is used consistently throughout the file."
+        },
+        {
+          "path": "frontend/src/services/localCandleAnalysis.ts",
+          "operation": "modify",
+          "description": "Move the timeframe localStorage read operation from module initialization into the analyzeChartImage() function body so it reads the current value at analysis execution time. Use the same unified constant key 'settings_timeframe' to retrieve the timeframe value. Ensure the retrieved timeframe ('M1', 'M3', or 'M5') is correctly assigned to the LocalAnalysisResult.timeframe field. Add a fallback default to 'M1' if no value is found in localStorage."
         }
       ]
     },
     {
-      "id": "REQ-143",
-      "summary": "Update chart thumbnail display in Results.tsx to show uploaded chart as large, full-width image below the 2×2 info grid with ChartOverlay for support/resistance lines",
+      "id": "REQ-147",
+      "summary": "Fix Settings page timeframe selector UI state to immediately reflect selected value and persist without reverting",
       "acceptanceCriteria": [
-        "Chart image is displayed full-width (or near full-width) below the 2×2 info grid",
-        "ChartOverlay component renders green dashed support lines and red dashed resistance lines on the chart",
-        "A directional arrow on the right edge of the chart indicates COMPRA (up) or VENDA (down)",
-        "Image is retrieved from sessionStorage key 'chartImage'",
-        "No small corner thumbnail is shown; the chart section is a prominent scrollable area"
+        "Selecting M5 in the timeframe selector immediately shows M5 as the active/selected option without reverting",
+        "Selecting M3 in the timeframe selector immediately shows M3 as the active/selected option without reverting",
+        "The selected value is written to localStorage immediately on change",
+        "The updateSettings mutation is called with the new timeframe value",
+        "'Configuração salva!' toast appears after successful save",
+        "Navigating away and returning to Settings shows the previously saved timeframe value"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/Results.tsx",
+          "path": "frontend/src/pages/Settings.tsx",
           "operation": "modify",
-          "description": "Replace any previous small corner thumbnail placement with a large, full-width chart thumbnail section positioned below the 2×2 info grid. Retrieve the chart image data URL from sessionStorage under the key 'chartImage'. Render the chart using the ChartOverlay component so that green dashed support lines and red dashed resistance lines are drawn on top of the chart. Pass the signal direction ('COMPRA' or 'VENDA') to ChartOverlay to display a directional arrow on the right edge of the chart (upward arrow for COMPRA, downward arrow for VENDA). Ensure the chart section is full-width or near-full-width and occupies a prominent scrollable area matching the reference design in image-13.png. Remove any previous logic that displayed the chart as a small thumbnail in a corner. Verify the ChartOverlay component's usage instructions before implementing."
+          "description": "Fix the timeframe selector's onChange handler to update the local React state immediately (using setSettings or equivalent state updater) before persisting to localStorage and calling the backend mutation. Ensure the select element's value prop is bound to the current state so it displays the selected option correctly. Add the Portuguese success toast 'Configuração salva!' after the updateSettings mutation completes successfully. Verify that the initial timeframe value is correctly loaded from the backend settings or localStorage on component mount to prevent incorrect initial display."
         }
       ]
     },
     {
-      "id": "REQ-144",
-      "summary": "Update 2×2 info grid tiles in Results.tsx to display colored arrow icon for Tendência, cyan value for Precisão, purple value for Volume, and amber value with subtitle for Time Frame",
+      "id": "REQ-148",
+      "summary": "Fix countdown timer and Time Frame tile in Results page to use the correct timeframe from analysis result",
       "acceptanceCriteria": [
-        "Tendência tile shows colored arrow (green ↗ for ALTA, red ↘ for BAIXA) inline with the value",
-        "Precisão tile value is rendered in cyan/teal",
-        "Volume tile value is rendered in purple",
-        "Time Frame tile value is rendered in amber/orange bold with subtitle '1 min/vela', '3 min/vela', or '5 min/vela' matching the selected timeframe",
-        "All tile labels are in Portuguese"
+        "When analysis result contains timeframe='M5', the countdown timer starts at 05:00 (300 seconds)",
+        "When analysis result contains timeframe='M3', the countdown timer starts at 03:00 (180 seconds)",
+        "When analysis result contains timeframe='M1', the countdown timer starts at 01:00 (60 seconds)",
+        "The Time Frame tile displays 'M5' when the analysis result timeframe is M5, not 'M1'",
+        "The Time Frame tile displays 'M3' when the analysis result timeframe is M3",
+        "'Entrar às HH:MM' shows current time + correct timeframe duration (e.g., +5 min for M5)",
+        "The Time Frame tile subtitle shows '5 min/vela' for M5, '3 min/vela' for M3, '1 min/vela' for M1"
       ],
       "file_operations": [
         {
           "path": "frontend/src/pages/Results.tsx",
           "operation": "modify",
-          "description": "Update the 2×2 info grid tiles to match the visual style shown in image-13.png. In the Tendência tile (top-left), display a colored arrow icon (green upward arrow ↗ for ALTA, red downward arrow ↘ for BAIXA) inline with the trend value. Apply green text color for ALTA and red text color for BAIXA. In the Precisão tile (top-right), render the precision value (percentage or label) in cyan/teal text. In the Volume tile (bottom-left), render the volume value in purple text. In the Time Frame tile (bottom-right), render the timeframe value (M1, M3, M5) in amber/orange bold text and include a subtitle line below it: '1 min/vela' for M1, '3 min/vela' for M3, '5 min/vela' for M5. Ensure all tile labels ('Tendência', 'Precisão', 'Volume', 'Time Frame') are displayed in Portuguese and use consistent dark tile backgrounds with rounded corners and padding."
-        }
-      ]
-    },
-    {
-      "id": "REQ-145",
-      "summary": "Update signal banner in Results.tsx to display arrow and signal label, trend/confidence line, and centered força badge inline within the full-width green or red banner",
-      "acceptanceCriteria": [
-        "Signal banner is full-width, green for COMPRA, red for VENDA",
-        "First line: arrow symbol + signal label in large bold white",
-        "Second line: 'Tendência: [value] • Confiança: [XX]%'",
-        "Third line: centered 'Força: [forte/média/fraca]' badge",
-        "Banner has generous vertical padding giving it prominent visual weight"
-      ],
-      "file_operations": [
+          "description": "Read the timeframe value from the analysis result object (result.timeframe) and compute the correct countdown duration based on it: M1 = 60 seconds, M3 = 180 seconds, M5 = 300 seconds. Pass this computed duration to the useCountdownTimer hook. Update the Time Frame tile to display result.timeframe directly instead of any hardcoded or default value. Update the subtitle logic to show '1 min/vela' for M1, '3 min/vela' for M3, and '5 min/vela' for M5 based on result.timeframe. Update the 'Entrar às HH:MM' calculation to add the correct number of minutes to the current time based on the timeframe (1, 3, or 5 minutes)."
+        },
         {
-          "path": "frontend/src/pages/Results.tsx",
+          "path": "frontend/src/hooks/useCountdownTimer.ts",
           "operation": "modify",
-          "description": "Update the signal banner to display all information inline within a single full-width banner element. The banner background color must be green for COMPRA and red for VENDA. Inside the banner, display: (1) A first line showing the arrow symbol and signal label (e.g., '↗ COMPRA' or '↙ VENDA') in large bold white text; (2) A second line showing 'Tendência: [value] • Confiança: [XX]%' (e.g., 'Tendência: ALTA • Confiança: 95%'); (3) A third line showing a centered pill badge with 'Força: [forte/média/fraca]' (e.g., 'Força: forte'). Apply generous vertical padding to the banner to give it prominent visual weight matching the reference design in image-13.png. Ensure all text is in Portuguese and the banner spans the full width of the screen."
+          "description": "Ensure the hook accepts the timeframe-derived duration parameter correctly and initializes the countdown timer with it. Verify that the hook returns the formatted time string in MM:SS format and the finished flag as expected by the Results page. No logic changes are required if the hook already accepts a duration in seconds; this operation confirms compatibility."
         }
       ]
     }
