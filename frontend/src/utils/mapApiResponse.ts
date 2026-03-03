@@ -1,4 +1,4 @@
-import { LocalAnalysisResult } from '../types/analysisTypes';
+import { LocalAnalysisResult, MultiTimeframeEntry } from '../types/analysisTypes';
 
 /**
  * Internal AnalysisResult shape used by the Results page (stored in sessionStorage).
@@ -18,6 +18,8 @@ export interface AnalysisResult {
   timeframe: string;
   suportes: number[];
   resistencias: number[];
+  /** Optional multi-timeframe breakdown when multiple images were analyzed */
+  multiTimeframe?: MultiTimeframeEntry[];
 }
 
 export function mapLocalAnalysisResult(local: LocalAnalysisResult): AnalysisResult {
@@ -35,5 +37,6 @@ export function mapLocalAnalysisResult(local: LocalAnalysisResult): AnalysisResu
     timeframe: local.timeframe,
     suportes: local.suportes,
     resistencias: local.resistencias,
+    multiTimeframe: local.multiTimeframe,
   };
 }

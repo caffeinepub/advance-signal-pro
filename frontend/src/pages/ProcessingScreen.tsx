@@ -6,13 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ExternalBlob, Timeframe } from '../backend';
 import { analyzeChartImage } from '../services/localCandleAnalysis';
-import { mapLocalAnalysisResult } from '../utils/mapApiResponse';
 import { dataUrlToFile } from '../utils/dataUrlToFile';
+import { mergeMultiTimeframeResults } from '../utils/mergeMultiTimeframeResults';
 import { useAnalyzeChart } from '../hooks/useQueries';
 import { useActor } from '../hooks/useActor';
+import type { LocalAnalysisResult } from '../types/analysisTypes';
 
 const STAGES = [
-  { label: 'Carregando imagem do gráfico', duration: 3500 },
+  { label: 'Carregando imagens do gráfico', duration: 3000 },
   { label: 'Identificando candles e estrutura', duration: 4000 },
   { label: 'Detectando padrões de candle', duration: 4500 },
   { label: 'Gerando resultado da análise', duration: 3000 },
@@ -26,6 +27,8 @@ function mapTimeframe(tf: 'M1' | 'M3' | 'M5'): Timeframe {
   return Timeframe.M1;
 }
 
+type TimeframeKey = 'M1' | 'M3' | 'M5';
+
 export default function ProcessingScreen() {
   const navigate = useNavigate();
   const { actor } = useActor();
@@ -36,6 +39,7 @@ export default function ProcessingScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isChartDetectionError, setIsChartDetectionError] = useState(false);
   const [isProcessing, setIsProcessing] = useState(true);
+  const [processingLabel, setProcessingLabel] = useState('');
 
   const hasStarted = useRef(false);
 
@@ -59,40 +63,51 @@ export default function ProcessingScreen() {
     setError(null);
     setIsChartDetectionError(false);
 
-    // ── Stage 0: Load image ──
+    // ── Stage 0: Load images ──
     setCurrentStage(0);
     await delay(STAGES[0].duration);
 
-    let imageData: string | null = null;
-    try {
-      imageData = sessionStorage.getItem('chartImage');
-    } catch {
-      setError('Não foi possível acessar a imagem. Tente novamente.');
-      setIsProcessing(false);
-      return;
+    // Read multi-timeframe images from sessionStorage
+    const countStr = sessionStorage.getItem('chartImages_count');
+    const count = countStr ? parseInt(countStr, 10) : 0;
+
+    let imagesToProcess: Array<{ timeframe: TimeframeKey; dataUrl: string }> = [];
+
+    if (count > 0) {
+      // Multi-timeframe flow
+      const tfs: TimeframeKey[] = ['M1', 'M3', 'M5'];
+      for (const tf of tfs) {
+        const data = sessionStorage.getItem(`chartImage_${tf}`);
+        if (data && data.startsWith('data:')) {
+          imagesToProcess.push({ timeframe: tf, dataUrl: data });
+        }
+      }
     }
 
-    if (!imageData || !imageData.startsWith('data:')) {
+    // Fallback to legacy single image
+    if (imagesToProcess.length === 0) {
+      const legacyData = sessionStorage.getItem('chartImage');
+      if (legacyData && legacyData.startsWith('data:')) {
+        imagesToProcess.push({ timeframe: 'M1', dataUrl: legacyData });
+      }
+    }
+
+    if (imagesToProcess.length === 0) {
       setError('Imagem não encontrada. Envie o gráfico novamente.');
       setIsProcessing(false);
       return;
     }
 
-    const imageFile = dataUrlToFile(imageData, 'chart.png');
-    if (!imageFile) {
-      setError('Imagem inválida ou corrompida. Envie o gráfico novamente.');
-      setIsProcessing(false);
-      return;
-    }
-
-    let imageBlob: ExternalBlob;
-    try {
-      const buffer = await imageFile.arrayBuffer();
-      imageBlob = ExternalBlob.fromBytes(new Uint8Array(buffer));
-    } catch {
-      setError('Não foi possível processar a imagem. Tente novamente.');
-      setIsProcessing(false);
-      return;
+    // Convert first image to blob for backend save
+    const firstImageFile = dataUrlToFile(imagesToProcess[0].dataUrl, 'chart.png');
+    let imageBlob: ExternalBlob | null = null;
+    if (firstImageFile) {
+      try {
+        const buffer = await firstImageFile.arrayBuffer();
+        imageBlob = ExternalBlob.fromBytes(new Uint8Array(buffer));
+      } catch {
+        // non-fatal
+      }
     }
 
     markComplete(0);
@@ -102,21 +117,47 @@ export default function ProcessingScreen() {
     await delay(STAGES[1].duration);
     markComplete(1);
 
-    // ── Stage 2: Detect patterns ──
+    // ── Stage 2: Detect patterns (run analysis on all images) ──
     setCurrentStage(2);
 
-    const [localResult] = await Promise.all([
-      analyzeChartImage(imageFile),
-      delay(STAGES[2].duration),
-    ]);
+    const analysisResults: Array<{ timeframe: TimeframeKey; result: LocalAnalysisResult }> = [];
 
-    // Treat as chart detection error only if confidence is very low and signal is NEUTRO
-    if (localResult.sinal === 'NEUTRO' && localResult.confianca < 35) {
+    for (const { timeframe, dataUrl } of imagesToProcess) {
+      setProcessingLabel(
+        imagesToProcess.length > 1 ? `Analisando ${timeframe}...` : ''
+      );
+      const imageFile = dataUrlToFile(dataUrl, `chart_${timeframe}.png`);
+      if (!imageFile) {
+        // Skip invalid images but don't crash
+        continue;
+      }
+      try {
+        const result = await analyzeChartImage(imageFile);
+        analysisResults.push({ timeframe, result });
+      } catch {
+        // Skip failed analyses
+      }
+    }
+
+    await delay(STAGES[2].duration);
+
+    if (analysisResults.length === 0) {
       setIsChartDetectionError(true);
       setIsProcessing(false);
       return;
     }
 
+    // Check if all results are low-confidence NEUTRO
+    const allNeutroLowConf = analysisResults.every(
+      ({ result }) => result.sinal === 'NEUTRO' && result.confianca < 35
+    );
+    if (allNeutroLowConf) {
+      setIsChartDetectionError(true);
+      setIsProcessing(false);
+      return;
+    }
+
+    setProcessingLabel('');
     markComplete(2);
 
     // ── Stage 3: Generate result ──
@@ -124,10 +165,10 @@ export default function ProcessingScreen() {
     await delay(STAGES[3].duration);
     markComplete(3);
 
-    let mappedResult: ReturnType<typeof mapLocalAnalysisResult>;
+    let mergedResult: ReturnType<typeof mergeMultiTimeframeResults>;
     try {
-      mappedResult = mapLocalAnalysisResult(localResult);
-      sessionStorage.setItem('latestAnalysis', JSON.stringify(mappedResult));
+      mergedResult = mergeMultiTimeframeResults(analysisResults);
+      sessionStorage.setItem('latestAnalysis', JSON.stringify(mergedResult));
     } catch {
       setError('Não foi possível processar o resultado. Tente novamente.');
       setIsProcessing(false);
@@ -135,32 +176,33 @@ export default function ProcessingScreen() {
     }
 
     // ── Backend save: non-blocking, best-effort ──
-    if (actor) {
+    if (actor && imageBlob) {
+      const primaryResult = analysisResults[0].result;
       Promise.resolve().then(async () => {
         try {
           await analyzeChart.mutateAsync({
             direction:
-              localResult.sinal === 'COMPRA'
+              primaryResult.sinal === 'COMPRA'
                 ? ({ bullish: null } as any)
-                : localResult.sinal === 'VENDA'
+                : primaryResult.sinal === 'VENDA'
                 ? ({ bearish: null } as any)
                 : ({ sideways: null } as any),
             resistanceLevels: [],
             candlestickPatterns: [],
             pullbacks: false,
             breakouts: false,
-            trendStrength: BigInt(Math.floor(localResult.confianca * 0.8)),
-            confidencePercentage: BigInt(Math.floor(localResult.confianca)),
+            trendStrength: BigInt(Math.floor(primaryResult.confianca * 0.8)),
+            confidencePercentage: BigInt(Math.floor(primaryResult.confianca)),
             timestamp: BigInt(Date.now() * 1_000_000),
             image: imageBlob,
-            probabilidadeAlta: localResult.probAlta / 100,
-            probabilidadeBaixa: localResult.probBaixa / 100,
-            acaoSugerida: localResult.sinal,
+            probabilidadeAlta: primaryResult.probAlta / 100,
+            probabilidadeBaixa: primaryResult.probBaixa / 100,
+            acaoSugerida: primaryResult.sinal,
             operationFollowed: undefined,
             entradaExemplo: undefined,
             stopExemplo: undefined,
             alvoExemplo: undefined,
-            timeframe: mapTimeframe(localResult.timeframe),
+            timeframe: mapTimeframe(primaryResult.timeframe),
           });
         } catch (err) {
           console.warn('[ProcessingScreen] Backend save skipped:', err);
@@ -241,7 +283,9 @@ export default function ProcessingScreen() {
           style={{ filter: 'drop-shadow(0 0 12px rgba(255,255,255,0.18))' }}
         />
         <h1 className="text-white text-2xl font-bold tracking-tight">Analisando Gráfico</h1>
-        <p className="text-zinc-500 text-sm mt-1">Processamento local com IA</p>
+        <p className="text-zinc-500 text-sm mt-1">
+          {processingLabel || 'Processamento local com IA'}
+        </p>
       </div>
 
       <div className="w-full max-w-sm bg-zinc-900 rounded-2xl p-6 shadow-2xl border border-zinc-800">

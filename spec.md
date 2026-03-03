@@ -1,15 +1,14 @@
 # Specification
 
 ## Summary
-**Goal:** Fix the timeframe propagation bug so that the timeframe selected in Settings is correctly reflected throughout the app — in localStorage, in analysis results, and in the Results screen UI.
+**Goal:** Enable multi-timeframe chart analysis by allowing users to upload up to 3 chart screenshots (M1, M3, M5) in the AnalyzeChart page, process each independently, and display a per-timeframe breakdown in the Results page.
 
 **Planned changes:**
-- Unify the localStorage key for timeframe between `Settings.tsx` and `localCandleAnalysis.ts` using a single shared constant (e.g., `'settings_timeframe'`)
-- Fix `Settings.tsx` timeframe selector so selecting M1, M3, or M5 immediately updates the UI, persists to localStorage, calls the `updateSettings` mutation, and shows a `'Configuração salva!'` toast; restores the saved value on page reload
-- Fix `localCandleAnalysis.ts` to read the timeframe from localStorage at the moment `analyzeChartImage()` is called (not at module load time), and populate `LocalAnalysisResult.timeframe` accordingly
-- Fix `Results.tsx` countdown timer to use the timeframe from the analysis result: M1 = 60s, M3 = 180s, M5 = 300s
-- Fix the Time Frame tile in the 2×2 info grid to display the value from the analysis result's timeframe field (e.g., `'M5'`) with the correct subtitle (`'5 min/vela'`, `'3 min/vela'`, `'1 min/vela'`)
-- Fix `'Entrar às HH:MM'` entry time to be computed as current time plus the correct timeframe duration
-- Update `useCountdownTimer.ts` to accept the timeframe-derived duration correctly
+- Replace the single upload area in `AnalyzeChart.tsx` with three distinct vertically-arranged upload slots labeled "M1 — 1 minuto", "M3 — 3 minutos", and "M5 — 5 minutos", each supporting file picker, camera capture, clipboard paste, and drag-and-drop; each slot shows a preview thumbnail with an "X" remove button once filled
+- The "Analisar Gráfico" button remains disabled until at least one slot is filled
+- Update sessionStorage logic in `AnalyzeChart.tsx` to store each filled slot under `chartImage_M1`, `chartImage_M3`, `chartImage_M5` keys plus a `chartImages_count` key; clear legacy `chartImage` key; show a Portuguese error toast and block navigation if storage fails
+- Update `ProcessingScreen.tsx` to read all three sessionStorage image keys on mount, run the local analysis engine sequentially for each present image, then merge results into a combined object stored under `analysisResult` before navigating to Results; single-image flow remains unchanged
+- Extend `LocalAnalysisResult` (in `analysisTypes.ts`) and `AnalysisResult` (in `mapApiResponse.ts`) with an optional `multiTimeframe` array field, each entry containing the timeframe label and all standard analysis fields
+- Update `Results.tsx` to show a horizontal scrollable row of compact timeframe cards (M1, M3, M5) below the main signal banner when `multiTimeframe` contains more than one entry; each card displays timeframe label, signal, trend, and confidence; the card matching the user's default timeframe is visually highlighted; section is hidden for single-image results
 
-**User-visible outcome:** After selecting M5 (or M3) in Settings, the Results screen will show the correct countdown timer (5:00 or 3:00), the correct Time Frame tile value, and the correct entry time — matching whatever timeframe the user configured.
+**User-visible outcome:** Users can upload up to three chart images at once (one per timeframe: M1, M3, M5), have each analyzed automatically, and see a side-by-side multi-timeframe summary on the Results screen — while the existing single-image flow continues to work unchanged.

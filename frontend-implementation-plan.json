@@ -1,72 +1,118 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix timeframe propagation bug: Settings selection not reflected in Results screen",
+  "title": "Multi-timeframe chart upload: allow up to 3 chart images (M1, M3, M5) in AnalyzeChart",
   "requirements": [
     {
-      "id": "REQ-146",
-      "summary": "Fix localStorage key mismatch between Settings.tsx and localCandleAnalysis.ts to ensure consistent timeframe storage and retrieval",
+      "id": "REQ-149",
+      "summary": "Redesign AnalyzeChart page to support three independent upload slots for M1, M3, and M5 timeframes with full input method support and preview thumbnails",
       "acceptanceCriteria": [
-        "The localStorage key used to save the timeframe in Settings.tsx is identical to the key used to read it in localCandleAnalysis.ts",
-        "Selecting M5 in Settings persists 'M5' to localStorage under the unified key",
-        "Selecting M3 in Settings persists 'M3' to localStorage under the unified key",
-        "localCandleAnalysis.ts reads the timeframe at the moment analyzeChartImage() is called, not at import/module load time",
-        "The LocalAnalysisResult.timeframe field contains 'M5' when user had M5 selected, 'M3' when M3 was selected, 'M1' when M1 was selected"
+        "Three distinct upload slots are shown, labeled M1, M3, and M5 respectively.",
+        "Each slot independently accepts file picker, camera capture, clipboard paste, and drag-and-drop image input.",
+        "After an image is selected for a slot, a preview thumbnail appears in that slot with an 'X' button to remove it.",
+        "The 'Analisar Gráfico' button is disabled when no slot has an image, and enabled as soon as at least one slot has an image.",
+        "All slot labels, button text, and instructions are in Portuguese (Brazil).",
+        "The UI maintains a dark-theme professional appearance consistent with the existing design."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/Settings.tsx",
+          "path": "frontend/src/pages/AnalyzeChart.tsx",
           "operation": "modify",
-          "description": "Update the timeframe selection handler to write the selected timeframe value ('M1', 'M3', or 'M5') to localStorage using a unified constant key 'settings_timeframe'. Ensure the value is persisted immediately on selection change before calling the updateSettings mutation. Verify that the same key constant is used consistently throughout the file."
+          "description": "Replace the single-image upload UI with three vertically-arranged upload slot cards, each labeled with its timeframe badge (M1, M3, M5) in Portuguese. Each slot must independently support file picker, camera capture (using the camera component), clipboard paste (using the useClipboard hook), and drag-and-drop (using the FileUpload component's logic). Each slot displays a preview thumbnail once filled and includes an 'X' remove button to clear that specific slot. Enable the 'Analisar Gráfico' button only when at least one slot contains an image. Maintain dark-theme styling consistent with image-14.png. Verify the camera component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/services/localCandleAnalysis.ts",
-          "operation": "modify",
-          "description": "Move the timeframe localStorage read operation from module initialization into the analyzeChartImage() function body so it reads the current value at analysis execution time. Use the same unified constant key 'settings_timeframe' to retrieve the timeframe value. Ensure the retrieved timeframe ('M1', 'M3', or 'M5') is correctly assigned to the LocalAnalysisResult.timeframe field. Add a fallback default to 'M1' if no value is found in localStorage."
+          "path": "frontend/src/components/TimeframeUploadSlot.tsx",
+          "operation": "create",
+          "description": "Create a reusable React component that renders a single timeframe upload slot. Props: timeframe label (M1/M3/M5), current image file or null, and callbacks for onImageChange and onImageRemove. The component internally uses FileUpload for drag-and-drop/file picker, useCamera for camera capture (verify the camera component's usage instructions before implementing), and useClipboard for paste support. Display a preview thumbnail when an image is present, with an 'X' button overlay to remove it. When empty, show input method buttons (file picker, camera, clipboard paste icons). All labels in Portuguese (Brazil)."
+        },
+        {
+          "path": "frontend/src/hooks/useMultiTimeframeUpload.ts",
+          "operation": "create",
+          "description": "Create a custom React hook that manages state for three independent upload slots (M1, M3, M5). Export functions to set/clear images for each slot, check if at least one slot is filled, and retrieve all filled slots as an array of {timeframe, file} objects. This hook encapsulates the multi-slot logic and is consumed by AnalyzeChart.tsx."
         }
       ]
     },
     {
-      "id": "REQ-147",
-      "summary": "Fix Settings page timeframe selector UI state to immediately reflect selected value and persist without reverting",
+      "id": "REQ-150",
+      "summary": "Update sessionStorage persistence to store each timeframe's image under separate keys and track the count of filled slots",
       "acceptanceCriteria": [
-        "Selecting M5 in the timeframe selector immediately shows M5 as the active/selected option without reverting",
-        "Selecting M3 in the timeframe selector immediately shows M3 as the active/selected option without reverting",
-        "The selected value is written to localStorage immediately on change",
-        "The updateSettings mutation is called with the new timeframe value",
-        "'Configuração salva!' toast appears after successful save",
-        "Navigating away and returning to Settings shows the previously saved timeframe value"
+        "Each filled upload slot's data URL is stored under the corresponding sessionStorage key ('chartImage_M1', 'chartImage_M3', 'chartImage_M5').",
+        "Unfilled slots are not stored (or stored as absent/undefined).",
+        "'chartImages_count' is stored reflecting the number of filled slots.",
+        "If sessionStorage write fails, a Portuguese error toast is shown and navigation is blocked."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/Settings.tsx",
+          "path": "frontend/src/pages/AnalyzeChart.tsx",
           "operation": "modify",
-          "description": "Fix the timeframe selector's onChange handler to update the local React state immediately (using setSettings or equivalent state updater) before persisting to localStorage and calling the backend mutation. Ensure the select element's value prop is bound to the current state so it displays the selected option correctly. Add the Portuguese success toast 'Configuração salva!' after the updateSettings mutation completes successfully. Verify that the initial timeframe value is correctly loaded from the backend settings or localStorage on component mount to prevent incorrect initial display."
+          "description": "Update the navigate-to-processing logic to read all filled slots from useMultiTimeframeUpload, convert each image file to a base64 data URL, and store them in sessionStorage under keys 'chartImage_M1', 'chartImage_M3', 'chartImage_M5' (only for filled slots). Also store 'chartImages_count' as the number of filled slots. Remove any legacy 'chartImage' key. If sessionStorage write fails (quota exceeded), display a Portuguese toast 'Erro ao preparar imagem. Tente novamente.' and block navigation."
         }
       ]
     },
     {
-      "id": "REQ-148",
-      "summary": "Fix countdown timer and Time Frame tile in Results page to use the correct timeframe from analysis result",
+      "id": "REQ-151",
+      "summary": "Update ProcessingScreen to read multi-timeframe images from sessionStorage, run the local analysis engine on each, and merge results into a combined multi-timeframe result object",
       "acceptanceCriteria": [
-        "When analysis result contains timeframe='M5', the countdown timer starts at 05:00 (300 seconds)",
-        "When analysis result contains timeframe='M3', the countdown timer starts at 03:00 (180 seconds)",
-        "When analysis result contains timeframe='M1', the countdown timer starts at 01:00 (60 seconds)",
-        "The Time Frame tile displays 'M5' when the analysis result timeframe is M5, not 'M1'",
-        "The Time Frame tile displays 'M3' when the analysis result timeframe is M3",
-        "'Entrar às HH:MM' shows current time + correct timeframe duration (e.g., +5 min for M5)",
-        "The Time Frame tile subtitle shows '5 min/vela' for M5, '3 min/vela' for M3, '1 min/vela' for M1"
+        "ProcessingScreen reads up to 3 chart images from sessionStorage and runs the analysis engine on each one present.",
+        "Processing stages animate normally during multi-image analysis.",
+        "A combined result is stored in sessionStorage and the user is navigated to /results on success.",
+        "Single-image flow is unchanged when only one slot was filled.",
+        "Errors per image slot are caught and displayed with Portuguese messages without crashing the entire flow."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/ProcessingScreen.tsx",
+          "operation": "modify",
+          "description": "On mount, read 'chartImages_count' and all available chart images from sessionStorage ('chartImage_M1', 'chartImage_M3', 'chartImage_M5'). For each image present, run the local candle analysis engine (analyzeChartImage from localCandleAnalysis.ts) sequentially while displaying the four animated processing stages. After all analyses complete, merge the results into a single object with a multiTimeframe array (each entry containing timeframe and full analysis fields). Store this combined result in sessionStorage under 'analysisResult', then navigate to /results. If only one image was uploaded, preserve the existing single-image flow (no multiTimeframe array). Catch and display Portuguese error messages per slot without crashing the entire flow."
+        },
+        {
+          "path": "frontend/src/utils/mergeMultiTimeframeResults.ts",
+          "operation": "create",
+          "description": "Create a utility function that accepts an array of LocalAnalysisResult objects (one per timeframe) and merges them into a single AnalysisResult object with a multiTimeframe array field. Each entry in multiTimeframe contains the timeframe label (M1/M3/M5) and all standard analysis fields. If only one result is provided, return a standard single-timeframe AnalysisResult without the multiTimeframe array. This function is called by ProcessingScreen after all slot analyses complete."
+        }
+      ]
+    },
+    {
+      "id": "REQ-152",
+      "summary": "Extend TypeScript analysis interfaces to support an optional multiTimeframe array field for per-timeframe breakdown",
+      "acceptanceCriteria": [
+        "LocalAnalysisResult and AnalysisResult interfaces include an optional 'multiTimeframe' array field.",
+        "Each entry in the multiTimeframe array contains the timeframe label and full analysis fields.",
+        "Existing single-timeframe fields remain unchanged for backward compatibility."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/types/analysisTypes.ts",
+          "operation": "modify",
+          "description": "Add an optional 'multiTimeframe' field to the LocalAnalysisResult interface. The field is an array of objects, each containing: timeframe ('M1' | 'M3' | 'M5'), sinal, tendencia, confianca, probabilidade_alta, probabilidade_baixa, padroes, forca, explicacao, precisao, volume, suportes, resistencias. This allows the Results screen to display a per-timeframe breakdown when multiple images were analyzed."
+        },
+        {
+          "path": "frontend/src/utils/mapApiResponse.ts",
+          "operation": "modify",
+          "description": "Add an optional 'multiTimeframe' field to the AnalysisResult interface, mirroring the structure added to LocalAnalysisResult. Update the mapping function to pass through the multiTimeframe array if present. Ensure backward compatibility with single-timeframe results."
+        }
+      ]
+    },
+    {
+      "id": "REQ-153",
+      "summary": "Update Results page to display a multi-timeframe summary section when multiple images were analyzed",
+      "acceptanceCriteria": [
+        "When multiTimeframe contains 2 or 3 entries, a multi-timeframe card row is shown below the signal banner.",
+        "Each card shows the timeframe label, signal, trend, and confidence for that timeframe.",
+        "The card matching the user's default selected timeframe is visually highlighted.",
+        "When only one image was analyzed, the multi-timeframe section is hidden.",
+        "All text is in Portuguese (Brazil)."
       ],
       "file_operations": [
         {
           "path": "frontend/src/pages/Results.tsx",
           "operation": "modify",
-          "description": "Read the timeframe value from the analysis result object (result.timeframe) and compute the correct countdown duration based on it: M1 = 60 seconds, M3 = 180 seconds, M5 = 300 seconds. Pass this computed duration to the useCountdownTimer hook. Update the Time Frame tile to display result.timeframe directly instead of any hardcoded or default value. Update the subtitle logic to show '1 min/vela' for M1, '3 min/vela' for M3, and '5 min/vela' for M5 based on result.timeframe. Update the 'Entrar às HH:MM' calculation to add the correct number of minutes to the current time based on the timeframe (1, 3, or 5 minutes)."
+          "description": "After the main signal banner and before the 2×2 grid, conditionally render a horizontal scrollable row of timeframe summary cards if the analysis result contains a multiTimeframe array with more than one entry. Each card displays the timeframe label (M1/M3/M5), signal (COMPRA ↑ / VENDA ↓ / SEM ENTRADA), trend (ALTA/BAIXA/LATERAL), and confidence percentage for that specific timeframe. Visually highlight the card matching the user's default selected timeframe (retrieved from settings). Hide this section entirely when only one image was analyzed. All labels in Portuguese (Brazil)."
         },
         {
-          "path": "frontend/src/hooks/useCountdownTimer.ts",
-          "operation": "modify",
-          "description": "Ensure the hook accepts the timeframe-derived duration parameter correctly and initializes the countdown timer with it. Verify that the hook returns the formatted time string in MM:SS format and the finished flag as expected by the Results page. No logic changes are required if the hook already accepts a duration in seconds; this operation confirms compatibility."
+          "path": "frontend/src/components/TimeframeSummaryCard.tsx",
+          "operation": "create",
+          "description": "Create a compact React component that displays a single timeframe's analysis summary: timeframe badge (M1/M3/M5), signal direction icon and label (COMPRA/VENDA/SEM ENTRADA), trend badge (ALTA/BAIXA/LATERAL), and confidence percentage. Accept a 'highlighted' boolean prop to apply a visual accent (border or background) when this card corresponds to the user's default timeframe. All labels in Portuguese (Brazil)."
         }
       ]
     }

@@ -4,11 +4,13 @@ import { ArrowLeft, TrendingUp, TrendingDown, Minus, CheckCircle, XCircle } from
 import { toast } from 'sonner';
 import { useUpdateOperationFollowed } from '../hooks/useQueries';
 import ChartOverlay from '../components/ChartOverlay';
+import TimeframeSummaryCard from '../components/TimeframeSummaryCard';
 import { useCountdownTimer } from '../hooks/useCountdownTimer';
+import type { MultiTimeframeEntry } from '../types/analysisTypes';
 
 type TimeframeStr = 'M1' | 'M3' | 'M5';
 
-// Shape stored in sessionStorage by mapLocalAnalysisResult / mapApiResponse.ts
+// Shape stored in sessionStorage by mergeMultiTimeframeResults / mapApiResponse.ts
 interface StoredAnalysis {
   sinal: string;
   tendencia: string;
@@ -23,6 +25,7 @@ interface StoredAnalysis {
   timeframe: string;
   suportes: number[];
   resistencias: number[];
+  multiTimeframe?: MultiTimeframeEntry[];
 }
 
 function getTimeframeDuration(tf: string): number {
@@ -52,9 +55,22 @@ export default function Results() {
   const updateOperationFollowed = useUpdateOperationFollowed();
   const entryTimeRef = useRef<string | null>(null);
 
+  // Read user's default timeframe from localStorage for highlighting
+  const defaultTimeframe = (() => {
+    try {
+      const raw = localStorage.getItem('userSettings');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return parsed.defaultTimeframe as TimeframeStr;
+      }
+    } catch {
+      // ignore
+    }
+    return 'M1' as TimeframeStr;
+  })();
+
   useEffect(() => {
     try {
-      // Support both 'latestAnalysis' (written by ProcessingScreen) and 'analysis_${id}'
       const stored =
         sessionStorage.getItem('latestAnalysis') ??
         sessionStorage.getItem(`analysis_${id}`);
@@ -77,7 +93,6 @@ export default function Results() {
 
   const handleFeedback = (result: 'win' | 'loss') => {
     setFeedbackGiven(result);
-    // Best-effort: always try index 0 (most recent analysis)
     updateOperationFollowed.mutate(
       { analysisIndex: 0, followed: result === 'win' },
       {
@@ -85,7 +100,6 @@ export default function Results() {
           toast.success(result === 'win' ? '✅ WIN registrado!' : '❌ LOSS registrado!');
         },
         onError: () => {
-          // Still show success to user — feedback is best-effort
           toast.success(result === 'win' ? '✅ WIN registrado!' : '❌ LOSS registrado!');
         },
       }
@@ -116,11 +130,13 @@ export default function Results() {
       ? 'text-amber-400'
       : 'text-white/40';
 
-  // probAlta/probBaixa are stored as 0–100 integers by mapLocalAnalysisResult
   const probAlta = Math.round(analysisData.probAlta ?? 50);
   const probBaixa = Math.round(analysisData.probBaixa ?? 50);
 
   const imageDataUrl = sessionStorage.getItem('chartImage');
+
+  const showMultiTimeframe =
+    analysisData.multiTimeframe && analysisData.multiTimeframe.length > 1;
 
   return (
     <div className="min-h-screen bg-black text-white pb-24">
@@ -141,6 +157,11 @@ export default function Results() {
               ? 'Tendência de Baixa'
               : 'Mercado Lateral'}{' '}
             · Confiança {analysisData.confianca}%
+            {showMultiTimeframe && (
+              <span className="ml-2 px-1.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 text-[10px] font-bold border border-cyan-500/30">
+                MULTI-TF
+              </span>
+            )}
           </p>
         </div>
       </div>
@@ -148,7 +169,6 @@ export default function Results() {
       <div className="px-4 space-y-4">
         {/* Timer + Entry Time tiles */}
         <div className="grid grid-cols-2 gap-3">
-          {/* Countdown */}
           <div className="bg-white rounded-2xl p-4 flex flex-col items-center justify-center min-h-[90px]">
             <p className="text-black/50 text-xs font-medium uppercase tracking-wider mb-1">TEMPO</p>
             <p className={`text-3xl font-black tabular-nums ${isFinished ? 'text-red-500' : 'text-black'}`}>
@@ -157,7 +177,6 @@ export default function Results() {
             <p className="text-black/40 text-xs mt-1">{tf}</p>
           </div>
 
-          {/* Entry time */}
           <div className="bg-cyan-400 rounded-2xl p-4 flex flex-col items-center justify-center min-h-[90px]">
             <p className="text-black/60 text-xs font-medium uppercase tracking-wider mb-1">ENTRAR ÀS</p>
             <p className="text-2xl font-black text-black tabular-nums">{entryTime}</p>
@@ -178,6 +197,24 @@ export default function Results() {
           </div>
           <span className="text-5xl text-white/90">{signalArrow}</span>
         </div>
+
+        {/* Multi-timeframe summary cards */}
+        {showMultiTimeframe && (
+          <div>
+            <p className="text-white/40 text-xs uppercase tracking-wider mb-3 px-1">
+              Análise por Timeframe
+            </p>
+            <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
+              {analysisData.multiTimeframe!.map((entry) => (
+                <TimeframeSummaryCard
+                  key={entry.timeframe}
+                  entry={entry}
+                  highlighted={entry.timeframe === defaultTimeframe}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* 2×2 Info grid */}
         <div className="grid grid-cols-2 gap-3">

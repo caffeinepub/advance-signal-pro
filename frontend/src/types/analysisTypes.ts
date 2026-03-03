@@ -44,4 +44,26 @@ export interface LocalAnalysisResult {
    * M1 = 1 minute, M3 = 3 minutes, M5 = 5 minutes
    */
   timeframe: 'M1' | 'M3' | 'M5';
+
+  /**
+   * Optional multi-timeframe breakdown when multiple chart images were analyzed.
+   * Each entry contains the timeframe label and full analysis fields for that timeframe.
+   */
+  multiTimeframe?: MultiTimeframeEntry[];
+}
+
+export interface MultiTimeframeEntry {
+  timeframe: 'M1' | 'M3' | 'M5';
+  sinal: string;
+  tendencia: string;
+  confianca: number;
+  probabilidade_alta: number;
+  probabilidade_baixa: number;
+  padroes: string[];
+  forca: string;
+  explicacao: string;
+  precisao: number;
+  volume: string;
+  suportes: number[];
+  resistencias: number[];
 }

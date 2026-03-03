@@ -1,35 +1,39 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-03-03T00:04:26.056Z",
-  "summary": "The diff implements fixes across Settings.tsx, localCandleAnalysis.ts, and Results.tsx for the timeframe propagation bug. Most requirements are addressed. Both files use the same key 'userSettings' with a JSON object containing 'defaultTimeframe', which is functionally consistent between the two files, but deviates from the spec's instruction to unify to a single constant key (e.g., 'settings_timeframe') storing the raw string value directly. REQ-147 is well-covered with immediate UI updates, localStorage persistence, mutation call, and Portuguese toast. REQ-148 is well-covered with duration mapping, tile label functions, and entry time computation.",
+  "generatedAt": "2026-03-03T00:57:03.224Z",
+  "summary": "The diff implements all five requirements (REQ-149 through REQ-153) with high fidelity. Three timeframe upload slots with independent input methods, sessionStorage persistence under the correct keys, multi-image processing in ProcessingScreen, updated TypeScript interfaces, and a conditional multi-timeframe card row in Results are all present. One minor gap exists: the 'SEM ENTRADA' signal label in TimeframeSummaryCard maps to 'NEUTRO' instead of 'SEM ENTRADA' as required by REQ-153 AC.",
   "missing_requirements": [
     {
-      "id": "REQ-146",
-      "requirement": "Unify localStorage key to a single constant (e.g., 'settings_timeframe') storing the raw timeframe string directly, not nested in a JSON object.",
-      "reason": "Both Settings.tsx and localCandleAnalysis.ts use the key 'userSettings' with a JSON object containing 'defaultTimeframe', rather than a flat constant like 'settings_timeframe' storing the raw value. The spec explicitly says to unify to a single constant key. While both files are consistent with each other fixing the functional bug, the implementation does not match the specified approach.",
+      "id": "REQ-153",
+      "requirement": "Each card displays the signal as 'COMPRA ↑ / VENDA ↓ / SEM ENTRADA' for the neutral/no-entry case.",
+      "reason": "In TimeframeSummaryCard.tsx, the neutral signal label is rendered as 'NEUTRO' instead of 'SEM ENTRADA' as specified in the acceptance criteria.",
       "evidence": [
-        "frontend/src/pages/Settings.tsx",
-        "frontend/src/services/localCandleAnalysis.ts"
+        "frontend/src/components/TimeframeSummaryCard.tsx"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "When backend save fails, the Settings page shows 'Timeframe salvo localmente.' toast instead of 'Configuração salva!'.",
-      "reason": "The spec only specifies showing the Portuguese success toast 'Configuração salva!' after successful save. Showing a different toast message 'Timeframe salvo localmente.' on error was not requested.",
+      "description": "Legacy 'chartImage' key is also written during handleProceed (storing the first filled slot's data URL) to support the Results page chart overlay.",
+      "reason": "REQ-150 explicitly says to clear the old 'chartImage' key and only store per-timeframe keys. The diff stores the first image back under 'chartImage' as a legacy shim, which was not requested.",
       "evidence": [
-        "frontend/src/pages/Settings.tsx"
+        "frontend/src/pages/AnalyzeChart.tsx"
       ]
     }
   ],
-  "confidence": 0.72,
+  "confidence": 0.87,
   "changed_files": [
     "frontend-file-summaries.txt",
+    "frontend/src/components/TimeframeSummaryCard.tsx",
+    "frontend/src/components/TimeframeUploadSlot.tsx",
+    "frontend/src/hooks/useMultiTimeframeUpload.ts",
+    "frontend/src/pages/AnalyzeChart.tsx",
     "frontend/src/pages/ProcessingScreen.tsx",
     "frontend/src/pages/Results.tsx",
-    "frontend/src/pages/Settings.tsx",
-    "frontend/src/services/localCandleAnalysis.ts",
+    "frontend/src/types/analysisTypes.ts",
+    "frontend/src/utils/mapApiResponse.ts",
+    "frontend/src/utils/mergeMultiTimeframeResults.ts",
     "project_state.json"
   ]
 }

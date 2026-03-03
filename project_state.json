@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 61,
+  "projectStateVersion": 63,
   "summary": "Advance Signal Pro: Mobile app (Android/iOS) for automated financial chart analysis using a local candle analysis engine. The results screen shows: a small thumbnail of the original screenshot, a prominent probability sentence (e.g., '70% de alta / 30% de baixa'), and a detailed quality analysis for the next candle direction. Analysis is slower/more deliberate for better UX. Features: AI-powered chart analysis with support/resistance detection, last two chart patterns identified, trend direction (ALTA/BAIXA), precision level (baixa/média/alta), volume indicator (baixo/alto), and auto-detected timeframe from user settings (M1/M5/M10). Dark/light themes, Portuguese (Brazil) interface, chart upload (camera/gallery/clipboard/drag-drop), analysis history, daily operation management (3/4/6/8 ops per day with midnight reset), operation confirmation buttons (green=followed, red=not followed).",
   "architectural_notes": [
     "Mobile-first architecture for Android and iOS platforms",
@@ -20,7 +20,7 @@
     "Settings page: timeframe selector not persisting/propagating selected value (M1/M3/M5); daily operation limit selector not displaying or functioning correctly with normal numbers.",
     "Timeframe selector in Settings not updating the active value when user selects M3 or M5 — the displayed/active timeframe does not change after selection, persisting the old value instead of the newly chosen one."
   ],
-  "isFixRequest": true,
+  "isFixRequest": false,
   "existing_features": [
     {
       "id": "feature-create-a-dashboard-home-screen-with-four-primary-action-buttons-analyze-chart-analysis-history-settings-and-an-ai-status-indicator-showing-system-readiness-use-a-minimalist-black-white-and-gray-color-scheme-with-large-prominent-buttons-and-simple-iconography-in-a-professional-trading-app-style",
@@ -1029,6 +1029,46 @@
         "REQ-148"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-redesign-the-analyzechart-page-frontend-src-pages-analyzechart-tsx-to-support-uploading-up-to-3-chart-screenshots-simultaneously-one-per-timeframe-slot-m1-m3-and-m5-replace-the-current-single-image-upload-area-with-three-distinct-upload-slots-arranged-vertically-or-in-a-card-list-each-slot-must-be-clearly-labeled-with-its-timeframe-badge-e-g-m1-1-minuto-m3-3-minutos-m5-5-minutos-each-slot-must-independently-support-file-picker-camera-capture-clipboard-paste-and-drag-and-drop-input-each-slot-shows-a-preview-thumbnail-once-an-image-is-selected-with-an-x-remove-button-to-clear-that-slot-at-least-one-slot-must-be-filled-before-the-analisar-gr-fico-button-becomes-active-the-analisar-gr-fico-button-at-the-bottom-remains-as-the-single-call-to-action-to-start-analysis-all-labels-must-be-in-portuguese-brazil-maintain-the-existing-dark-theme-professional-appearance-consistent-with-the-current-ui-shown-in-image-14-png",
+      "title": "Redesign the AnalyzeChart page (frontend/src/pages/AnalyzeChart.tsx) to support uploading up to 3 chart screenshots simultaneously — one per timeframe slot: M1, M3, and M5. Replace the current single-image upload area with three distinct upload slots arranged vertically (or in a card list). Each slot must be clearly labeled with its timeframe badge (e.g., 'M1 — 1 minuto', 'M3 — 3 minutos', 'M5 — 5 minutos'). Each slot must independently support file picker, camera capture, clipboard paste, and drag-and-drop input. Each slot shows a preview thumbnail once an image is selected, with an 'X' remove button to clear that slot. At least one slot must be filled before the 'Analisar Gráfico' button becomes active. The 'Analisar Gráfico' button at the bottom remains as the single call-to-action to start analysis. All labels must be in Portuguese (Brazil). Maintain the existing dark-theme professional appearance consistent with the current UI shown in image-14.png.",
+      "reqIds": [
+        "REQ-149"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-sessionstorage-persistence-logic-in-frontend-src-pages-analyzechart-tsx-so-that-when-the-user-proceeds-to-analysis-all-uploaded-chart-images-are-stored-in-sessionstorage-under-separate-keys-chartimage-m1-chartimage-m3-and-chartimage-m5-each-containing-a-base64-data-url-or-null-absent-if-not-provided-also-store-a-chartimages-count-key-indicating-how-many-slots-were-filled-1-2-or-3-clear-any-previously-stored-single-chartimage-key-if-storing-to-sessionstorage-fails-e-g-quota-exceeded-show-a-portuguese-error-toast-erro-ao-preparar-imagem-tente-novamente-and-do-not-navigate",
+      "title": "Update the sessionStorage persistence logic in frontend/src/pages/AnalyzeChart.tsx so that when the user proceeds to analysis, all uploaded chart images are stored in sessionStorage under separate keys: 'chartImage_M1', 'chartImage_M3', and 'chartImage_M5' (each containing a base64 data URL, or null/absent if not provided). Also store a 'chartImages_count' key indicating how many slots were filled (1, 2, or 3). Clear any previously stored single 'chartImage' key. If storing to sessionStorage fails (e.g., quota exceeded), show a Portuguese error toast 'Erro ao preparar imagem. Tente novamente.' and do not navigate.",
+      "reqIds": [
+        "REQ-150"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-pages-processingscreen-tsx-to-handle-the-new-multi-image-session-storage-format-on-mount-read-all-available-chart-images-from-sessionstorage-chartimage-m1-chartimage-m3-chartimage-m5-for-each-image-present-run-the-local-candle-analysis-engine-analyzechartimage-sequentially-display-the-four-animated-processing-stages-as-usual-after-all-analyses-complete-merge-the-results-into-a-combined-multi-timeframe-result-object-stored-in-sessionstorage-under-the-key-analysisresult-then-navigate-to-the-results-page-if-only-one-image-was-uploaded-the-behavior-must-remain-identical-to-the-previous-single-image-flow-all-error-handling-missing-image-analysis-failure-chart-not-identifiable-must-apply-per-image-slot-and-surface-a-clear-portuguese-error-message-if-any-slot-fails",
+      "title": "Update frontend/src/pages/ProcessingScreen.tsx to handle the new multi-image session storage format. On mount, read all available chart images from sessionStorage ('chartImage_M1', 'chartImage_M3', 'chartImage_M5'). For each image present, run the local candle analysis engine (analyzeChartImage) sequentially. Display the four animated processing stages as usual. After all analyses complete, merge the results into a combined multi-timeframe result object stored in sessionStorage under the key 'analysisResult', then navigate to the Results page. If only one image was uploaded, the behavior must remain identical to the previous single-image flow. All error handling (missing image, analysis failure, chart not identifiable) must apply per image slot and surface a clear Portuguese error message if any slot fails.",
+      "reqIds": [
+        "REQ-151"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-localanalysisresult-typescript-interface-in-frontend-src-types-analysistypes-ts-and-the-analysisresult-interface-in-frontend-src-utils-mapapiresponse-ts-to-support-an-optional-multitimeframe-field-an-array-of-objects-each-containing-timeframe-m1-m3-m5-and-all-standard-analysis-fields-sinal-tendencia-confianca-probabilidade-alta-probabilidade-baixa-padroes-forca-explicacao-precisao-volume-suportes-resistencias-this-allows-the-results-screen-to-display-a-per-timeframe-breakdown-when-multiple-images-were-analyzed",
+      "title": "Update the LocalAnalysisResult TypeScript interface in frontend/src/types/analysisTypes.ts and the AnalysisResult interface in frontend/src/utils/mapApiResponse.ts to support an optional 'multiTimeframe' field — an array of objects, each containing: timeframe ('M1' | 'M3' | 'M5'), and all standard analysis fields (sinal, tendencia, confianca, probabilidade_alta, probabilidade_baixa, padroes, forca, explicacao, precisao, volume, suportes, resistencias). This allows the Results screen to display a per-timeframe breakdown when multiple images were analyzed.",
+      "reqIds": [
+        "REQ-152"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-pages-results-tsx-to-display-a-multi-timeframe-analysis-summary-section-when-the-multitimeframe-field-is-present-in-the-analysis-result-and-contains-more-than-one-entry-this-section-must-appear-below-the-main-signal-banner-as-a-horizontal-scrollable-row-of-compact-timeframe-cards-one-per-analyzed-timeframe-m1-m3-m5-each-card-displays-the-timeframe-label-signal-compra-venda-sem-entrada-trend-alta-baixa-lateral-and-confidence-percentage-for-that-specific-timeframe-the-card-for-the-user-s-currently-selected-default-timeframe-is-visually-highlighted-if-only-one-image-was-analyzed-this-multi-timeframe-section-is-hidden-and-the-existing-single-result-layout-is-shown-unchanged-all-labels-must-be-in-portuguese-brazil",
+      "title": "Update frontend/src/pages/Results.tsx to display a multi-timeframe analysis summary section when the 'multiTimeframe' field is present in the analysis result and contains more than one entry. This section must appear below the main signal banner as a horizontal scrollable row of compact timeframe cards (one per analyzed timeframe: M1, M3, M5). Each card displays the timeframe label, signal (COMPRA ↑ / VENDA ↓ / SEM ENTRADA), trend (ALTA/BAIXA/LATERAL), and confidence percentage for that specific timeframe. The card for the user's currently selected default timeframe is visually highlighted. If only one image was analyzed, this multi-timeframe section is hidden and the existing single-result layout is shown unchanged. All labels must be in Portuguese (Brazil).",
+      "reqIds": [
+        "REQ-153"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -1386,6 +1426,12 @@
       "reqIds": [
         "REQ-141"
       ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-88",
+      "summary": "Update AnalyzeChart page to allow uploading up to 3 chart screenshots at once (one per timeframe: M1, M3, M5). Each upload slot is labeled with its timeframe. The local candle analysis engine analyzes all provided charts and combines/summarizes the results for a multi-timeframe analysis view on the Results screen.",
+      "reqIds": [],
       "status": "pending"
     }
   ],

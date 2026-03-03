@@ -1,85 +1,120 @@
 {
   "kind": "build_request",
-  "title": "Fix timeframe propagation bug: Settings selection not reflected in Results screen",
+  "title": "Multi-timeframe chart upload: allow up to 3 chart images (M1, M3, M5) in AnalyzeChart",
   "projectName": "Advance Signal Pro",
-  "priority": "high",
+  "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-146",
-      "text": "Fix the localStorage key mismatch between frontend/src/pages/Settings.tsx and frontend/src/services/localCandleAnalysis.ts. Audit both files to confirm they use the exact same key string when writing and reading the timeframe value. If the keys differ, unify them to a single constant (e.g., 'settings_timeframe'). The Settings page must write the selected value ('M1', 'M3', or 'M5') to localStorage under this key immediately on selection, and localCandleAnalysis.ts must read from this exact same key at analysis execution time — never at module load time.",
+      "id": "REQ-149",
+      "text": "Redesign the AnalyzeChart page (frontend/src/pages/AnalyzeChart.tsx) to support uploading up to 3 chart screenshots simultaneously — one per timeframe slot: M1, M3, and M5. Replace the current single-image upload area with three distinct upload slots arranged vertically (or in a card list). Each slot must be clearly labeled with its timeframe badge (e.g., 'M1 — 1 minuto', 'M3 — 3 minutos', 'M5 — 5 minutos'). Each slot must independently support file picker, camera capture, clipboard paste, and drag-and-drop input. Each slot shows a preview thumbnail once an image is selected, with an 'X' remove button to clear that slot. At least one slot must be filled before the 'Analisar Gráfico' button becomes active. The 'Analisar Gráfico' button at the bottom remains as the single call-to-action to start analysis. All labels must be in Portuguese (Brazil). Maintain the existing dark-theme professional appearance consistent with the current UI shown in image-14.png.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-latest"
+          "msg-last"
         ],
         "quotes": [
-          "o que você quis dizer foi: Ao selecionar 5 minutos nas configurações, o timeframe deveria mudar em todos os lugares do app",
-          "isso, corrige, restante esta certo"
+          "crie opção de poder enviar 3 fotos do grafico, pois enviaria por exemplo, tempo de vela 1m, 3m,5m"
         ]
       },
       "acceptanceCriteria": [
-        "The localStorage key used to save the timeframe in Settings.tsx is identical to the key used to read it in localCandleAnalysis.ts",
-        "Selecting M5 in Settings persists 'M5' to localStorage under the unified key",
-        "Selecting M3 in Settings persists 'M3' to localStorage under the unified key",
-        "localCandleAnalysis.ts reads the timeframe at the moment analyzeChartImage() is called, not at import/module load time",
-        "The LocalAnalysisResult.timeframe field contains 'M5' when user had M5 selected, 'M3' when M3 was selected, 'M1' when M1 was selected"
+        "Three distinct upload slots are shown, labeled M1, M3, and M5 respectively.",
+        "Each slot independently accepts file picker, camera capture, clipboard paste, and drag-and-drop image input.",
+        "After an image is selected for a slot, a preview thumbnail appears in that slot with an 'X' button to remove it.",
+        "The 'Analisar Gráfico' button is disabled when no slot has an image, and enabled as soon as at least one slot has an image.",
+        "All slot labels, button text, and instructions are in Portuguese (Brazil).",
+        "The UI maintains a dark-theme professional appearance consistent with the existing design."
       ]
     },
     {
-      "id": "REQ-147",
-      "text": "Fix the Settings page timeframe selector in frontend/src/pages/Settings.tsx so that selecting M3 or M5 immediately updates the displayed/active selected state in the UI, persists the value to localStorage under the unified key (matching localCandleAnalysis.ts), and saves to the backend via the updateSettings mutation. The selector must not visually revert to its previous value after selection. On page reload, the selector must restore the last saved value. Show the Portuguese success toast 'Configuração salva!' after each successful save.",
+      "id": "REQ-150",
+      "text": "Update the sessionStorage persistence logic in frontend/src/pages/AnalyzeChart.tsx so that when the user proceeds to analysis, all uploaded chart images are stored in sessionStorage under separate keys: 'chartImage_M1', 'chartImage_M3', and 'chartImage_M5' (each containing a base64 data URL, or null/absent if not provided). Also store a 'chartImages_count' key indicating how many slots were filled (1, 2, or 3). Clear any previously stored single 'chartImage' key. If storing to sessionStorage fails (e.g., quota exceeded), show a Portuguese error toast 'Erro ao preparar imagem. Tente novamente.' and do not navigate.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-latest"
+          "msg-last"
         ],
         "quotes": [
-          "isso, corrige, restante esta certo"
+          "crie opção de poder enviar 3 fotos do grafico, pois enviaria por exemplo, tempo de vela 1m, 3m,5m"
         ]
       },
       "acceptanceCriteria": [
-        "Selecting M5 in the timeframe selector immediately shows M5 as the active/selected option without reverting",
-        "Selecting M3 in the timeframe selector immediately shows M3 as the active/selected option without reverting",
-        "The selected value is written to localStorage immediately on change",
-        "The updateSettings mutation is called with the new timeframe value",
-        "'Configuração salva!' toast appears after successful save",
-        "Navigating away and returning to Settings shows the previously saved timeframe value"
+        "Each filled upload slot's data URL is stored under the corresponding sessionStorage key ('chartImage_M1', 'chartImage_M3', 'chartImage_M5').",
+        "Unfilled slots are not stored (or stored as absent/undefined).",
+        "'chartImages_count' is stored reflecting the number of filled slots.",
+        "If sessionStorage write fails, a Portuguese error toast is shown and navigation is blocked."
       ]
     },
     {
-      "id": "REQ-148",
-      "text": "Fix the countdown timer and Time Frame tile in frontend/src/pages/Results.tsx to use the timeframe value from the analysis result's 'timeframe' field. The timer initial duration must be: M1 = 60 seconds, M3 = 180 seconds, M5 = 300 seconds. The 'Entrar às HH:MM' entry time must be computed as the current time at page load plus the correct duration. The Time Frame tile in the 2×2 info grid must display the value from the analysis result's timeframe field (e.g., 'M5'), never hardcoding or defaulting to M1 when another timeframe was selected. Also update frontend/src/hooks/useCountdownTimer.ts to accept the timeframe-derived duration correctly.",
+      "id": "REQ-151",
+      "text": "Update frontend/src/pages/ProcessingScreen.tsx to handle the new multi-image session storage format. On mount, read all available chart images from sessionStorage ('chartImage_M1', 'chartImage_M3', 'chartImage_M5'). For each image present, run the local candle analysis engine (analyzeChartImage) sequentially. Display the four animated processing stages as usual. After all analyses complete, merge the results into a combined multi-timeframe result object stored in sessionStorage under the key 'analysisResult', then navigate to the Results page. If only one image was uploaded, the behavior must remain identical to the previous single-image flow. All error handling (missing image, analysis failure, chart not identifiable) must apply per image slot and surface a clear Portuguese error message if any slot fails.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-latest"
+          "msg-last"
         ],
         "quotes": [
-          "isso, corrige, restante esta certo"
+          "enviaria por exemplo, tempo de vela 1m, 3m,5m voce consegue"
         ]
       },
       "acceptanceCriteria": [
-        "When analysis result contains timeframe='M5', the countdown timer starts at 05:00 (300 seconds)",
-        "When analysis result contains timeframe='M3', the countdown timer starts at 03:00 (180 seconds)",
-        "When analysis result contains timeframe='M1', the countdown timer starts at 01:00 (60 seconds)",
-        "The Time Frame tile displays 'M5' when the analysis result timeframe is M5, not 'M1'",
-        "The Time Frame tile displays 'M3' when the analysis result timeframe is M3",
-        "'Entrar às HH:MM' shows current time + correct timeframe duration (e.g., +5 min for M5)",
-        "The Time Frame tile subtitle shows '5 min/vela' for M5, '3 min/vela' for M3, '1 min/vela' for M1"
+        "ProcessingScreen reads up to 3 chart images from sessionStorage and runs the analysis engine on each one present.",
+        "Processing stages animate normally during multi-image analysis.",
+        "A combined result is stored in sessionStorage and the user is navigated to /results on success.",
+        "Single-image flow is unchanged when only one slot was filled.",
+        "Errors per image slot are caught and displayed with Portuguese messages without crashing the entire flow."
+      ]
+    },
+    {
+      "id": "REQ-152",
+      "text": "Update the LocalAnalysisResult TypeScript interface in frontend/src/types/analysisTypes.ts and the AnalysisResult interface in frontend/src/utils/mapApiResponse.ts to support an optional 'multiTimeframe' field — an array of objects, each containing: timeframe ('M1' | 'M3' | 'M5'), and all standard analysis fields (sinal, tendencia, confianca, probabilidade_alta, probabilidade_baixa, padroes, forca, explicacao, precisao, volume, suportes, resistencias). This allows the Results screen to display a per-timeframe breakdown when multiple images were analyzed.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-last"
+        ],
+        "quotes": [
+          "enviaria por exemplo, tempo de vela 1m, 3m,5m"
+        ]
+      },
+      "acceptanceCriteria": [
+        "LocalAnalysisResult and AnalysisResult interfaces include an optional 'multiTimeframe' array field.",
+        "Each entry in the multiTimeframe array contains the timeframe label and full analysis fields.",
+        "Existing single-timeframe fields remain unchanged for backward compatibility."
+      ]
+    },
+    {
+      "id": "REQ-153",
+      "text": "Update frontend/src/pages/Results.tsx to display a multi-timeframe analysis summary section when the 'multiTimeframe' field is present in the analysis result and contains more than one entry. This section must appear below the main signal banner as a horizontal scrollable row of compact timeframe cards (one per analyzed timeframe: M1, M3, M5). Each card displays the timeframe label, signal (COMPRA ↑ / VENDA ↓ / SEM ENTRADA), trend (ALTA/BAIXA/LATERAL), and confidence percentage for that specific timeframe. The card for the user's currently selected default timeframe is visually highlighted. If only one image was analyzed, this multi-timeframe section is hidden and the existing single-result layout is shown unchanged. All labels must be in Portuguese (Brazil).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-last"
+        ],
+        "quotes": [
+          "para um estudo ficar ainda melhor pela analisa da inteligencia artificial, crie opção de poder enviar 3 fotos do grafico, pois enviaria por exemplo, tempo de vela 1m, 3m,5m"
+        ]
+      },
+      "acceptanceCriteria": [
+        "When multiTimeframe contains 2 or 3 entries, a multi-timeframe card row is shown below the signal banner.",
+        "Each card shows the timeframe label, signal, trend, and confidence for that timeframe.",
+        "The card matching the user's default selected timeframe is visually highlighted.",
+        "When only one image was analyzed, the multi-timeframe section is hidden.",
+        "All text is in Portuguese (Brazil)."
       ]
     }
   ],
   "constraints": [
-    "Do not change any backend logic — this is a frontend-only fix",
-    "Do not modify files listed in frontend.immutablePaths",
-    "All user-facing text must remain in Portuguese (Brazil)",
-    "Do not remove or alter any other working features (timer UI, signal banner, grid layout, chart thumbnail, WIN/LOSS buttons)"
+    "Do not change backend/main.mo schema for this feature — all multi-timeframe state is managed in sessionStorage on the frontend.",
+    "Do not break the existing single-image analysis flow — it must work identically when only one slot is filled.",
+    "Preserve all existing Results screen sections (timer, signal banner, 2×2 grid, chart thumbnail, probability bars, WIN/LOSS buttons).",
+    "All user-facing text must remain in Portuguese (Brazil).",
+    "Do not edit any file listed in frontend.immutablePaths."
   ],
   "nonGoals": [
-    "Redesigning the Results screen layout",
-    "Changing the analysis engine logic",
-    "Adding new timeframe options beyond M1, M3, M5",
-    "Modifying the backend actor"
+    "Sending multiple images simultaneously to any external API.",
+    "Storing per-timeframe analysis results separately in the backend canister.",
+    "Adding new timeframe options beyond M1, M3, and M5.",
+    "Changing the existing Settings timeframe selector behavior."
   ],
   "imageRequirements": {
     "required": [],
