@@ -1,39 +1,33 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-03-03T00:57:03.224Z",
-  "summary": "The diff implements all five requirements (REQ-149 through REQ-153) with high fidelity. Three timeframe upload slots with independent input methods, sessionStorage persistence under the correct keys, multi-image processing in ProcessingScreen, updated TypeScript interfaces, and a conditional multi-timeframe card row in Results are all present. One minor gap exists: the 'SEM ENTRADA' signal label in TimeframeSummaryCard maps to 'NEUTRO' instead of 'SEM ENTRADA' as required by REQ-153 AC.",
+  "generatedAt": "2026-03-03T01:25:45.624Z",
+  "summary": "The diff implements REQ-154 by adding `isActive` and `onActivate` props to TimeframeUploadSlot, managing `activeSlot` state in AnalyzeChart, attaching a global paste listener only when a slot is active, and clearing active state on page background click. The implementation covers nearly all acceptance criteria, but two areas are uncertain due to truncation.",
   "missing_requirements": [
     {
-      "id": "REQ-153",
-      "requirement": "Each card displays the signal as 'COMPRA ↑ / VENDA ↓ / SEM ENTRADA' for the neutral/no-entry case.",
-      "reason": "In TimeframeSummaryCard.tsx, the neutral signal label is rendered as 'NEUTRO' instead of 'SEM ENTRADA' as specified in the acceptance criteria.",
+      "id": "REQ-154",
+      "requirement": "The active slot must display a visible focus indicator (e.g., a highlighted border or subtle glow) so the user knows which slot will receive the pasted image.",
+      "reason": "The TimeframeUploadSlot.tsx diff is truncated before the JSX return, so it is not possible to confirm that the isActive prop is used to apply any visible CSS highlight or glow. The prop is received but no conditional styling is visible in the available diff.",
       "evidence": [
-        "frontend/src/components/TimeframeSummaryCard.tsx"
+        "frontend/src/components/TimeframeUploadSlot.tsx"
       ]
-    }
-  ],
-  "hallucinated_features": [
+    },
     {
-      "description": "Legacy 'chartImage' key is also written during handleProceed (storing the first filled slot's data URL) to support the Results page chart overlay.",
-      "reason": "REQ-150 explicitly says to clear the old 'chartImage' key and only store per-timeframe keys. The diff stores the first image back under 'chartImage' as a legacy shim, which was not requested.",
+      "id": "REQ-154",
+      "requirement": "Selecting a file/camera image for a different slot deactivates the previous active slot.",
+      "reason": "The handleInputChange and camera capture handlers in the truncated TimeframeUploadSlot.tsx diff do not show any call to onActivate or a mechanism to signal AnalyzeChart to switch the active slot when a file or camera image is selected for a different slot.",
       "evidence": [
+        "frontend/src/components/TimeframeUploadSlot.tsx",
         "frontend/src/pages/AnalyzeChart.tsx"
       ]
     }
   ],
-  "confidence": 0.87,
+  "hallucinated_features": [],
+  "confidence": 0.62,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/components/TimeframeSummaryCard.tsx",
     "frontend/src/components/TimeframeUploadSlot.tsx",
-    "frontend/src/hooks/useMultiTimeframeUpload.ts",
     "frontend/src/pages/AnalyzeChart.tsx",
-    "frontend/src/pages/ProcessingScreen.tsx",
-    "frontend/src/pages/Results.tsx",
-    "frontend/src/types/analysisTypes.ts",
-    "frontend/src/utils/mapApiResponse.ts",
-    "frontend/src/utils/mergeMultiTimeframeResults.ts",
     "project_state.json"
   ]
 }

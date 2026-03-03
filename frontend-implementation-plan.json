@@ -1,118 +1,32 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Multi-timeframe chart upload: allow up to 3 chart images (M1, M3, M5) in AnalyzeChart",
+  "title": "Enable clipboard paste (Ctrl+V) by clicking directly on each timeframe upload slot rectangle",
   "requirements": [
     {
-      "id": "REQ-149",
-      "summary": "Redesign AnalyzeChart page to support three independent upload slots for M1, M3, and M5 timeframes with full input method support and preview thumbnails",
+      "id": "REQ-154",
+      "summary": "Make each TimeframeUploadSlot (M1, M3, M5) independently clickable to become the active paste target, so Ctrl+V pastes only into the selected slot with a visible focus indicator",
       "acceptanceCriteria": [
-        "Three distinct upload slots are shown, labeled M1, M3, and M5 respectively.",
-        "Each slot independently accepts file picker, camera capture, clipboard paste, and drag-and-drop image input.",
-        "After an image is selected for a slot, a preview thumbnail appears in that slot with an 'X' button to remove it.",
-        "The 'Analisar Gráfico' button is disabled when no slot has an image, and enabled as soon as at least one slot has an image.",
-        "All slot labels, button text, and instructions are in Portuguese (Brazil).",
-        "The UI maintains a dark-theme professional appearance consistent with the existing design."
+        "Clicking on the M1 slot rectangle makes it the active paste target; Ctrl+V pastes only into the M1 slot.",
+        "Clicking on the M3 slot rectangle makes it the active paste target; Ctrl+V pastes only into the M3 slot.",
+        "Clicking on the M5 slot rectangle makes it the active paste target; Ctrl+V pastes only into the M5 slot.",
+        "Only one slot is active at a time — activating a new slot deactivates the previously active one.",
+        "The currently active slot displays a visible focus indicator (highlighted border or subtle glow).",
+        "Clicking outside all slots clears the active paste target so Ctrl+V does not accidentally paste into any slot.",
+        "All three slots continue to independently support file picker, camera capture, and drag-and-drop as before.",
+        "The 'Analisar Gráfico' button remains active only when at least one slot has an image.",
+        "All UI text remains in Portuguese (Brazil)."
       ],
       "file_operations": [
-        {
-          "path": "frontend/src/pages/AnalyzeChart.tsx",
-          "operation": "modify",
-          "description": "Replace the single-image upload UI with three vertically-arranged upload slot cards, each labeled with its timeframe badge (M1, M3, M5) in Portuguese. Each slot must independently support file picker, camera capture (using the camera component), clipboard paste (using the useClipboard hook), and drag-and-drop (using the FileUpload component's logic). Each slot displays a preview thumbnail once filled and includes an 'X' remove button to clear that specific slot. Enable the 'Analisar Gráfico' button only when at least one slot contains an image. Maintain dark-theme styling consistent with image-14.png. Verify the camera component's usage instructions before implementing."
-        },
         {
           "path": "frontend/src/components/TimeframeUploadSlot.tsx",
-          "operation": "create",
-          "description": "Create a reusable React component that renders a single timeframe upload slot. Props: timeframe label (M1/M3/M5), current image file or null, and callbacks for onImageChange and onImageRemove. The component internally uses FileUpload for drag-and-drop/file picker, useCamera for camera capture (verify the camera component's usage instructions before implementing), and useClipboard for paste support. Display a preview thumbnail when an image is present, with an 'X' button overlay to remove it. When empty, show input method buttons (file picker, camera, clipboard paste icons). All labels in Portuguese (Brazil)."
+          "operation": "modify",
+          "description": "Add clickable focus behavior to the upload slot rectangle: when the user clicks anywhere on the slot (except buttons), set it as the active paste target. Add an 'isActive' boolean prop from the parent, and apply a visible focus indicator (e.g., a blue ring or glow) when isActive is true. When the slot is active, attach a paste event listener to capture Ctrl+V and process the clipboard image only for this slot. Ensure existing file picker, drag-and-drop, and camera capture continue to work independently. Remove any global paste listener logic that was pasting into the first available slot. If the user selects a file or camera image for a different slot, emit a callback to the parent to deactivate this slot. Use Portuguese UI labels throughout."
         },
-        {
-          "path": "frontend/src/hooks/useMultiTimeframeUpload.ts",
-          "operation": "create",
-          "description": "Create a custom React hook that manages state for three independent upload slots (M1, M3, M5). Export functions to set/clear images for each slot, check if at least one slot is filled, and retrieve all filled slots as an array of {timeframe, file} objects. This hook encapsulates the multi-slot logic and is consumed by AnalyzeChart.tsx."
-        }
-      ]
-    },
-    {
-      "id": "REQ-150",
-      "summary": "Update sessionStorage persistence to store each timeframe's image under separate keys and track the count of filled slots",
-      "acceptanceCriteria": [
-        "Each filled upload slot's data URL is stored under the corresponding sessionStorage key ('chartImage_M1', 'chartImage_M3', 'chartImage_M5').",
-        "Unfilled slots are not stored (or stored as absent/undefined).",
-        "'chartImages_count' is stored reflecting the number of filled slots.",
-        "If sessionStorage write fails, a Portuguese error toast is shown and navigation is blocked."
-      ],
-      "file_operations": [
         {
           "path": "frontend/src/pages/AnalyzeChart.tsx",
           "operation": "modify",
-          "description": "Update the navigate-to-processing logic to read all filled slots from useMultiTimeframeUpload, convert each image file to a base64 data URL, and store them in sessionStorage under keys 'chartImage_M1', 'chartImage_M3', 'chartImage_M5' (only for filled slots). Also store 'chartImages_count' as the number of filled slots. Remove any legacy 'chartImage' key. If sessionStorage write fails (quota exceeded), display a Portuguese toast 'Erro ao preparar imagem. Tente novamente.' and block navigation."
-        }
-      ]
-    },
-    {
-      "id": "REQ-151",
-      "summary": "Update ProcessingScreen to read multi-timeframe images from sessionStorage, run the local analysis engine on each, and merge results into a combined multi-timeframe result object",
-      "acceptanceCriteria": [
-        "ProcessingScreen reads up to 3 chart images from sessionStorage and runs the analysis engine on each one present.",
-        "Processing stages animate normally during multi-image analysis.",
-        "A combined result is stored in sessionStorage and the user is navigated to /results on success.",
-        "Single-image flow is unchanged when only one slot was filled.",
-        "Errors per image slot are caught and displayed with Portuguese messages without crashing the entire flow."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/ProcessingScreen.tsx",
-          "operation": "modify",
-          "description": "On mount, read 'chartImages_count' and all available chart images from sessionStorage ('chartImage_M1', 'chartImage_M3', 'chartImage_M5'). For each image present, run the local candle analysis engine (analyzeChartImage from localCandleAnalysis.ts) sequentially while displaying the four animated processing stages. After all analyses complete, merge the results into a single object with a multiTimeframe array (each entry containing timeframe and full analysis fields). Store this combined result in sessionStorage under 'analysisResult', then navigate to /results. If only one image was uploaded, preserve the existing single-image flow (no multiTimeframe array). Catch and display Portuguese error messages per slot without crashing the entire flow."
-        },
-        {
-          "path": "frontend/src/utils/mergeMultiTimeframeResults.ts",
-          "operation": "create",
-          "description": "Create a utility function that accepts an array of LocalAnalysisResult objects (one per timeframe) and merges them into a single AnalysisResult object with a multiTimeframe array field. Each entry in multiTimeframe contains the timeframe label (M1/M3/M5) and all standard analysis fields. If only one result is provided, return a standard single-timeframe AnalysisResult without the multiTimeframe array. This function is called by ProcessingScreen after all slot analyses complete."
-        }
-      ]
-    },
-    {
-      "id": "REQ-152",
-      "summary": "Extend TypeScript analysis interfaces to support an optional multiTimeframe array field for per-timeframe breakdown",
-      "acceptanceCriteria": [
-        "LocalAnalysisResult and AnalysisResult interfaces include an optional 'multiTimeframe' array field.",
-        "Each entry in the multiTimeframe array contains the timeframe label and full analysis fields.",
-        "Existing single-timeframe fields remain unchanged for backward compatibility."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/types/analysisTypes.ts",
-          "operation": "modify",
-          "description": "Add an optional 'multiTimeframe' field to the LocalAnalysisResult interface. The field is an array of objects, each containing: timeframe ('M1' | 'M3' | 'M5'), sinal, tendencia, confianca, probabilidade_alta, probabilidade_baixa, padroes, forca, explicacao, precisao, volume, suportes, resistencias. This allows the Results screen to display a per-timeframe breakdown when multiple images were analyzed."
-        },
-        {
-          "path": "frontend/src/utils/mapApiResponse.ts",
-          "operation": "modify",
-          "description": "Add an optional 'multiTimeframe' field to the AnalysisResult interface, mirroring the structure added to LocalAnalysisResult. Update the mapping function to pass through the multiTimeframe array if present. Ensure backward compatibility with single-timeframe results."
-        }
-      ]
-    },
-    {
-      "id": "REQ-153",
-      "summary": "Update Results page to display a multi-timeframe summary section when multiple images were analyzed",
-      "acceptanceCriteria": [
-        "When multiTimeframe contains 2 or 3 entries, a multi-timeframe card row is shown below the signal banner.",
-        "Each card shows the timeframe label, signal, trend, and confidence for that timeframe.",
-        "The card matching the user's default selected timeframe is visually highlighted.",
-        "When only one image was analyzed, the multi-timeframe section is hidden.",
-        "All text is in Portuguese (Brazil)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/Results.tsx",
-          "operation": "modify",
-          "description": "After the main signal banner and before the 2×2 grid, conditionally render a horizontal scrollable row of timeframe summary cards if the analysis result contains a multiTimeframe array with more than one entry. Each card displays the timeframe label (M1/M3/M5), signal (COMPRA ↑ / VENDA ↓ / SEM ENTRADA), trend (ALTA/BAIXA/LATERAL), and confidence percentage for that specific timeframe. Visually highlight the card matching the user's default selected timeframe (retrieved from settings). Hide this section entirely when only one image was analyzed. All labels in Portuguese (Brazil)."
-        },
-        {
-          "path": "frontend/src/components/TimeframeSummaryCard.tsx",
-          "operation": "create",
-          "description": "Create a compact React component that displays a single timeframe's analysis summary: timeframe badge (M1/M3/M5), signal direction icon and label (COMPRA/VENDA/SEM ENTRADA), trend badge (ALTA/BAIXA/LATERAL), and confidence percentage. Accept a 'highlighted' boolean prop to apply a visual accent (border or background) when this card corresponds to the user's default timeframe. All labels in Portuguese (Brazil)."
+          "description": "Manage the single active paste target state across all three TimeframeUploadSlot instances (M1, M3, M5). Track which slot is currently active (e.g., activeSlotId: 'M1' | 'M3' | 'M5' | null). When a slot is clicked, set it as the active slot and deactivate the others. Pass an 'isActive' prop and an 'onActivate' callback to each TimeframeUploadSlot. Implement an 'onClick outside' handler (e.g., a click on the page background or the instruction card) that clears the active slot state so Ctrl+V does nothing when no slot is selected. Ensure the 'Analisar Gráfico' button logic remains unchanged (enabled only when at least one slot has an image). Verify that sessionStorage keys ('chartImage_M1', 'chartImage_M3', 'chartImage_M5') and navigation to ProcessingScreen are unaffected."
         }
       ]
     }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 63,
+  "projectStateVersion": 65,
   "summary": "Advance Signal Pro: Mobile app (Android/iOS) for automated financial chart analysis using a local candle analysis engine. The results screen shows: a small thumbnail of the original screenshot, a prominent probability sentence (e.g., '70% de alta / 30% de baixa'), and a detailed quality analysis for the next candle direction. Analysis is slower/more deliberate for better UX. Features: AI-powered chart analysis with support/resistance detection, last two chart patterns identified, trend direction (ALTA/BAIXA), precision level (baixa/média/alta), volume indicator (baixo/alto), and auto-detected timeframe from user settings (M1/M5/M10). Dark/light themes, Portuguese (Brazil) interface, chart upload (camera/gallery/clipboard/drag-drop), analysis history, daily operation management (3/4/6/8 ops per day with midnight reset), operation confirmation buttons (green=followed, red=not followed).",
   "architectural_notes": [
     "Mobile-first architecture for Android and iOS platforms",
@@ -1069,6 +1069,14 @@
         "REQ-153"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-update-the-timeframeuploadslot-component-frontend-src-components-timeframeuploadslot-tsx-and-the-analyzechart-page-frontend-src-pages-analyzechart-tsx-so-that-each-individual-upload-slot-rectangle-m1-m3-m5-becomes-clipboard-paste-active-when-the-user-clicks-or-taps-on-it-when-a-slot-is-in-the-active-focused-state-pressing-ctrl-v-or-triggering-a-paste-event-on-mobile-must-paste-the-clipboard-image-directly-into-that-specific-slot-only-not-into-all-slots-simultaneously-only-one-slot-can-be-the-active-paste-target-at-a-time-the-active-slot-must-display-a-visible-focus-indicator-e-g-a-highlighted-border-or-subtle-glow-so-the-user-knows-which-slot-will-receive-the-pasted-image-clicking-outside-any-slot-or-selecting-a-file-camera-image-for-a-different-slot-deactivates-the-previous-active-slot-this-replaces-any-existing-global-paste-listener-that-pastes-into-the-first-available-slot-regardless-of-user-intent",
+      "title": "Update the TimeframeUploadSlot component (frontend/src/components/TimeframeUploadSlot.tsx) and the AnalyzeChart page (frontend/src/pages/AnalyzeChart.tsx) so that each individual upload slot rectangle (M1, M3, M5) becomes clipboard-paste-active when the user clicks or taps on it. When a slot is in the active/focused state, pressing Ctrl+V (or triggering a paste event on mobile) must paste the clipboard image directly into that specific slot only — not into all slots simultaneously. Only one slot can be the active paste target at a time. The active slot must display a visible focus indicator (e.g., a highlighted border or subtle glow) so the user knows which slot will receive the pasted image. Clicking outside any slot or selecting a file/camera image for a different slot deactivates the previous active slot. This replaces any existing global paste listener that pastes into the first available slot regardless of user intent.",
+      "reqIds": [
+        "REQ-154"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -1431,6 +1439,12 @@
     {
       "id": "AR-88",
       "summary": "Update AnalyzeChart page to allow uploading up to 3 chart screenshots at once (one per timeframe: M1, M3, M5). Each upload slot is labeled with its timeframe. The local candle analysis engine analyzes all provided charts and combines/summarizes the results for a multi-timeframe analysis view on the Results screen.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-89",
+      "summary": "Update AnalyzeChart page: each timeframe upload slot (M1, M3, M5) must support clipboard paste (Ctrl+V) when the user clicks/focuses on that specific slot rectangle — clicking a slot activates it so Ctrl+V pastes the image into that slot only.",
       "reqIds": [],
       "status": "pending"
     }

@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { Camera, Upload, Clipboard, X, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -10,6 +10,8 @@ interface TimeframeUploadSlotProps {
   file: File | null;
   onImageChange: (timeframe: TimeframeKey, file: File) => void;
   onImageRemove: (timeframe: TimeframeKey) => void;
+  isActive: boolean;
+  onActivate: (timeframe: TimeframeKey) => void;
 }
 
 const TIMEFRAME_LABELS: Record<TimeframeKey, string> = {
@@ -25,6 +27,8 @@ export default function TimeframeUploadSlot({
   file,
   onImageChange,
   onImageRemove,
+  isActive,
+  onActivate,
 }: TimeframeUploadSlotProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const replaceInputRef = useRef<HTMLInputElement>(null);
@@ -33,7 +37,7 @@ export default function TimeframeUploadSlot({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const {
-    isActive,
+    isActive: cameraActive,
     isLoading,
     error: cameraError,
     startCamera,
@@ -64,13 +68,39 @@ export default function TimeframeUploadSlot({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showCamera]);
 
-  const validateAndSet = (f: File) => {
-    if (f.size > MAX_FILE_SIZE) {
-      toast.error('Arquivo muito grande. Máximo 10MB.');
-      return;
-    }
-    onImageChange(timeframe, f);
-  };
+  const validateAndSet = useCallback(
+    (f: File) => {
+      if (f.size > MAX_FILE_SIZE) {
+        toast.error('Arquivo muito grande. Máximo 10MB.');
+        return;
+      }
+      onImageChange(timeframe, f);
+    },
+    [timeframe, onImageChange]
+  );
+
+  // Global paste listener — only fires when this slot is active
+  useEffect(() => {
+    if (!isActive) return;
+
+    const handleGlobalPaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of Array.from(items)) {
+        if (item.type.startsWith('image/')) {
+          const f = item.getAsFile();
+          if (f) {
+            validateAndSet(f);
+            toast.success(`Imagem colada em ${timeframe}`);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('paste', handleGlobalPaste);
+    return () => window.removeEventListener('paste', handleGlobalPaste);
+  }, [isActive, timeframe, validateAndSet]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -92,7 +122,8 @@ export default function TimeframeUploadSlot({
     if (f && f.type.startsWith('image/')) validateAndSet(f);
   };
 
-  const handlePaste = (e: React.ClipboardEvent) => {
+  // Inline paste handler for the drop zone (fallback for React synthetic events)
+  const handleDropZonePaste = (e: React.ClipboardEvent) => {
     const items = e.clipboardData?.items;
     if (!items) return;
     for (const item of Array.from(items)) {
@@ -100,7 +131,7 @@ export default function TimeframeUploadSlot({
         const f = item.getAsFile();
         if (f) {
           validateAndSet(f);
-          toast.success(`Imagem colada para ${timeframe}`);
+          toast.success(`Imagem colada em ${timeframe}`);
           break;
         }
       }
@@ -122,6 +153,42 @@ export default function TimeframeUploadSlot({
     setShowCamera(false);
   };
 
+  // Clicking the "Colar" button: activate this slot and try to read clipboard
+  const handlePasteButtonClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onActivate(timeframe);
+
+    // Try Clipboard API first (modern browsers)
+    try {
+      if (navigator.clipboard && navigator.clipboard.read) {
+        const clipboardItems = await navigator.clipboard.read();
+        for (const clipboardItem of clipboardItems) {
+          for (const type of clipboardItem.types) {
+            if (type.startsWith('image/')) {
+              const blob = await clipboardItem.getType(type);
+              const f = new File([blob], `paste-${timeframe}.png`, { type });
+              validateAndSet(f);
+              toast.success(`Imagem colada em ${timeframe}`);
+              return;
+            }
+          }
+        }
+        // No image found in clipboard
+        toast.info(`Slot ${timeframe} ativo — pressione Ctrl+V para colar`);
+      } else {
+        toast.info(`Slot ${timeframe} ativo — pressione Ctrl+V para colar`);
+      }
+    } catch {
+      // Permission denied or no image — just activate the slot
+      toast.info(`Slot ${timeframe} ativo — pressione Ctrl+V para colar`);
+    }
+  };
+
+  // Clicking anywhere on the slot card activates it as paste target
+  const handleSlotClick = () => {
+    onActivate(timeframe);
+  };
+
   // Badge / border colors per timeframe
   const badgeColor =
     timeframe === 'M1'
@@ -137,8 +204,30 @@ export default function TimeframeUploadSlot({
       ? 'border-amber-500/40'
       : 'border-purple-500/40';
 
+  // Active ring color per timeframe
+  const activeRingColor =
+    timeframe === 'M1'
+      ? 'ring-2 ring-cyan-400/70 ring-offset-2 ring-offset-black'
+      : timeframe === 'M3'
+      ? 'ring-2 ring-amber-400/70 ring-offset-2 ring-offset-black'
+      : 'ring-2 ring-purple-400/70 ring-offset-2 ring-offset-black';
+
+  const activeBorderColor =
+    timeframe === 'M1'
+      ? 'border-cyan-400/60'
+      : timeframe === 'M3'
+      ? 'border-amber-400/60'
+      : 'border-purple-400/60';
+
   return (
-    <div className="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden">
+    <div
+      className={`bg-zinc-900 rounded-2xl border overflow-hidden transition-all duration-200 cursor-pointer ${
+        isActive
+          ? `${activeBorderColor} ${activeRingColor}`
+          : 'border-zinc-800 hover:border-zinc-700'
+      }`}
+      onClick={handleSlotClick}
+    >
       {/* Slot header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
         <div className="flex items-center gap-3">
@@ -146,6 +235,12 @@ export default function TimeframeUploadSlot({
             {timeframe}
           </span>
           <span className="text-white/60 text-sm">{TIMEFRAME_LABELS[timeframe]}</span>
+          {isActive && (
+            <span className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-white/10 text-white/70">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block" />
+              Ativo — Ctrl+V
+            </span>
+          )}
         </div>
         {file && (
           <button
@@ -160,7 +255,7 @@ export default function TimeframeUploadSlot({
 
       {/* Camera view */}
       {showCamera && !file && (
-        <div className="p-4 space-y-3">
+        <div className="p-4 space-y-3" onClick={(e) => e.stopPropagation()}>
           <div className="relative rounded-xl overflow-hidden bg-black" style={{ minHeight: 200 }}>
             <video
               ref={videoRef}
@@ -186,7 +281,7 @@ export default function TimeframeUploadSlot({
               size="sm"
               className="flex-1 bg-white text-black hover:bg-zinc-200 gap-2"
               onClick={handleCapture}
-              disabled={!isActive || isLoading}
+              disabled={!cameraActive || isLoading}
             >
               <Camera className="w-4 h-4" />
               Capturar
@@ -233,18 +328,29 @@ export default function TimeframeUploadSlot({
       {/* Upload drop zone when no file and no camera */}
       {!file && !showCamera && (
         <div
-          className={`relative m-3 border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all duration-200 ${
+          className={`relative m-3 border-2 border-dashed rounded-xl p-5 text-center transition-all duration-200 ${
             isDragging
               ? 'border-white/40 bg-white/5 scale-[1.01]'
+              : isActive
+              ? timeframe === 'M1'
+                ? 'border-cyan-500/50 bg-cyan-500/5'
+                : timeframe === 'M3'
+                ? 'border-amber-500/50 bg-amber-500/5'
+                : 'border-purple-500/50 bg-purple-500/5'
               : 'border-zinc-700 hover:border-zinc-500'
           }`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          onPaste={handlePaste}
-          onClick={() => fileInputRef.current?.click()}
+          onPaste={handleDropZonePaste}
+          onClick={(e) => {
+            e.stopPropagation();
+            onActivate(timeframe);
+          }}
           tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') fileInputRef.current?.click();
+          }}
         >
           <input
             ref={fileInputRef}
@@ -255,7 +361,7 @@ export default function TimeframeUploadSlot({
           />
           <Upload className="w-7 h-7 text-zinc-600 mx-auto mb-2" />
           <p className="text-white/50 text-sm font-medium mb-1">
-            Arraste ou clique para enviar
+            {isActive ? 'Pronto para colar — pressione Ctrl+V' : 'Arraste ou clique para enviar'}
           </p>
           <p className="text-zinc-600 text-xs">PNG, JPG, WebP — até 10MB</p>
         </div>
@@ -263,10 +369,11 @@ export default function TimeframeUploadSlot({
 
       {/* Action buttons when empty */}
       {!file && !showCamera && (
-        <div className="flex gap-2 px-3 pb-3">
+        <div className="flex gap-2 px-3 pb-3" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={(e) => {
               e.stopPropagation();
+              onActivate(timeframe);
               fileInputRef.current?.click();
             }}
             className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white/60 hover:text-white text-xs font-medium transition-colors"
@@ -277,6 +384,7 @@ export default function TimeframeUploadSlot({
           <button
             onClick={(e) => {
               e.stopPropagation();
+              onActivate(timeframe);
               setShowCamera(true);
             }}
             className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white/60 hover:text-white text-xs font-medium transition-colors"
@@ -285,11 +393,16 @@ export default function TimeframeUploadSlot({
             Câmera
           </button>
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              toast.info(`Pressione Ctrl+V para colar imagem no slot ${timeframe}`);
-            }}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white/60 hover:text-white text-xs font-medium transition-colors"
+            onClick={handlePasteButtonClick}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-colors ${
+              isActive
+                ? timeframe === 'M1'
+                  ? 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/40'
+                  : timeframe === 'M3'
+                  ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/40'
+                  : 'bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/40'
+                : 'bg-zinc-800 hover:bg-zinc-700 text-white/60 hover:text-white'
+            }`}
           >
             <Clipboard className="w-3.5 h-3.5" />
             Colar
@@ -299,7 +412,7 @@ export default function TimeframeUploadSlot({
 
       {/* Replace button when file is set */}
       {file && !showCamera && (
-        <div className="flex gap-2 px-3 pb-3">
+        <div className="flex gap-2 px-3 pb-3" onClick={(e) => e.stopPropagation()}>
           <input
             ref={replaceInputRef}
             type="file"

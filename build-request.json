@@ -1,120 +1,44 @@
 {
   "kind": "build_request",
-  "title": "Multi-timeframe chart upload: allow up to 3 chart images (M1, M3, M5) in AnalyzeChart",
+  "title": "Enable clipboard paste (Ctrl+V) by clicking directly on each timeframe upload slot rectangle",
   "projectName": "Advance Signal Pro",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-149",
-      "text": "Redesign the AnalyzeChart page (frontend/src/pages/AnalyzeChart.tsx) to support uploading up to 3 chart screenshots simultaneously — one per timeframe slot: M1, M3, and M5. Replace the current single-image upload area with three distinct upload slots arranged vertically (or in a card list). Each slot must be clearly labeled with its timeframe badge (e.g., 'M1 — 1 minuto', 'M3 — 3 minutos', 'M5 — 5 minutos'). Each slot must independently support file picker, camera capture, clipboard paste, and drag-and-drop input. Each slot shows a preview thumbnail once an image is selected, with an 'X' remove button to clear that slot. At least one slot must be filled before the 'Analisar Gráfico' button becomes active. The 'Analisar Gráfico' button at the bottom remains as the single call-to-action to start analysis. All labels must be in Portuguese (Brazil). Maintain the existing dark-theme professional appearance consistent with the current UI shown in image-14.png.",
+      "id": "REQ-154",
+      "text": "Update the TimeframeUploadSlot component (frontend/src/components/TimeframeUploadSlot.tsx) and the AnalyzeChart page (frontend/src/pages/AnalyzeChart.tsx) so that each individual upload slot rectangle (M1, M3, M5) becomes clipboard-paste-active when the user clicks or taps on it. When a slot is in the active/focused state, pressing Ctrl+V (or triggering a paste event on mobile) must paste the clipboard image directly into that specific slot only — not into all slots simultaneously. Only one slot can be the active paste target at a time. The active slot must display a visible focus indicator (e.g., a highlighted border or subtle glow) so the user knows which slot will receive the pasted image. Clicking outside any slot or selecting a file/camera image for a different slot deactivates the previous active slot. This replaces any existing global paste listener that pastes into the first available slot regardless of user intent.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-last"
         ],
         "quotes": [
-          "crie opção de poder enviar 3 fotos do grafico, pois enviaria por exemplo, tempo de vela 1m, 3m,5m"
+          "no 1m,3m,5m, tenha como selecionar cada retangulo para enviar CTRL +V no 3 opções para facilitar, como fosse clicar aonde eu circulei a ideia"
         ]
       },
       "acceptanceCriteria": [
-        "Three distinct upload slots are shown, labeled M1, M3, and M5 respectively.",
-        "Each slot independently accepts file picker, camera capture, clipboard paste, and drag-and-drop image input.",
-        "After an image is selected for a slot, a preview thumbnail appears in that slot with an 'X' button to remove it.",
-        "The 'Analisar Gráfico' button is disabled when no slot has an image, and enabled as soon as at least one slot has an image.",
-        "All slot labels, button text, and instructions are in Portuguese (Brazil).",
-        "The UI maintains a dark-theme professional appearance consistent with the existing design."
-      ]
-    },
-    {
-      "id": "REQ-150",
-      "text": "Update the sessionStorage persistence logic in frontend/src/pages/AnalyzeChart.tsx so that when the user proceeds to analysis, all uploaded chart images are stored in sessionStorage under separate keys: 'chartImage_M1', 'chartImage_M3', and 'chartImage_M5' (each containing a base64 data URL, or null/absent if not provided). Also store a 'chartImages_count' key indicating how many slots were filled (1, 2, or 3). Clear any previously stored single 'chartImage' key. If storing to sessionStorage fails (e.g., quota exceeded), show a Portuguese error toast 'Erro ao preparar imagem. Tente novamente.' and do not navigate.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-last"
-        ],
-        "quotes": [
-          "crie opção de poder enviar 3 fotos do grafico, pois enviaria por exemplo, tempo de vela 1m, 3m,5m"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Each filled upload slot's data URL is stored under the corresponding sessionStorage key ('chartImage_M1', 'chartImage_M3', 'chartImage_M5').",
-        "Unfilled slots are not stored (or stored as absent/undefined).",
-        "'chartImages_count' is stored reflecting the number of filled slots.",
-        "If sessionStorage write fails, a Portuguese error toast is shown and navigation is blocked."
-      ]
-    },
-    {
-      "id": "REQ-151",
-      "text": "Update frontend/src/pages/ProcessingScreen.tsx to handle the new multi-image session storage format. On mount, read all available chart images from sessionStorage ('chartImage_M1', 'chartImage_M3', 'chartImage_M5'). For each image present, run the local candle analysis engine (analyzeChartImage) sequentially. Display the four animated processing stages as usual. After all analyses complete, merge the results into a combined multi-timeframe result object stored in sessionStorage under the key 'analysisResult', then navigate to the Results page. If only one image was uploaded, the behavior must remain identical to the previous single-image flow. All error handling (missing image, analysis failure, chart not identifiable) must apply per image slot and surface a clear Portuguese error message if any slot fails.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-last"
-        ],
-        "quotes": [
-          "enviaria por exemplo, tempo de vela 1m, 3m,5m voce consegue"
-        ]
-      },
-      "acceptanceCriteria": [
-        "ProcessingScreen reads up to 3 chart images from sessionStorage and runs the analysis engine on each one present.",
-        "Processing stages animate normally during multi-image analysis.",
-        "A combined result is stored in sessionStorage and the user is navigated to /results on success.",
-        "Single-image flow is unchanged when only one slot was filled.",
-        "Errors per image slot are caught and displayed with Portuguese messages without crashing the entire flow."
-      ]
-    },
-    {
-      "id": "REQ-152",
-      "text": "Update the LocalAnalysisResult TypeScript interface in frontend/src/types/analysisTypes.ts and the AnalysisResult interface in frontend/src/utils/mapApiResponse.ts to support an optional 'multiTimeframe' field — an array of objects, each containing: timeframe ('M1' | 'M3' | 'M5'), and all standard analysis fields (sinal, tendencia, confianca, probabilidade_alta, probabilidade_baixa, padroes, forca, explicacao, precisao, volume, suportes, resistencias). This allows the Results screen to display a per-timeframe breakdown when multiple images were analyzed.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-last"
-        ],
-        "quotes": [
-          "enviaria por exemplo, tempo de vela 1m, 3m,5m"
-        ]
-      },
-      "acceptanceCriteria": [
-        "LocalAnalysisResult and AnalysisResult interfaces include an optional 'multiTimeframe' array field.",
-        "Each entry in the multiTimeframe array contains the timeframe label and full analysis fields.",
-        "Existing single-timeframe fields remain unchanged for backward compatibility."
-      ]
-    },
-    {
-      "id": "REQ-153",
-      "text": "Update frontend/src/pages/Results.tsx to display a multi-timeframe analysis summary section when the 'multiTimeframe' field is present in the analysis result and contains more than one entry. This section must appear below the main signal banner as a horizontal scrollable row of compact timeframe cards (one per analyzed timeframe: M1, M3, M5). Each card displays the timeframe label, signal (COMPRA ↑ / VENDA ↓ / SEM ENTRADA), trend (ALTA/BAIXA/LATERAL), and confidence percentage for that specific timeframe. The card for the user's currently selected default timeframe is visually highlighted. If only one image was analyzed, this multi-timeframe section is hidden and the existing single-result layout is shown unchanged. All labels must be in Portuguese (Brazil).",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-last"
-        ],
-        "quotes": [
-          "para um estudo ficar ainda melhor pela analisa da inteligencia artificial, crie opção de poder enviar 3 fotos do grafico, pois enviaria por exemplo, tempo de vela 1m, 3m,5m"
-        ]
-      },
-      "acceptanceCriteria": [
-        "When multiTimeframe contains 2 or 3 entries, a multi-timeframe card row is shown below the signal banner.",
-        "Each card shows the timeframe label, signal, trend, and confidence for that timeframe.",
-        "The card matching the user's default selected timeframe is visually highlighted.",
-        "When only one image was analyzed, the multi-timeframe section is hidden.",
-        "All text is in Portuguese (Brazil)."
+        "Clicking on the M1 slot rectangle makes it the active paste target; Ctrl+V pastes only into the M1 slot.",
+        "Clicking on the M3 slot rectangle makes it the active paste target; Ctrl+V pastes only into the M3 slot.",
+        "Clicking on the M5 slot rectangle makes it the active paste target; Ctrl+V pastes only into the M5 slot.",
+        "Only one slot is active at a time — activating a new slot deactivates the previously active one.",
+        "The currently active slot displays a visible focus indicator (highlighted border or subtle glow).",
+        "Clicking outside all slots clears the active paste target so Ctrl+V does not accidentally paste into any slot.",
+        "All three slots continue to independently support file picker, camera capture, and drag-and-drop as before.",
+        "The 'Analisar Gráfico' button remains active only when at least one slot has an image.",
+        "All UI text remains in Portuguese (Brazil)."
       ]
     }
   ],
   "constraints": [
-    "Do not change backend/main.mo schema for this feature — all multi-timeframe state is managed in sessionStorage on the frontend.",
-    "Do not break the existing single-image analysis flow — it must work identically when only one slot is filled.",
-    "Preserve all existing Results screen sections (timer, signal banner, 2×2 grid, chart thumbnail, probability bars, WIN/LOSS buttons).",
-    "All user-facing text must remain in Portuguese (Brazil).",
-    "Do not edit any file listed in frontend.immutablePaths."
+    "Do not change the overall AnalyzeChart page layout or the three-slot structure (M1, M3, M5).",
+    "Do not break existing file picker, camera capture, or drag-and-drop functionality for any slot.",
+    "Do not alter sessionStorage key names ('chartImage_M1', 'chartImage_M3', 'chartImage_M5') or the navigation flow to ProcessingScreen."
   ],
   "nonGoals": [
-    "Sending multiple images simultaneously to any external API.",
-    "Storing per-timeframe analysis results separately in the backend canister.",
-    "Adding new timeframe options beyond M1, M3, and M5.",
-    "Changing the existing Settings timeframe selector behavior."
+    "Changing the Results screen layout or analysis logic.",
+    "Modifying the ProcessingScreen or local candle analysis engine.",
+    "Adding new timeframe options beyond M1, M3, M5.",
+    "Any backend changes."
   ],
   "imageRequirements": {
     "required": [],

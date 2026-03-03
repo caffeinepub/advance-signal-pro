@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { ArrowLeft, Layers, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,16 @@ export default function AnalyzeChart() {
   const navigate = useNavigate();
   const { slots, setImage, clearImage, hasAnyImage, filledSlots } = useMultiTimeframeUpload();
   const [isNavigating, setIsNavigating] = useState(false);
+  const [activeSlot, setActiveSlot] = useState<TimeframeKey | null>(null);
+
+  const handleActivateSlot = useCallback((timeframe: TimeframeKey) => {
+    setActiveSlot(timeframe);
+  }, []);
+
+  // Clicking the page background clears the active slot
+  const handlePageClick = () => {
+    setActiveSlot(null);
+  };
 
   const handleProceed = async () => {
     if (!hasAnyImage) {
@@ -18,6 +28,7 @@ export default function AnalyzeChart() {
     }
 
     setIsNavigating(true);
+    setActiveSlot(null);
 
     try {
       // Clear old keys
@@ -73,14 +84,17 @@ export default function AnalyzeChart() {
   const filledCount = filledSlots.length;
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-black" onClick={handlePageClick}>
       <div className="container mx-auto px-4 py-6 max-w-2xl">
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate({ to: '/' })}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate({ to: '/' });
+            }}
             className="text-white/70 hover:text-white hover:bg-white/10"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -94,7 +108,10 @@ export default function AnalyzeChart() {
         </div>
 
         {/* Info banner */}
-        <div className="flex items-start gap-3 bg-white/5 border border-white/10 rounded-2xl p-4 mb-6">
+        <div
+          className="flex items-start gap-3 bg-white/5 border border-white/10 rounded-2xl p-4 mb-6"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className="w-8 h-8 rounded-full bg-cyan-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
             <Layers className="w-4 h-4 text-cyan-400" />
           </div>
@@ -108,14 +125,20 @@ export default function AnalyzeChart() {
         </div>
 
         {/* Upload slots */}
-        <div className="space-y-4 mb-6">
+        <div className="space-y-4 mb-6" onClick={(e) => e.stopPropagation()}>
           {(['M1', 'M3', 'M5'] as TimeframeKey[]).map((tf) => (
             <TimeframeUploadSlot
               key={tf}
               timeframe={tf}
               file={slots[tf]}
-              onImageChange={setImage}
-              onImageRemove={clearImage}
+              onImageChange={(timeframe, file) => {
+                setImage(timeframe, file);
+              }}
+              onImageRemove={(timeframe) => {
+                clearImage(timeframe);
+              }}
+              isActive={activeSlot === tf}
+              onActivate={handleActivateSlot}
             />
           ))}
         </div>
@@ -151,7 +174,7 @@ export default function AnalyzeChart() {
         <div className="flex items-center gap-2 mb-5 px-1">
           <Info className="w-3.5 h-3.5 text-zinc-600 flex-shrink-0" />
           <p className="text-zinc-600 text-xs">
-            Dica: Copie um print e clique em "Colar" no slot desejado, ou pressione Ctrl+V
+            Dica: Clique em um slot para ativá-lo e pressione Ctrl+V para colar a imagem
           </p>
         </div>
 
@@ -159,7 +182,10 @@ export default function AnalyzeChart() {
         <Button
           size="lg"
           className="w-full h-14 text-lg font-semibold bg-white text-black hover:bg-zinc-200 disabled:opacity-40 rounded-2xl"
-          onClick={handleProceed}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleProceed();
+          }}
           disabled={!hasAnyImage || isNavigating}
         >
           {isNavigating
