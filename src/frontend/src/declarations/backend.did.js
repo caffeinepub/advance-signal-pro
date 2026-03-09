@@ -19,10 +19,21 @@ export const _CaffeineStorageRefillResult = IDL.Record({
   'success' : IDL.Opt(IDL.Bool),
   'topped_up_amount' : IDL.Opt(IDL.Nat),
 });
+export const UserRole = IDL.Variant({
+  'admin' : IDL.Null,
+  'user' : IDL.Null,
+  'guest' : IDL.Null,
+});
 export const AnalysisDirection = IDL.Variant({
   'bullish' : IDL.Null,
   'sideways' : IDL.Null,
   'bearish' : IDL.Null,
+});
+export const Timeframe = IDL.Variant({
+  'M1' : IDL.Null,
+  'M3' : IDL.Null,
+  'M5' : IDL.Null,
+  'M10' : IDL.Null,
 });
 export const CandlestickPattern = IDL.Variant({
   'shootingStar' : IDL.Null,
@@ -38,19 +49,26 @@ export const ResistanceLevel = IDL.Record({
 export const ExternalBlob = IDL.Vec(IDL.Nat8);
 export const AnalysisResult = IDL.Record({
   'direction' : AnalysisDirection,
+  'stopExemplo' : IDL.Opt(IDL.Float64),
+  'timeframe' : Timeframe,
   'trendStrength' : IDL.Nat,
   'candlestickPatterns' : IDL.Vec(CandlestickPattern),
+  'acaoSugerida' : IDL.Opt(IDL.Text),
   'breakouts' : IDL.Bool,
   'resistanceLevels' : IDL.Vec(ResistanceLevel),
+  'probabilidadeBaixa' : IDL.Opt(IDL.Float64),
+  'entradaExemplo' : IDL.Opt(IDL.Float64),
+  'alvoExemplo' : IDL.Opt(IDL.Float64),
+  'probabilidadeAlta' : IDL.Opt(IDL.Float64),
   'timestamp' : IDL.Int,
   'confidencePercentage' : IDL.Nat,
   'image' : ExternalBlob,
+  'operationFollowed' : IDL.Opt(IDL.Bool),
   'pullbacks' : IDL.Bool,
 });
-export const Timeframe = IDL.Variant({
-  'M1' : IDL.Null,
-  'M5' : IDL.Null,
-  'M10' : IDL.Null,
+export const UserProfile = IDL.Record({
+  'name' : IDL.Text,
+  'email' : IDL.Opt(IDL.Text),
 });
 export const UserSettings = IDL.Record({
   'theme' : IDL.Text,
@@ -58,7 +76,9 @@ export const UserSettings = IDL.Record({
   'language' : IDL.Text,
   'aiSensitivity' : IDL.Nat,
   'defaultTimeframe' : Timeframe,
+  'dailyOperationLimit' : IDL.Nat,
 });
+export const IsNewUser = IDL.Bool;
 
 export const idlService = IDL.Service({
   '_caffeineStorageBlobIsLive' : IDL.Func(
@@ -87,8 +107,16 @@ export const idlService = IDL.Service({
       [],
     ),
   '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
+  '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+  'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'getAnalyses' : IDL.Func([], [IDL.Vec(AnalysisResult)], ['query']),
-  'getAnalysisHistory' : IDL.Func([], [IDL.Vec(AnalysisResult)], ['query']),
+  'getAnalysisHistory' : IDL.Func(
+      [IDL.Nat],
+      [IDL.Vec(AnalysisResult)],
+      ['query'],
+    ),
+  'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
+  'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getCriteria' : IDL.Func(
       [],
       [
@@ -103,16 +131,31 @@ export const idlService = IDL.Service({
       ],
       ['query'],
     ),
-  'getGeminiApiKey' : IDL.Func([], [IDL.Opt(IDL.Text)], ['query']),
+  'getDailyOperationProgress' : IDL.Func(
+      [IDL.Principal],
+      [IDL.Record({ 'dailyLimit' : IDL.Nat, 'completedOperations' : IDL.Nat })],
+      ['query'],
+    ),
   'getSettings' : IDL.Func([], [UserSettings], ['query']),
   'getTopResistanceLevels' : IDL.Func(
       [],
       [IDL.Vec(ResistanceLevel)],
       ['query'],
     ),
-  'setGeminiApiKey' : IDL.Func([IDL.Text], [], []),
-  'storeExternalAnalysis' : IDL.Func([AnalysisResult], [], []),
-  'updateSettings' : IDL.Func([UserSettings], [], []),
+  'getUserProfile' : IDL.Func(
+      [IDL.Principal],
+      [IDL.Opt(UserProfile)],
+      ['query'],
+    ),
+  'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'setDailyOperationLimit' : IDL.Func([IDL.Nat], [IDL.Text], []),
+  'storeAnalysis' : IDL.Func(
+      [AnalysisResult],
+      [IDL.Record({ 'isNewUser' : IsNewUser, 'legacyEntriesCount' : IDL.Nat })],
+      [],
+    ),
+  'updateSettings' : IDL.Func([UserSettings], [IDL.Text], []),
 });
 
 export const idlInitArgs = [];
@@ -129,10 +172,21 @@ export const idlFactory = ({ IDL }) => {
     'success' : IDL.Opt(IDL.Bool),
     'topped_up_amount' : IDL.Opt(IDL.Nat),
   });
+  const UserRole = IDL.Variant({
+    'admin' : IDL.Null,
+    'user' : IDL.Null,
+    'guest' : IDL.Null,
+  });
   const AnalysisDirection = IDL.Variant({
     'bullish' : IDL.Null,
     'sideways' : IDL.Null,
     'bearish' : IDL.Null,
+  });
+  const Timeframe = IDL.Variant({
+    'M1' : IDL.Null,
+    'M3' : IDL.Null,
+    'M5' : IDL.Null,
+    'M10' : IDL.Null,
   });
   const CandlestickPattern = IDL.Variant({
     'shootingStar' : IDL.Null,
@@ -148,19 +202,26 @@ export const idlFactory = ({ IDL }) => {
   const ExternalBlob = IDL.Vec(IDL.Nat8);
   const AnalysisResult = IDL.Record({
     'direction' : AnalysisDirection,
+    'stopExemplo' : IDL.Opt(IDL.Float64),
+    'timeframe' : Timeframe,
     'trendStrength' : IDL.Nat,
     'candlestickPatterns' : IDL.Vec(CandlestickPattern),
+    'acaoSugerida' : IDL.Opt(IDL.Text),
     'breakouts' : IDL.Bool,
     'resistanceLevels' : IDL.Vec(ResistanceLevel),
+    'probabilidadeBaixa' : IDL.Opt(IDL.Float64),
+    'entradaExemplo' : IDL.Opt(IDL.Float64),
+    'alvoExemplo' : IDL.Opt(IDL.Float64),
+    'probabilidadeAlta' : IDL.Opt(IDL.Float64),
     'timestamp' : IDL.Int,
     'confidencePercentage' : IDL.Nat,
     'image' : ExternalBlob,
+    'operationFollowed' : IDL.Opt(IDL.Bool),
     'pullbacks' : IDL.Bool,
   });
-  const Timeframe = IDL.Variant({
-    'M1' : IDL.Null,
-    'M5' : IDL.Null,
-    'M10' : IDL.Null,
+  const UserProfile = IDL.Record({
+    'name' : IDL.Text,
+    'email' : IDL.Opt(IDL.Text),
   });
   const UserSettings = IDL.Record({
     'theme' : IDL.Text,
@@ -168,7 +229,9 @@ export const idlFactory = ({ IDL }) => {
     'language' : IDL.Text,
     'aiSensitivity' : IDL.Nat,
     'defaultTimeframe' : Timeframe,
+    'dailyOperationLimit' : IDL.Nat,
   });
+  const IsNewUser = IDL.Bool;
   
   return IDL.Service({
     '_caffeineStorageBlobIsLive' : IDL.Func(
@@ -197,8 +260,16 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
+    '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+    'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'getAnalyses' : IDL.Func([], [IDL.Vec(AnalysisResult)], ['query']),
-    'getAnalysisHistory' : IDL.Func([], [IDL.Vec(AnalysisResult)], ['query']),
+    'getAnalysisHistory' : IDL.Func(
+        [IDL.Nat],
+        [IDL.Vec(AnalysisResult)],
+        ['query'],
+      ),
+    'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
+    'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getCriteria' : IDL.Func(
         [],
         [
@@ -213,16 +284,41 @@ export const idlFactory = ({ IDL }) => {
         ],
         ['query'],
       ),
-    'getGeminiApiKey' : IDL.Func([], [IDL.Opt(IDL.Text)], ['query']),
+    'getDailyOperationProgress' : IDL.Func(
+        [IDL.Principal],
+        [
+          IDL.Record({
+            'dailyLimit' : IDL.Nat,
+            'completedOperations' : IDL.Nat,
+          }),
+        ],
+        ['query'],
+      ),
     'getSettings' : IDL.Func([], [UserSettings], ['query']),
     'getTopResistanceLevels' : IDL.Func(
         [],
         [IDL.Vec(ResistanceLevel)],
         ['query'],
       ),
-    'setGeminiApiKey' : IDL.Func([IDL.Text], [], []),
-    'storeExternalAnalysis' : IDL.Func([AnalysisResult], [], []),
-    'updateSettings' : IDL.Func([UserSettings], [], []),
+    'getUserProfile' : IDL.Func(
+        [IDL.Principal],
+        [IDL.Opt(UserProfile)],
+        ['query'],
+      ),
+    'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'setDailyOperationLimit' : IDL.Func([IDL.Nat], [IDL.Text], []),
+    'storeAnalysis' : IDL.Func(
+        [AnalysisResult],
+        [
+          IDL.Record({
+            'isNewUser' : IsNewUser,
+            'legacyEntriesCount' : IDL.Nat,
+          }),
+        ],
+        [],
+      ),
+    'updateSettings' : IDL.Func([UserSettings], [IDL.Text], []),
   });
 };
 

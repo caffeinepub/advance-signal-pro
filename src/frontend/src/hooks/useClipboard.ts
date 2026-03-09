@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from "react";
 
 export function useClipboard() {
   const [clipboardImage, setClipboardImage] = useState<File | null>(null);
@@ -11,7 +11,7 @@ export function useClipboard() {
 
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
-        if (item.type.indexOf('image') !== -1) {
+        if (item.type.indexOf("image") !== -1) {
           const blob = item.getAsFile();
           if (blob) {
             setClipboardImage(blob);
@@ -23,14 +23,14 @@ export function useClipboard() {
     };
 
     // Check clipboard permission
-    if (navigator.clipboard && navigator.clipboard.read) {
+    if (navigator.clipboard?.read) {
       navigator.clipboard.read().catch(() => {
-        setError('Clipboard access denied. Please grant permission.');
+        setError("Clipboard access denied. Please grant permission.");
       });
     }
 
-    window.addEventListener('paste', handlePaste);
-    return () => window.removeEventListener('paste', handlePaste);
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
   }, []);
 
   return { clipboardImage, error };

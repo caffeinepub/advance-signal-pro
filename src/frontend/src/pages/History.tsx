@@ -1,58 +1,68 @@
-import { useNavigate } from '@tanstack/react-router';
-import { ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import HistoryListItem from '../components/HistoryListItem';
-import { useGetAnalyses } from '../hooks/useQueries';
+import { useNavigate } from "@tanstack/react-router";
+import { ArrowLeft, BarChart2, History as HistoryIcon } from "lucide-react";
+import HistoryListItem from "../components/HistoryListItem";
+import { useGetAnalyses } from "../hooks/useQueries";
 
 export default function History() {
   const navigate = useNavigate();
   const { data: analyses, isLoading } = useGetAnalyses();
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6 max-w-4xl">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate({ to: '/' })}
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">Histórico de Análises</h1>
-            <p className="text-sm text-muted-foreground">
-              Revise suas análises anteriores
-            </p>
-          </div>
+    <div className="min-h-screen bg-zinc-950 text-white pb-10">
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3 flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => navigate({ to: "/" })}
+          className="p-2 rounded-lg hover:bg-zinc-800 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <div className="flex-1">
+          <h1 className="text-sm font-semibold tracking-wide">
+            HISTÓRICO DE ANÁLISES
+          </h1>
+          <p className="text-xs text-zinc-500">Suas operações anteriores</p>
         </div>
+        <HistoryIcon className="w-5 h-5 text-zinc-500" />
+      </div>
 
-        {/* History List */}
+      <div className="max-w-lg mx-auto px-4 pt-5">
         {isLoading ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Carregando histórico...</p>
+          <div className="flex items-center justify-center py-20">
+            <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : analyses && analyses.length > 0 ? (
-          <div className="space-y-4">
-            {analyses.map((analysis, idx) => (
-              <HistoryListItem key={idx} analysis={analysis} />
-            ))}
+        ) : !analyses || analyses.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <BarChart2 className="w-12 h-12 text-zinc-700 mb-4" />
+            <h2 className="text-lg font-semibold text-zinc-400 mb-2">
+              Nenhuma análise ainda
+            </h2>
+            <p className="text-sm text-zinc-600 max-w-xs">
+              Analise seu primeiro gráfico para começar a construir seu
+              histórico de operações.
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate({ to: "/analyze" })}
+              className="mt-6 px-5 py-2.5 bg-white text-black rounded-xl text-sm font-semibold hover:bg-zinc-200 transition-colors"
+            >
+              Analisar Gráfico
+            </button>
           </div>
         ) : (
-          <div className="text-center py-12">
-            <img
-              src="/assets/generated/icon-history.dim_128x128.png"
-              alt=""
-              className="w-24 h-24 mx-auto mb-4 opacity-30"
-            />
-            <p className="text-lg font-semibold mb-2">Nenhuma análise ainda</p>
-            <p className="text-sm text-muted-foreground mb-6">
-              Comece analisando seu primeiro gráfico
+          <div className="space-y-3">
+            <p className="text-xs text-zinc-600 mb-2">
+              {analyses.length} análise{analyses.length !== 1 ? "s" : ""}{" "}
+              registrada
+              {analyses.length !== 1 ? "s" : ""}
             </p>
-            <Button onClick={() => navigate({ to: '/analyze' })}>
-              Analisar Gráfico
-            </Button>
+            {analyses.map((analysis) => (
+              <HistoryListItem
+                key={String(analysis.timestamp)}
+                analysis={analysis}
+              />
+            ))}
           </div>
         )}
       </div>

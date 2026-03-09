@@ -1,107 +1,99 @@
-import { useNavigate } from '@tanstack/react-router';
-import { TrendingUp, TrendingDown, Minus, AlertCircle } from 'lucide-react';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { formatTimestamp } from '../utils/formatTimestamp';
-import { AnalysisDirection, type AnalysisResult } from '../backend';
+import {
+  AlertCircle,
+  CheckCircle,
+  Minus,
+  TrendingDown,
+  TrendingUp,
+  XCircle,
+} from "lucide-react";
+import type { AnalysisResult } from "../backend";
+import { LocalAnalysisResult } from "../types/analysisTypes";
+import { formatTimestamp } from "../utils/formatTimestamp";
 
 interface HistoryListItemProps {
-  analysis: AnalysisResult & { sinalOriginal?: string };
+  analysis: AnalysisResult;
+  onClick?: () => void;
 }
 
-export default function HistoryListItem({ analysis }: HistoryListItemProps) {
-  const navigate = useNavigate();
+function getSignalFromDirection(direction: string): string {
+  if (direction === "bullish") return "COMPRA";
+  if (direction === "bearish") return "VENDA";
+  return "NEUTRO";
+}
 
-  const isBullish = analysis.direction === AnalysisDirection.bullish;
-  const isBearish = analysis.direction === AnalysisDirection.bearish;
-  const isSideways = analysis.direction === AnalysisDirection.sideways;
-  
-  // Check for special signal types
-  const isSemEntrada = analysis.sinalOriginal === 'SEM ENTRADA';
-  const isNeutro = analysis.sinalOriginal === 'NEUTRO';
-  
-  // Determine signal label
-  let signal = 'MANTER';
-  if (isSemEntrada) {
-    signal = 'Sem entrada';
-  } else if (isNeutro) {
-    signal = 'Neutro';
-  } else if (isBullish) {
-    signal = 'COMPRA';
-  } else if (isBearish) {
-    signal = 'VENDA';
-  }
+export default function HistoryListItem({
+  analysis,
+  onClick,
+}: HistoryListItemProps) {
+  const signal = getSignalFromDirection(analysis.direction.toString());
+  const confidence = Number(analysis.confidencePercentage);
+  const timestamp = analysis.timestamp;
 
-  const handleClick = () => {
-    // Store analysis data for results page
-    sessionStorage.setItem('latestAnalysis', JSON.stringify({
-      ...analysis,
-      direction: analysis.direction,
-      resistanceLevels: analysis.resistanceLevels.map(r => ({ 
-        price: r.price, 
-        strength: Number(r.strength) 
-      })),
-      trendStrength: Number(analysis.trendStrength),
-      confidencePercentage: Number(analysis.confidencePercentage),
-      timestamp: Number(analysis.timestamp),
-    }));
-    navigate({ to: '/results/$id', params: { id: 'latest' } });
-  };
+  const isCompra = signal === "COMPRA";
+  const isVenda = signal === "VENDA";
+  const isNeutro = signal === "NEUTRO";
+
+  const signalColor = isCompra
+    ? "text-green-400"
+    : isVenda
+      ? "text-red-400"
+      : "text-zinc-400";
+
+  const signalBg = isCompra
+    ? "bg-green-950/40 border-green-800/40"
+    : isVenda
+      ? "bg-red-950/40 border-red-800/40"
+      : "bg-zinc-800/40 border-zinc-700/40";
+
+  const Icon = isCompra
+    ? TrendingUp
+    : isVenda
+      ? TrendingDown
+      : isNeutro
+        ? Minus
+        : AlertCircle;
+
+  const operationFollowed = analysis.operationFollowed;
 
   return (
-    <Card
-      className="p-4 cursor-pointer hover:bg-accent/50 transition-colors"
-      onClick={handleClick}
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full text-left bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex items-center gap-3 cursor-pointer hover:bg-zinc-800/80 transition-colors active:scale-[0.99]"
     >
-      <div className="flex items-center gap-4">
-        <div className="flex-shrink-0">
-          {isSemEntrada && <AlertCircle className="w-8 h-8 text-amber-600 dark:text-amber-500" />}
-          {!isSemEntrada && isBullish && <TrendingUp className="w-8 h-8 text-chart-1" />}
-          {!isSemEntrada && isBearish && <TrendingDown className="w-8 h-8 text-destructive" />}
-          {!isSemEntrada && isSideways && <Minus className="w-8 h-8 text-muted-foreground" />}
-        </div>
-        
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <Badge
-              variant={
-                isSemEntrada 
-                  ? 'outline' 
-                  : isNeutro 
-                  ? 'secondary' 
-                  : isBullish 
-                  ? 'default' 
-                  : isBearish 
-                  ? 'destructive' 
-                  : 'secondary'
-              }
-              className={
-                isSemEntrada 
-                  ? 'border-amber-600 text-amber-600 dark:border-amber-500 dark:text-amber-500' 
-                  : isBullish 
-                  ? 'bg-chart-1' 
-                  : ''
-              }
-            >
-              {signal}
-            </Badge>
-            <span className="text-sm font-semibold">
-              {Number(analysis.confidencePercentage)}% Confiança
-            </span>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {formatTimestamp(analysis.timestamp)}
-          </p>
-        </div>
+      {/* Signal Icon */}
+      <div className={`p-2 rounded-lg border ${signalBg} flex-shrink-0`}>
+        <Icon className={`w-5 h-5 ${signalColor}`} />
+      </div>
 
-        <div className="text-right">
-          <p className="text-sm text-muted-foreground">Tendência</p>
-          <p className="font-medium">
-            {analysis.direction === AnalysisDirection.bullish ? 'ALTA' : 
-             analysis.direction === AnalysisDirection.bearish ? 'BAIXA' : 'LATERAL'}
-          </p>
+      {/* Main Info */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className={`text-sm font-bold ${signalColor}`}>{signal}</span>
+          <span className="text-xs text-zinc-500">
+            {formatTimestamp(timestamp)}
+          </span>
+        </div>
+        <div className="text-xs text-zinc-500 mt-0.5">
+          Confiança: <span className="text-zinc-300">{confidence}%</span>
         </div>
       </div>
-    </Card>
+
+      {/* WIN/LOSS Badge */}
+      <div className="flex-shrink-0 flex items-center gap-2">
+        {operationFollowed === true && (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-green-900/60 border border-green-700/50 text-green-300">
+            <CheckCircle className="w-3 h-3" />
+            WIN
+          </span>
+        )}
+        {operationFollowed === false && (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-red-900/60 border border-red-700/50 text-red-300">
+            <XCircle className="w-3 h-3" />
+            LOSS
+          </span>
+        )}
+      </div>
+    </button>
   );
 }

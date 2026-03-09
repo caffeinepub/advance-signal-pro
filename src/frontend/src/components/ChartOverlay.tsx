@@ -1,109 +1,166 @@
-import { useEffect, useRef } from 'react';
+import type React from "react";
+import { useEffect, useRef } from "react";
 
 interface ChartOverlayProps {
-  analysis: any;
+  imageFile?: File | null;
+  imageUrl?: string | null;
+  sinal?: string;
+  signal?: string;
+  suportes?: number[];
+  resistencias?: number[];
+  className?: string;
 }
 
-export default function ChartOverlay({ analysis }: ChartOverlayProps) {
+const ChartOverlay: React.FC<ChartOverlayProps> = ({
+  imageFile,
+  imageUrl,
+  sinal,
+  signal,
+  suportes = [],
+  resistencias = [],
+  className = "",
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
+
+  // Resolve the effective signal label from either prop
+  const effectiveSignal = sinal ?? signal;
 
   useEffect(() => {
-    if (!canvasRef.current || !imageRef.current || !analysis) return;
-
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const img = imageRef.current;
+    if (!canvas) return;
 
+    // Determine image source: prefer imageFile, fall back to imageUrl
+    let objectUrl: string | null = null;
+    let src: string | null = null;
+
+    if (imageFile) {
+      objectUrl = URL.createObjectURL(imageFile);
+      src = objectUrl;
+    } else if (imageUrl) {
+      src = imageUrl;
+    }
+
+    if (!src) return;
+
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const drawOverlay = () => {
-      // Set canvas size to match image
-      canvas.width = img.naturalWidth || img.width;
-      canvas.height = img.naturalHeight || img.height;
+    const img = new Image();
 
-      // Draw the image
+    img.onload = () => {
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+
       ctx.drawImage(img, 0, 0);
 
-      // Draw support/resistance levels
-      ctx.strokeStyle = 'rgba(59, 130, 246, 0.8)';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([5, 5]);
+      const w = canvas.width;
+      const h = canvas.height;
 
-      analysis.resistanceLevels?.forEach((level: any, idx: number) => {
-        const y = (canvas.height / (analysis.resistanceLevels.length + 1)) * (idx + 1);
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(canvas.width, y);
-        ctx.stroke();
-
-        // Label
-        ctx.fillStyle = 'rgba(59, 130, 246, 0.9)';
-        ctx.font = '14px sans-serif';
-        ctx.fillText(`$${level.price.toFixed(2)}`, 10, y - 5);
-      });
-
-      // Draw trend arrow
-      ctx.setLineDash([]);
-      if (analysis.direction === 'bullish') {
-        ctx.strokeStyle = 'rgba(34, 197, 94, 0.8)';
-        ctx.fillStyle = 'rgba(34, 197, 94, 0.8)';
-      } else if (analysis.direction === 'bearish') {
-        ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
-        ctx.fillStyle = 'rgba(239, 68, 68, 0.8)';
+      // Draw support lines (green dashed)
+      if (suportes && suportes.length > 0) {
+        ctx.save();
+        ctx.strokeStyle = "#22c55e";
+        ctx.lineWidth = Math.max(1.5, h * 0.003);
+        ctx.setLineDash([8, 5]);
+        ctx.globalAlpha = 0.85;
+        for (const pct of suportes) {
+          const y = Math.round((pct / 100) * h);
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(w * 0.88, y);
+          ctx.stroke();
+          ctx.globalAlpha = 0.9;
+          ctx.fillStyle = "#22c55e";
+          ctx.font = `bold ${Math.max(10, Math.round(h * 0.025))}px sans-serif`;
+          ctx.fillText("S", w * 0.89, y + 4);
+          ctx.globalAlpha = 0.85;
+        }
+        ctx.restore();
       }
 
-      if (analysis.direction !== 'sideways') {
-        const startX = canvas.width * 0.2;
-        const endX = canvas.width * 0.8;
-        const startY = analysis.direction === 'bullish' ? canvas.height * 0.7 : canvas.height * 0.3;
-        const endY = analysis.direction === 'bullish' ? canvas.height * 0.3 : canvas.height * 0.7;
+      // Draw resistance lines (red dashed)
+      if (resistencias && resistencias.length > 0) {
+        ctx.save();
+        ctx.strokeStyle = "#ef4444";
+        ctx.lineWidth = Math.max(1.5, h * 0.003);
+        ctx.setLineDash([8, 5]);
+        ctx.globalAlpha = 0.85;
+        for (const pct of resistencias) {
+          const y = Math.round((pct / 100) * h);
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(w * 0.88, y);
+          ctx.stroke();
+          ctx.globalAlpha = 0.9;
+          ctx.fillStyle = "#ef4444";
+          ctx.font = `bold ${Math.max(10, Math.round(h * 0.025))}px sans-serif`;
+          ctx.fillText("R", w * 0.89, y + 4);
+          ctx.globalAlpha = 0.85;
+        }
+        ctx.restore();
+      }
 
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(startX, startY);
-        ctx.lineTo(endX, endY);
-        ctx.stroke();
+      // Draw directional arrow on right edge
+      if (effectiveSignal === "COMPRA" || effectiveSignal === "VENDA") {
+        const arrowX = w - Math.round(w * 0.06);
+        const arrowY = h / 2;
+        const arrowSize = Math.max(16, Math.round(h * 0.06));
+        const isUp = effectiveSignal === "COMPRA";
 
-        // Arrow head
-        const angle = Math.atan2(endY - startY, endX - startX);
+        ctx.save();
+        ctx.globalAlpha = 0.95;
+        ctx.fillStyle = isUp ? "#22c55e" : "#ef4444";
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 2;
+
         ctx.beginPath();
-        ctx.moveTo(endX, endY);
-        ctx.lineTo(
-          endX - 15 * Math.cos(angle - Math.PI / 6),
-          endY - 15 * Math.sin(angle - Math.PI / 6)
-        );
-        ctx.lineTo(
-          endX - 15 * Math.cos(angle + Math.PI / 6),
-          endY - 15 * Math.sin(angle + Math.PI / 6)
-        );
-        ctx.closePath();
+        if (isUp) {
+          ctx.moveTo(arrowX, arrowY - arrowSize);
+          ctx.lineTo(arrowX + arrowSize * 0.5, arrowY);
+          ctx.lineTo(arrowX + arrowSize * 0.2, arrowY);
+          ctx.lineTo(arrowX + arrowSize * 0.2, arrowY + arrowSize);
+          ctx.lineTo(arrowX - arrowSize * 0.2, arrowY + arrowSize);
+          ctx.lineTo(arrowX - arrowSize * 0.2, arrowY);
+          ctx.lineTo(arrowX - arrowSize * 0.5, arrowY);
+          ctx.closePath();
+        } else {
+          ctx.moveTo(arrowX, arrowY + arrowSize);
+          ctx.lineTo(arrowX + arrowSize * 0.5, arrowY);
+          ctx.lineTo(arrowX + arrowSize * 0.2, arrowY);
+          ctx.lineTo(arrowX + arrowSize * 0.2, arrowY - arrowSize);
+          ctx.lineTo(arrowX - arrowSize * 0.2, arrowY - arrowSize);
+          ctx.lineTo(arrowX - arrowSize * 0.2, arrowY);
+          ctx.lineTo(arrowX - arrowSize * 0.5, arrowY);
+          ctx.closePath();
+        }
         ctx.fill();
+        ctx.stroke();
+        ctx.restore();
       }
+
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
 
-    if (img.complete) {
-      drawOverlay();
-    } else {
-      img.onload = drawOverlay;
-    }
-  }, [analysis]);
+    img.onerror = () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
 
-  const imageData = sessionStorage.getItem('chartImage');
+    img.src = src;
+
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [imageFile, imageUrl, effectiveSignal, suportes, resistencias]);
+
+  if (!imageFile && !imageUrl) return null;
 
   return (
-    <div className="relative w-full">
-      <img
-        ref={imageRef}
-        src={imageData || ''}
-        alt="Chart"
-        className="w-full rounded-lg"
-        style={{ display: 'none' }}
-      />
-      <canvas
-        ref={canvasRef}
-        className="w-full rounded-lg border border-border"
-      />
-    </div>
+    <canvas
+      ref={canvasRef}
+      className={`w-full h-auto rounded-lg ${className}`}
+      style={{ display: "block" }}
+    />
   );
-}
+};
+
+export default ChartOverlay;

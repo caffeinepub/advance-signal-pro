@@ -1,12 +1,21 @@
-import { RouterProvider, createRouter, createRoute, createRootRoute } from '@tanstack/react-router';
-import { ThemeProvider } from './context/ThemeContext';
-import Layout from './components/Layout';
-import Dashboard from './pages/Dashboard';
-import AnalyzeChart from './pages/AnalyzeChart';
-import ProcessingScreen from './pages/ProcessingScreen';
-import Results from './pages/Results';
-import History from './pages/History';
-import Settings from './pages/Settings';
+import {
+  RouterProvider,
+  createRootRoute,
+  createRoute,
+  createRouter,
+} from "@tanstack/react-router";
+import { useEffect } from "react";
+import Layout from "./components/Layout";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import { ThemeProvider } from "./context/ThemeContext";
+import { useActor } from "./hooks/useActor";
+import AnalyzeChart from "./pages/AnalyzeChart";
+import Dashboard from "./pages/Dashboard";
+import History from "./pages/History";
+import LoginPage from "./pages/LoginPage";
+import ProcessingScreen from "./pages/ProcessingScreen";
+import Results from "./pages/Results";
+import Settings from "./pages/Settings";
 
 const rootRoute = createRootRoute({
   component: Layout,
@@ -14,37 +23,38 @@ const rootRoute = createRootRoute({
 
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/',
+  path: "/",
   component: Dashboard,
 });
 
 const analyzeRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/analyze',
+  path: "/analyze",
   component: AnalyzeChart,
 });
 
 const processingRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/processing',
+  path: "/processing",
   component: ProcessingScreen,
 });
 
+// Route without param — used by the new Results page (data via sessionStorage)
 const resultsRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/results/$id',
+  path: "/results/$id",
   component: Results,
 });
 
 const historyRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/history',
+  path: "/history",
   component: History,
 });
 
 const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/settings',
+  path: "/settings",
   component: Settings,
 });
 
@@ -59,16 +69,34 @@ const routeTree = rootRoute.addChildren([
 
 const router = createRouter({ routeTree });
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface Register {
     router: typeof router;
   }
 }
 
+function AppContent() {
+  const { isAuthenticated, setActor } = useAuth();
+  const { actor } = useActor();
+
+  // Wire the actor into AuthContext so it can sync user data to backend
+  useEffect(() => {
+    setActor(actor as Parameters<typeof setActor>[0]);
+  }, [actor, setActor]);
+
+  if (!isAuthenticated) {
+    return <LoginPage />;
+  }
+
+  return <RouterProvider router={router} />;
+}
+
 export default function App() {
   return (
     <ThemeProvider>
-      <RouterProvider router={router} />
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </ThemeProvider>
   );
 }

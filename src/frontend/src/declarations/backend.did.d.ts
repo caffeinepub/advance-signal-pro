@@ -15,13 +15,21 @@ export type AnalysisDirection = { 'bullish' : null } |
   { 'bearish' : null };
 export interface AnalysisResult {
   'direction' : AnalysisDirection,
+  'stopExemplo' : [] | [number],
+  'timeframe' : Timeframe,
   'trendStrength' : bigint,
   'candlestickPatterns' : Array<CandlestickPattern>,
+  'acaoSugerida' : [] | [string],
   'breakouts' : boolean,
   'resistanceLevels' : Array<ResistanceLevel>,
+  'probabilidadeBaixa' : [] | [number],
+  'entradaExemplo' : [] | [number],
+  'alvoExemplo' : [] | [number],
+  'probabilidadeAlta' : [] | [number],
   'timestamp' : bigint,
   'confidencePercentage' : bigint,
   'image' : ExternalBlob,
+  'operationFollowed' : [] | [boolean],
   'pullbacks' : boolean,
 }
 export type CandlestickPattern = { 'shootingStar' : null } |
@@ -30,16 +38,23 @@ export type CandlestickPattern = { 'shootingStar' : null } |
   { 'hammer' : null } |
   { 'engulfing' : null };
 export type ExternalBlob = Uint8Array;
+export type IsNewUser = boolean;
 export interface ResistanceLevel { 'strength' : bigint, 'price' : number }
 export type Timeframe = { 'M1' : null } |
+  { 'M3' : null } |
   { 'M5' : null } |
   { 'M10' : null };
+export interface UserProfile { 'name' : string, 'email' : [] | [string] }
+export type UserRole = { 'admin' : null } |
+  { 'user' : null } |
+  { 'guest' : null };
 export interface UserSettings {
   'theme' : string,
   'signalNotifications' : boolean,
   'language' : string,
   'aiSensitivity' : bigint,
   'defaultTimeframe' : Timeframe,
+  'dailyOperationLimit' : bigint,
 }
 export interface _CaffeineStorageCreateCertificateResult {
   'method' : string,
@@ -68,8 +83,12 @@ export interface _SERVICE {
     _CaffeineStorageRefillResult
   >,
   '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
+  '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'getAnalyses' : ActorMethod<[], Array<AnalysisResult>>,
-  'getAnalysisHistory' : ActorMethod<[], Array<AnalysisResult>>,
+  'getAnalysisHistory' : ActorMethod<[bigint], Array<AnalysisResult>>,
+  'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
+  'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getCriteria' : ActorMethod<
     [],
     {
@@ -81,12 +100,21 @@ export interface _SERVICE {
       'bullishThreshold' : number,
     }
   >,
-  'getGeminiApiKey' : ActorMethod<[], [] | [string]>,
+  'getDailyOperationProgress' : ActorMethod<
+    [Principal],
+    { 'dailyLimit' : bigint, 'completedOperations' : bigint }
+  >,
   'getSettings' : ActorMethod<[], UserSettings>,
   'getTopResistanceLevels' : ActorMethod<[], Array<ResistanceLevel>>,
-  'setGeminiApiKey' : ActorMethod<[string], undefined>,
-  'storeExternalAnalysis' : ActorMethod<[AnalysisResult], undefined>,
-  'updateSettings' : ActorMethod<[UserSettings], undefined>,
+  'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
+  'isCallerAdmin' : ActorMethod<[], boolean>,
+  'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'setDailyOperationLimit' : ActorMethod<[bigint], string>,
+  'storeAnalysis' : ActorMethod<
+    [AnalysisResult],
+    { 'isNewUser' : IsNewUser, 'legacyEntriesCount' : bigint }
+  >,
+  'updateSettings' : ActorMethod<[UserSettings], string>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

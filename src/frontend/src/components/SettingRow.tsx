@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
 interface SettingRowProps {
   label: string;
@@ -6,7 +6,11 @@ interface SettingRowProps {
   control: ReactNode;
 }
 
-export default function SettingRow({ label, description, control }: SettingRowProps) {
+export default function SettingRow({
+  label,
+  description,
+  control,
+}: SettingRowProps) {
   return (
     <div className="flex items-center justify-between gap-4">
       <div className="flex-1">

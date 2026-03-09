@@ -1,159 +1,218 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import { ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import CameraCapture from '../components/CameraCapture';
-import FileUpload from '../components/FileUpload';
-import { useClipboard } from '../hooks/useClipboard';
-import { ExternalBlob } from '../backend';
-import { toast } from 'sonner';
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "@tanstack/react-router";
+import { ArrowLeft, Info, Layers } from "lucide-react";
+import { useCallback, useState } from "react";
+import { toast } from "sonner";
+import TimeframeUploadSlot from "../components/TimeframeUploadSlot";
+import {
+  type TimeframeKey,
+  useMultiTimeframeUpload,
+} from "../hooks/useMultiTimeframeUpload";
 
 export default function AnalyzeChart() {
   const navigate = useNavigate();
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [uploadMethod, setUploadMethod] = useState<'camera' | 'file' | 'clipboard'>('file');
+  const { slots, setImage, clearImage, hasAnyImage, filledSlots } =
+    useMultiTimeframeUpload();
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [activeSlot, setActiveSlot] = useState<TimeframeKey | null>(null);
 
-  const { clipboardImage, error: clipboardError } = useClipboard();
+  const handleActivateSlot = useCallback((timeframe: TimeframeKey) => {
+    setActiveSlot(timeframe);
+  }, []);
 
-  const handleFileSelect = (file: File) => {
-    setSelectedFile(file);
-    toast.success('Imagem do gráfico selecionada');
+  // Clicking the page background clears the active slot
+  const handlePageClick = () => {
+    setActiveSlot(null);
   };
 
-  const handleCameraCapture = (file: File) => {
-    setSelectedFile(file);
-    setUploadMethod('camera');
-    toast.success('Foto capturada');
-  };
-
-  const handleProceed = () => {
-    if (!selectedFile && !clipboardImage) {
-      toast.error('Por favor, selecione ou capture uma imagem do gráfico');
+  const handleProceed = async () => {
+    if (!hasAnyImage) {
+      toast.error("Envie pelo menos uma imagem de gráfico para continuar");
       return;
     }
 
-    const fileToUse = selectedFile || clipboardImage;
-    if (fileToUse) {
-      // Store the file in session storage for processing screen
-      const reader = new FileReader();
-      reader.onload = () => {
-        sessionStorage.setItem('chartImage', reader.result as string);
-        sessionStorage.setItem('imageSource', uploadMethod);
-        navigate({ to: '/processing' });
-      };
-      reader.readAsDataURL(fileToUse);
+    setIsNavigating(true);
+    setActiveSlot(null);
+
+    try {
+      // Clear old keys
+      sessionStorage.removeItem("chartImage");
+      sessionStorage.removeItem("chartImage_M1");
+      sessionStorage.removeItem("chartImage_M3");
+      sessionStorage.removeItem("chartImage_M5");
+      sessionStorage.removeItem("chartImages_count");
+
+      // Convert each filled slot to data URL and store
+      const conversions = filledSlots.map(
+        ({ timeframe, file }) =>
+          new Promise<{ timeframe: TimeframeKey; dataUrl: string }>(
+            (resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => {
+                const dataUrl = reader.result as string;
+                if (!dataUrl || !dataUrl.startsWith("data:")) {
+                  reject(new Error(`Imagem inválida para ${timeframe}`));
+                } else {
+                  resolve({ timeframe, dataUrl });
+                }
+              };
+              reader.onerror = () =>
+                reject(new Error(`Erro ao ler imagem ${timeframe}`));
+              reader.readAsDataURL(file);
+            },
+          ),
+      );
+
+      const results = await Promise.all(conversions);
+
+      try {
+        for (const { timeframe, dataUrl } of results) {
+          sessionStorage.setItem(`chartImage_${timeframe}`, dataUrl);
+        }
+        sessionStorage.setItem("chartImages_count", String(results.length));
+
+        // Also store the first filled slot as legacy 'chartImage' for Results page chart overlay
+        if (results.length > 0) {
+          sessionStorage.setItem("chartImage", results[0].dataUrl);
+        }
+      } catch {
+        toast.error("Erro ao preparar imagem. Tente novamente.");
+        setIsNavigating(false);
+        return;
+      }
+
+      navigate({ to: "/processing" });
+    } catch (err: any) {
+      toast.error(err?.message ?? "Erro ao preparar imagens. Tente novamente.");
+      setIsNavigating(false);
     }
   };
 
+  const filledCount = filledSlots.length;
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6 max-w-4xl">
+    <div
+      className="min-h-screen bg-black"
+      onClick={handlePageClick}
+      onKeyDown={handlePageClick}
+    >
+      <div className="container mx-auto px-4 py-6 max-w-2xl">
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate({ to: '/' })}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate({ to: "/" });
+            }}
+            className="text-white/70 hover:text-white hover:bg-white/10"
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Analisar Gráfico</h1>
-            <p className="text-sm text-muted-foreground">
-              Envie ou capture um gráfico de trading para análise da IA
+            <h1 className="text-2xl font-bold text-white">Analisar Gráfico</h1>
+            <p className="text-sm text-white/40">
+              Envie até 3 gráficos para análise multi-timeframe
             </p>
           </div>
         </div>
 
-        {/* Upload Methods */}
-        <Card className="p-6 mb-6">
-          <Tabs defaultValue="file" className="w-full" onValueChange={(v) => setUploadMethod(v as any)}>
-            <TabsList className="grid w-full grid-cols-3 mb-6">
-              <TabsTrigger value="file" className="gap-2">
-                <img
-                  src="/assets/generated/icon-upload.dim_96x96.png"
-                  alt=""
-                  className="w-5 h-5 opacity-70"
-                />
-                Enviar
-              </TabsTrigger>
-              <TabsTrigger value="camera" className="gap-2">
-                <img
-                  src="/assets/generated/icon-camera.dim_96x96.png"
-                  alt=""
-                  className="w-5 h-5 opacity-70"
-                />
-                Câmera
-              </TabsTrigger>
-              <TabsTrigger value="clipboard" className="gap-2">
-                <img
-                  src="/assets/generated/icon-clipboard.dim_96x96.png"
-                  alt=""
-                  className="w-5 h-5 opacity-70"
-                />
-                Colar
-              </TabsTrigger>
-            </TabsList>
+        {/* Info banner */}
+        <div
+          className="flex items-start gap-3 bg-white/5 border border-white/10 rounded-2xl p-4 mb-6"
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
+          <div className="w-8 h-8 rounded-full bg-cyan-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <Layers className="w-4 h-4 text-cyan-400" />
+          </div>
+          <div>
+            <p className="text-white/80 text-sm font-semibold mb-1">
+              Análise Multi-Timeframe
+            </p>
+            <p className="text-white/40 text-xs leading-relaxed">
+              Envie prints do gráfico em diferentes tempos de vela (M1, M3, M5)
+              para uma análise mais completa pela IA. Pelo menos um gráfico é
+              obrigatório.
+            </p>
+          </div>
+        </div>
 
-            <TabsContent value="file" className="mt-0">
-              <FileUpload onFileSelect={handleFileSelect} selectedFile={selectedFile} />
-            </TabsContent>
+        {/* Upload slots */}
+        <div
+          className="space-y-4 mb-6"
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
+          {(["M1", "M3", "M5"] as TimeframeKey[]).map((tf) => (
+            <TimeframeUploadSlot
+              key={tf}
+              timeframe={tf}
+              file={slots[tf]}
+              onImageChange={(timeframe, file) => {
+                setImage(timeframe, file);
+              }}
+              onImageRemove={(timeframe) => {
+                clearImage(timeframe);
+              }}
+              isActive={activeSlot === tf}
+              onActivate={handleActivateSlot}
+            />
+          ))}
+        </div>
 
-            <TabsContent value="camera" className="mt-0">
-              <CameraCapture onCapture={handleCameraCapture} />
-            </TabsContent>
-
-            <TabsContent value="clipboard" className="mt-0">
-              <div className="text-center py-12">
-                <img
-                  src="/assets/generated/icon-clipboard.dim_96x96.png"
-                  alt=""
-                  className="w-16 h-16 mx-auto mb-4 opacity-50"
+        {/* Status indicator */}
+        {filledCount > 0 && (
+          <div className="flex items-center gap-2 mb-4 px-1">
+            <div className="flex gap-1">
+              {(["M1", "M3", "M5"] as TimeframeKey[]).map((tf) => (
+                <div
+                  key={tf}
+                  className={`w-2 h-2 rounded-full transition-all ${
+                    slots[tf]
+                      ? tf === "M1"
+                        ? "bg-cyan-400"
+                        : tf === "M3"
+                          ? "bg-amber-400"
+                          : "bg-purple-400"
+                      : "bg-zinc-700"
+                  }`}
                 />
-                {clipboardImage ? (
-                  <div>
-                    <p className="text-lg font-semibold text-chart-1 mb-2">
-                      Imagem detectada na área de transferência!
-                    </p>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Clique em "Analisar Gráfico" abaixo para prosseguir
-                    </p>
-                    <div className="max-w-md mx-auto">
-                      <img
-                        src={URL.createObjectURL(clipboardImage)}
-                        alt="Pré-visualização"
-                        className="rounded-lg border border-border"
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <p className="text-lg font-semibold mb-2">
-                      Copie uma imagem para sua área de transferência
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Use Ctrl+C (ou Cmd+C no Mac) para copiar uma imagem do gráfico, depois retorne aqui
-                    </p>
-                    {clipboardError && (
-                      <p className="text-sm text-destructive mt-2">{clipboardError}</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-          </Tabs>
-        </Card>
+              ))}
+            </div>
+            <p className="text-white/40 text-xs">
+              {filledCount === 1
+                ? "1 gráfico selecionado"
+                : `${filledCount} gráficos selecionados`}
+            </p>
+          </div>
+        )}
+
+        {/* Tip for clipboard paste */}
+        <div className="flex items-center gap-2 mb-5 px-1">
+          <Info className="w-3.5 h-3.5 text-zinc-600 flex-shrink-0" />
+          <p className="text-zinc-600 text-xs">
+            Dica: Clique em um slot para ativá-lo e pressione Ctrl+V para colar
+            a imagem
+          </p>
+        </div>
 
         {/* Action Button */}
         <Button
           size="lg"
-          className="w-full h-14 text-lg font-semibold"
-          onClick={handleProceed}
-          disabled={!selectedFile && !clipboardImage}
+          className="w-full h-14 text-lg font-semibold bg-white text-black hover:bg-zinc-200 disabled:opacity-40 rounded-2xl"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleProceed();
+          }}
+          disabled={!hasAnyImage || isNavigating}
         >
-          Analisar Gráfico
+          {isNavigating
+            ? "Preparando..."
+            : filledCount > 1
+              ? `Analisar ${filledCount} Gráficos`
+              : "Analisar Gráfico"}
         </Button>
       </div>
     </div>
