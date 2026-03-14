@@ -47,7 +47,7 @@ export default function Dashboard() {
             <div className="flex items-center gap-2">
               <Cpu className="w-5 h-5 text-chart-1" />
               <span className="font-medium">Status da IA:</span>
-              <Badge variant="default" className="bg-chart-1 text-white">
+              <Badge variant="default" className="bg-chart-1 text-foreground">
                 Ativo
               </Badge>
             </div>

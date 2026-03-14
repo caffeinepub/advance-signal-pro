@@ -4,13 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
 
-// ── Constants ─────────────────────────────────────────────────────────────────
-
 const STORAGE_KEY = "asp_auth_user";
 
 type Step = "email" | "createPin" | "confirmPin" | "enterPin";
-
-// ── PIN Dot indicator ─────────────────────────────────────────────────────────
 
 function PinDots({ count, shake }: { count: number; shake: boolean }) {
   return (
@@ -24,8 +20,8 @@ function PinDots({ count, shake }: { count: number; shake: boolean }) {
           key={i}
           className={`w-5 h-5 rounded-full border-2 transition-all duration-200 ${
             i < count
-              ? "bg-white border-white shadow-[0_0_8px_rgba(255,255,255,0.6)]"
-              : "bg-transparent border-white/30"
+              ? "bg-gray-800 border-gray-800 shadow-sm"
+              : "bg-transparent border-gray-300"
           }`}
           animate={i < count ? { scale: [1, 1.2, 1] } : { scale: 1 }}
           transition={{ duration: 0.15 }}
@@ -34,8 +30,6 @@ function PinDots({ count, shake }: { count: number; shake: boolean }) {
     </motion.div>
   );
 }
-
-// ── Numeric Keypad ────────────────────────────────────────────────────────────
 
 function NumericKeypad({
   onDigit,
@@ -52,23 +46,22 @@ function NumericKeypad({
           data-ocid={`login.pin_key_${key}`}
           onClick={() => onDigit(key)}
           whileTap={{ scale: 0.92 }}
-          className="h-[72px] rounded-2xl bg-white/10 border border-white/15 text-white text-2xl font-bold
-            hover:bg-white/20 active:bg-white/25 transition-colors touch-target
+          className="h-[72px] rounded-2xl bg-gray-100 border border-gray-300 text-gray-800 text-2xl font-bold
+            hover:bg-gray-200 active:bg-gray-300 transition-colors touch-target
             flex items-center justify-center select-none"
         >
           {key}
         </motion.button>
       ))}
 
-      {/* Bottom row: empty | 0 | delete */}
       <div className="h-[72px]" />
       <motion.button
         type="button"
         data-ocid="login.pin_key_0"
         onClick={() => onDigit("0")}
         whileTap={{ scale: 0.92 }}
-        className="h-[72px] rounded-2xl bg-white/10 border border-white/15 text-white text-2xl font-bold
-          hover:bg-white/20 active:bg-white/25 transition-colors touch-target
+        className="h-[72px] rounded-2xl bg-gray-100 border border-gray-300 text-gray-800 text-2xl font-bold
+          hover:bg-gray-200 active:bg-gray-300 transition-colors touch-target
           flex items-center justify-center select-none"
       >
         0
@@ -78,8 +71,8 @@ function NumericKeypad({
         data-ocid="login.pin_delete_button"
         onClick={onDelete}
         whileTap={{ scale: 0.92 }}
-        className="h-[72px] rounded-2xl bg-white/8 border border-white/10 text-white/70 text-2xl
-          hover:bg-white/15 hover:text-white active:bg-white/20 transition-colors touch-target
+        className="h-[72px] rounded-2xl bg-gray-50 border border-gray-200 text-gray-500 text-2xl
+          hover:bg-gray-100 hover:text-gray-800 active:bg-gray-200 transition-colors touch-target
           flex items-center justify-center select-none"
       >
         <Delete className="w-6 h-6" />
@@ -89,8 +82,6 @@ function NumericKeypad({
 }
 
 type Mode = "login" | "register";
-
-// ── Main LoginPage ─────────────────────────────────────────────────────────────
 
 export default function LoginPage() {
   const { login, register } = useAuth();
@@ -107,7 +98,6 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const emailInputRef = useRef<HTMLInputElement>(null);
 
-  // On mount: check if a stored user exists → pre-fill email for login
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -127,7 +117,6 @@ export default function LoginPage() {
     setMode("login");
   }, []);
 
-  // Focus email input on email step
   useEffect(() => {
     if (step === "email") {
       setTimeout(() => emailInputRef.current?.focus(), 100);
@@ -137,17 +126,14 @@ export default function LoginPage() {
   const triggerShake = useCallback(() => {
     setShake(true);
     setTimeout(() => setShake(false), 500);
-    // Vibração física no celular ao errar a senha
     try {
       if (navigator.vibrate) {
         navigator.vibrate([80, 40, 80, 40, 120]);
       }
     } catch {
-      // ignore se não suportado
+      // ignore
     }
   }, []);
-
-  // ── Email step ──────────────────────────────────────────────────────────────
 
   const handleEmailContinue = () => {
     const trimmed = email.trim().toLowerCase();
@@ -160,12 +146,10 @@ export default function LoginPage() {
     setEmail(trimmed);
 
     if (mode === "register") {
-      // Register flow: always go to create PIN
       setStep("createPin");
       return;
     }
 
-    // Login flow: check if email is registered
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
@@ -179,12 +163,9 @@ export default function LoginPage() {
       // ignore
     }
 
-    // Email not found → prompt to register
     setEmailError("Email não cadastrado. Crie sua conta primeiro.");
     triggerShake();
   };
-
-  // ── PIN input handler (shared) ──────────────────────────────────────────────
 
   const handleDigit = useCallback(
     async (digit: string) => {
@@ -196,7 +177,6 @@ export default function LoginPage() {
         if (next.length <= 4) {
           setPin(next);
           if (next.length === 4) {
-            // Move to confirm
             setFirstPin(next);
             setTimeout(() => {
               setPin("");
@@ -210,7 +190,6 @@ export default function LoginPage() {
           setConfirmPinValue(next);
           if (next.length === 4) {
             if (next === firstPin) {
-              // Register success
               setIsLoading(true);
               try {
                 const newUser = await register(email, next);
@@ -222,7 +201,6 @@ export default function LoginPage() {
                 setIsLoading(false);
               }
             } else {
-              // Mismatch
               triggerShake();
               setErrorMsg("PINs não coincidem. Tente novamente.");
               setTimeout(() => {
@@ -247,7 +225,6 @@ export default function LoginPage() {
                 setErrorMsg(result.error ?? "PIN incorreto");
                 setTimeout(() => setPin(""), 500);
               }
-              // On success, AuthContext updates isAuthenticated → App re-renders
             } finally {
               setIsLoading(false);
             }
@@ -270,13 +247,9 @@ export default function LoginPage() {
 
   const handleDelete = useCallback(() => {
     setErrorMsg("");
-    if (step === "createPin") {
-      setPin((p) => p.slice(0, -1));
-    } else if (step === "confirmPin") {
-      setConfirmPinValue((p) => p.slice(0, -1));
-    } else if (step === "enterPin") {
-      setPin((p) => p.slice(0, -1));
-    }
+    if (step === "createPin") setPin((p) => p.slice(0, -1));
+    else if (step === "confirmPin") setConfirmPinValue((p) => p.slice(0, -1));
+    else if (step === "enterPin") setPin((p) => p.slice(0, -1));
   }, [step]);
 
   const handleSwitchAccount = () => {
@@ -304,14 +277,9 @@ export default function LoginPage() {
     setFirstPin("");
     setConfirmPinValue("");
     setErrorMsg("");
-    if (step === "confirmPin") {
-      setStep("createPin");
-    } else if (step === "createPin") {
-      setStep("email");
-    }
+    if (step === "confirmPin") setStep("createPin");
+    else if (step === "createPin") setStep("email");
   };
-
-  // ── Render helpers ──────────────────────────────────────────────────────────
 
   const currentPinCount =
     step === "confirmPin" ? confirmPinValue.length : pin.length;
@@ -334,13 +302,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center px-6 py-12 relative overflow-hidden">
-      {/* Ambient glow */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full bg-white/[0.03] blur-3xl" />
-        <div className="absolute bottom-[-10%] left-1/2 -translate-x-1/2 w-[400px] h-[300px] rounded-full bg-white/[0.02] blur-3xl" />
-      </div>
-
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 py-12 relative overflow-hidden">
       <div className="relative z-10 w-full max-w-sm">
         {/* Branding */}
         <div className="text-center mb-8">
@@ -348,19 +310,19 @@ export default function LoginPage() {
             <img
               src="/assets/generated/app-icon.dim_512x512.png"
               alt="Advance Signal Pro"
-              className="w-16 h-16 rounded-2xl shadow-lg shadow-white/10"
+              className="w-16 h-16 rounded-2xl shadow-lg shadow-gray-400/30"
             />
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">
             Advance Signal Pro
           </h1>
-          <p className="text-sm text-white/40 mt-1">
+          <p className="text-sm text-gray-500 mt-1">
             Análise de Gráficos com IA
           </p>
         </div>
 
         {/* Card */}
-        <div className="bg-white/[0.04] border border-white/10 rounded-3xl p-6 backdrop-blur-sm">
+        <div className="bg-white/80 border border-gray-200 rounded-3xl p-6 backdrop-blur-sm shadow-md">
           <AnimatePresence mode="wait">
             <motion.div
               key={step}
@@ -369,25 +331,23 @@ export default function LoginPage() {
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.2 }}
             >
-              {/* Back button for PIN creation steps */}
               {(step === "createPin" || step === "confirmPin") && (
                 <button
                   type="button"
                   data-ocid="login.back_button"
                   onClick={handleBack}
-                  className="flex items-center gap-1 text-white/40 hover:text-white/70 transition-colors text-sm mb-4"
+                  className="flex items-center gap-1 text-gray-400 hover:text-gray-700 transition-colors text-sm mb-4"
                 >
                   <ArrowLeft className="w-4 h-4" />
                   Voltar
                 </button>
               )}
 
-              {/* Step title */}
               <div className="mb-6 text-center">
-                <h2 className="text-lg font-semibold text-white">
+                <h2 className="text-lg font-semibold text-foreground">
                   {stepTitle[step]}
                 </h2>
-                <p className="text-sm text-white/40 mt-1">
+                <p className="text-sm text-gray-500 mt-1">
                   {stepSubtitle[step]}
                 </p>
               </div>
@@ -395,16 +355,16 @@ export default function LoginPage() {
               {/* EMAIL STEP */}
               {step === "email" && (
                 <div className="space-y-4">
-                  {/* Login / Cadastro tabs */}
-                  <div className="flex rounded-xl bg-white/[0.06] p-1 mb-2">
+                  {/* Tabs */}
+                  <div className="flex rounded-xl bg-gray-100 p-1 mb-2">
                     <button
                       type="button"
                       data-ocid="login.login_tab"
                       onClick={() => handleSwitchMode("login")}
                       className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
                         mode === "login"
-                          ? "bg-white text-black shadow"
-                          : "text-white/40 hover:text-white/70"
+                          ? "bg-white text-gray-800 shadow"
+                          : "text-gray-400 hover:text-gray-600"
                       }`}
                     >
                       Entrar
@@ -415,8 +375,8 @@ export default function LoginPage() {
                       onClick={() => handleSwitchMode("register")}
                       className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
                         mode === "register"
-                          ? "bg-white text-black shadow"
-                          : "text-white/40 hover:text-white/70"
+                          ? "bg-white text-gray-800 shadow"
+                          : "text-gray-400 hover:text-gray-600"
                       }`}
                     >
                       Cadastrar
@@ -426,7 +386,7 @@ export default function LoginPage() {
                   <div>
                     <label
                       htmlFor="login-email"
-                      className="block text-xs font-medium text-white/50 mb-1.5 uppercase tracking-wider"
+                      className="block text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wider"
                     >
                       Email
                     </label>
@@ -452,14 +412,18 @@ export default function LoginPage() {
                           : {}
                       }
                       transition={{ duration: 0.4 }}
-                      className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white
-                        placeholder-white/20 focus:outline-none focus:bg-white/8
-                        transition-colors text-base ${emailError ? "border-red-500/60 focus:border-red-400" : "border-white/15 focus:border-white/40"}`}
+                      className={`w-full bg-white border rounded-xl px-4 py-3 text-foreground
+                        placeholder-gray-300 focus:outline-none focus:bg-white
+                        transition-colors text-base ${
+                          emailError
+                            ? "border-red-400 focus:border-red-500"
+                            : "border-gray-300 focus:border-gray-500"
+                        }`}
                     />
                     {emailError && (
                       <p
                         data-ocid="login.email_error"
-                        className="text-red-400 text-xs mt-1.5"
+                        className="text-red-500 text-xs mt-1.5"
                       >
                         {emailError}
                       </p>
@@ -470,19 +434,19 @@ export default function LoginPage() {
                     data-ocid="login.continue_button"
                     onClick={handleEmailContinue}
                     whileTap={{ scale: 0.97 }}
-                    className="w-full py-3.5 rounded-xl bg-white text-black font-bold text-base
-                      hover:bg-white/90 transition-colors"
+                    className="w-full py-3.5 rounded-xl bg-gray-900 text-white font-bold text-base
+                      hover:bg-gray-700 transition-colors"
                   >
                     {mode === "register" ? "Criar Conta" : "Continuar"}
                   </motion.button>
                   {mode === "login" && (
-                    <p className="text-center text-xs text-white/25 pt-1">
+                    <p className="text-center text-xs text-gray-400 pt-1">
                       Ainda não tem conta?{" "}
                       <button
                         type="button"
                         data-ocid="login.go_register_button"
                         onClick={() => handleSwitchMode("register")}
-                        className="text-white/50 hover:text-white underline underline-offset-2 transition-colors"
+                        className="text-gray-600 hover:text-gray-900 underline underline-offset-2 transition-colors"
                       >
                         Cadastre-se
                       </button>
@@ -498,7 +462,7 @@ export default function LoginPage() {
                   {errorMsg && (
                     <p
                       data-ocid="login.pin_error"
-                      className="text-red-400 text-xs text-center mb-2"
+                      className="text-red-500 text-xs text-center mb-2"
                     >
                       {errorMsg}
                     </p>
@@ -514,7 +478,7 @@ export default function LoginPage() {
               {step === "confirmPin" && (
                 <div className="space-y-1">
                   {isLoading ? (
-                    <div className="flex items-center justify-center gap-2 my-6 text-white/50">
+                    <div className="flex items-center justify-center gap-2 my-6 text-gray-500">
                       <Loader2 className="w-5 h-5 animate-spin" />
                       <span className="text-sm">Criando conta...</span>
                     </div>
@@ -524,7 +488,7 @@ export default function LoginPage() {
                   {errorMsg && (
                     <p
                       data-ocid="login.pin_error"
-                      className="text-red-400 text-xs text-center mb-2"
+                      className="text-red-500 text-xs text-center mb-2"
                     >
                       {errorMsg}
                     </p>
@@ -536,14 +500,13 @@ export default function LoginPage() {
                 </div>
               )}
 
-              {/* ENTER PIN STEP (returning user) */}
+              {/* ENTER PIN STEP */}
               {step === "enterPin" && (
                 <div className="space-y-1">
-                  {/* Saved email badge */}
                   <div className="flex items-center justify-center gap-2 mb-2">
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/8 border border-white/10">
-                      <User className="w-3.5 h-3.5 text-white/40" />
-                      <span className="text-sm text-white/50">{email}</span>
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 border border-gray-200">
+                      <User className="w-3.5 h-3.5 text-gray-400" />
+                      <span className="text-sm text-gray-600">{email}</span>
                     </div>
                   </div>
                   <div className="text-center mb-1">
@@ -551,30 +514,27 @@ export default function LoginPage() {
                       type="button"
                       data-ocid="login.switch_account_button"
                       onClick={handleSwitchAccount}
-                      className="text-xs text-white/30 hover:text-white/60 transition-colors underline underline-offset-2"
+                      className="text-xs text-gray-400 hover:text-gray-700 transition-colors underline underline-offset-2"
                     >
                       Trocar conta
                     </button>
                   </div>
-
                   {isLoading ? (
-                    <div className="flex items-center justify-center gap-2 my-6 text-white/50">
+                    <div className="flex items-center justify-center gap-2 my-6 text-gray-500">
                       <Loader2 className="w-5 h-5 animate-spin" />
                       <span className="text-sm">Verificando...</span>
                     </div>
                   ) : (
                     <PinDots count={currentPinCount} shake={shake} />
                   )}
-
                   {errorMsg && (
                     <p
                       data-ocid="login.pin_error"
-                      className="text-red-400 text-xs text-center mb-2"
+                      className="text-red-500 text-xs text-center mb-2"
                     >
                       {errorMsg}
                     </p>
                   )}
-
                   <NumericKeypad
                     onDigit={handleDigit}
                     onDelete={handleDelete}
@@ -585,8 +545,7 @@ export default function LoginPage() {
           </AnimatePresence>
         </div>
 
-        {/* Footer note */}
-        <p className="text-center text-xs text-white/20 mt-6">
+        <p className="text-center text-xs text-gray-400 mt-6">
           Conta salva na nuvem — acesse de qualquer dispositivo
         </p>
       </div>

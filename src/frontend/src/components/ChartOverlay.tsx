@@ -21,15 +21,12 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({
   className = "",
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  // Resolve the effective signal label from either prop
   const effectiveSignal = sinal ?? signal;
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // Determine image source: prefer imageFile, fall back to imageUrl
     let objectUrl: string | null = null;
     let src: string | null = null;
 
@@ -50,57 +47,144 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({
     img.onload = () => {
       canvas.width = img.naturalWidth;
       canvas.height = img.naturalHeight;
-
       ctx.drawImage(img, 0, 0);
 
       const w = canvas.width;
       const h = canvas.height;
+      const lineWidth = Math.max(2, h * 0.004);
+      const labelFontSize = Math.max(11, Math.round(h * 0.028));
+      const labelPad = 6;
+      const labelW = labelFontSize * 1.8 + labelPad * 2;
+      const labelH = labelFontSize + labelPad * 2;
 
-      // Draw support lines (green dashed)
-      if (suportes && suportes.length > 0) {
-        ctx.save();
-        ctx.strokeStyle = "#22c55e";
-        ctx.lineWidth = Math.max(1.5, h * 0.003);
-        ctx.setLineDash([8, 5]);
-        ctx.globalAlpha = 0.85;
+      // ── Support lines (green) ──
+      if (suportes.length > 0) {
         for (const pct of suportes) {
           const y = Math.round((pct / 100) * h);
+
+          // Shaded band
+          ctx.save();
+          ctx.globalAlpha = 0.12;
+          ctx.fillStyle = "#16a34a";
+          ctx.fillRect(0, y - lineWidth * 2, w, lineWidth * 5);
+          ctx.restore();
+
+          // Line with glow
+          ctx.save();
+          ctx.shadowColor = "#16a34a";
+          ctx.shadowBlur = 6;
+          ctx.strokeStyle = "#16a34a";
+          ctx.lineWidth = lineWidth;
+          ctx.setLineDash([10, 6]);
+          ctx.globalAlpha = 0.9;
           ctx.beginPath();
           ctx.moveTo(0, y);
-          ctx.lineTo(w * 0.88, y);
+          ctx.lineTo(w - labelW - 8, y);
           ctx.stroke();
-          ctx.globalAlpha = 0.9;
-          ctx.fillStyle = "#22c55e";
-          ctx.font = `bold ${Math.max(10, Math.round(h * 0.025))}px sans-serif`;
-          ctx.fillText("S", w * 0.89, y + 4);
-          ctx.globalAlpha = 0.85;
+          ctx.restore();
+
+          // Label box
+          ctx.save();
+          ctx.globalAlpha = 0.95;
+          const lx = w - labelW - 4;
+          const ly = y - labelH / 2;
+          ctx.fillStyle = "#16a34a";
+          ctx.beginPath();
+          // rounded rect
+          const r = 4;
+          ctx.moveTo(lx + r, ly);
+          ctx.lineTo(lx + labelW - r, ly);
+          ctx.quadraticCurveTo(lx + labelW, ly, lx + labelW, ly + r);
+          ctx.lineTo(lx + labelW, ly + labelH - r);
+          ctx.quadraticCurveTo(
+            lx + labelW,
+            ly + labelH,
+            lx + labelW - r,
+            ly + labelH,
+          );
+          ctx.lineTo(lx + r, ly + labelH);
+          ctx.quadraticCurveTo(lx, ly + labelH, lx, ly + labelH - r);
+          ctx.lineTo(lx, ly + r);
+          ctx.quadraticCurveTo(lx, ly, lx + r, ly);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillStyle = "#ffffff";
+          ctx.font = `bold ${labelFontSize}px sans-serif`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(
+            `S ${(pct).toFixed(0)}%`,
+            lx + labelW / 2,
+            ly + labelH / 2,
+          );
+          ctx.restore();
         }
-        ctx.restore();
       }
 
-      // Draw resistance lines (red dashed)
-      if (resistencias && resistencias.length > 0) {
-        ctx.save();
-        ctx.strokeStyle = "#ef4444";
-        ctx.lineWidth = Math.max(1.5, h * 0.003);
-        ctx.setLineDash([8, 5]);
-        ctx.globalAlpha = 0.85;
+      // ── Resistance lines (red) ──
+      if (resistencias.length > 0) {
         for (const pct of resistencias) {
           const y = Math.round((pct / 100) * h);
+
+          // Shaded band
+          ctx.save();
+          ctx.globalAlpha = 0.12;
+          ctx.fillStyle = "#dc2626";
+          ctx.fillRect(0, y - lineWidth * 2, w, lineWidth * 5);
+          ctx.restore();
+
+          // Line with glow
+          ctx.save();
+          ctx.shadowColor = "#dc2626";
+          ctx.shadowBlur = 6;
+          ctx.strokeStyle = "#dc2626";
+          ctx.lineWidth = lineWidth;
+          ctx.setLineDash([10, 6]);
+          ctx.globalAlpha = 0.9;
           ctx.beginPath();
           ctx.moveTo(0, y);
-          ctx.lineTo(w * 0.88, y);
+          ctx.lineTo(w - labelW - 8, y);
           ctx.stroke();
-          ctx.globalAlpha = 0.9;
-          ctx.fillStyle = "#ef4444";
-          ctx.font = `bold ${Math.max(10, Math.round(h * 0.025))}px sans-serif`;
-          ctx.fillText("R", w * 0.89, y + 4);
-          ctx.globalAlpha = 0.85;
+          ctx.restore();
+
+          // Label box
+          ctx.save();
+          ctx.globalAlpha = 0.95;
+          const lx = w - labelW - 4;
+          const ly = y - labelH / 2;
+          ctx.fillStyle = "#dc2626";
+          ctx.beginPath();
+          const r = 4;
+          ctx.moveTo(lx + r, ly);
+          ctx.lineTo(lx + labelW - r, ly);
+          ctx.quadraticCurveTo(lx + labelW, ly, lx + labelW, ly + r);
+          ctx.lineTo(lx + labelW, ly + labelH - r);
+          ctx.quadraticCurveTo(
+            lx + labelW,
+            ly + labelH,
+            lx + labelW - r,
+            ly + labelH,
+          );
+          ctx.lineTo(lx + r, ly + labelH);
+          ctx.quadraticCurveTo(lx, ly + labelH, lx, ly + labelH - r);
+          ctx.lineTo(lx, ly + r);
+          ctx.quadraticCurveTo(lx, ly, lx + r, ly);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillStyle = "#ffffff";
+          ctx.font = `bold ${labelFontSize}px sans-serif`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(
+            `R ${(pct).toFixed(0)}%`,
+            lx + labelW / 2,
+            ly + labelH / 2,
+          );
+          ctx.restore();
         }
-        ctx.restore();
       }
 
-      // Draw directional arrow on right edge
+      // ── Directional arrow ──
       if (effectiveSignal === "COMPRA" || effectiveSignal === "VENDA") {
         const arrowX = w - Math.round(w * 0.06);
         const arrowY = h / 2;
@@ -109,9 +193,11 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({
 
         ctx.save();
         ctx.globalAlpha = 0.95;
-        ctx.fillStyle = isUp ? "#22c55e" : "#ef4444";
+        ctx.fillStyle = isUp ? "#16a34a" : "#dc2626";
         ctx.strokeStyle = "#ffffff";
         ctx.lineWidth = 2;
+        ctx.shadowColor = isUp ? "#16a34a" : "#dc2626";
+        ctx.shadowBlur = 8;
 
         ctx.beginPath();
         if (isUp) {

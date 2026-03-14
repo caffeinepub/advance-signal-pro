@@ -1,37 +1,52 @@
 import { useState } from "react";
 
+export type SlotKey = "Foto1" | "Foto2";
+export type TimeframeOption = "1m" | "2m" | "3m" | "5m";
+// Backward compat alias
 export type TimeframeKey = "M1" | "M3" | "M5";
 
-export interface TimeframeSlot {
-  timeframe: TimeframeKey;
-  file: File | null;
-}
-
 export interface FilledSlot {
-  timeframe: TimeframeKey;
+  slot: SlotKey;
+  timeframe: TimeframeOption;
   file: File;
 }
 
+const DEFAULT_TIMEFRAMES: Record<SlotKey, TimeframeOption> = {
+  Foto1: "1m",
+  Foto2: "5m",
+};
+
 export function useMultiTimeframeUpload() {
-  const [slots, setSlots] = useState<Record<TimeframeKey, File | null>>({
-    M1: null,
-    M3: null,
-    M5: null,
+  const [files, setFiles] = useState<Record<SlotKey, File | null>>({
+    Foto1: null,
+    Foto2: null,
   });
+  const [timeframes, setTimeframes] =
+    useState<Record<SlotKey, TimeframeOption>>(DEFAULT_TIMEFRAMES);
 
-  const setImage = (timeframe: TimeframeKey, file: File) => {
-    setSlots((prev) => ({ ...prev, [timeframe]: file }));
+  const setImage = (slot: SlotKey, file: File) =>
+    setFiles((prev) => ({ ...prev, [slot]: file }));
+  const clearImage = (slot: SlotKey) =>
+    setFiles((prev) => ({ ...prev, [slot]: null }));
+  const setSlotTimeframe = (slot: SlotKey, tf: TimeframeOption) =>
+    setTimeframes((prev) => ({ ...prev, [slot]: tf }));
+
+  const hasAnyImage = Object.values(files).some((f) => f !== null);
+  const filledSlots: FilledSlot[] = (["Foto1", "Foto2"] as SlotKey[])
+    .filter((s) => files[s] !== null)
+    .map((s) => ({
+      slot: s,
+      timeframe: timeframes[s],
+      file: files[s] as File,
+    }));
+
+  return {
+    files,
+    timeframes,
+    setImage,
+    clearImage,
+    setSlotTimeframe,
+    hasAnyImage,
+    filledSlots,
   };
-
-  const clearImage = (timeframe: TimeframeKey) => {
-    setSlots((prev) => ({ ...prev, [timeframe]: null }));
-  };
-
-  const hasAnyImage = Object.values(slots).some((f) => f !== null);
-
-  const filledSlots: FilledSlot[] = (["M1", "M3", "M5"] as TimeframeKey[])
-    .filter((tf) => slots[tf] !== null)
-    .map((tf) => ({ timeframe: tf, file: slots[tf] as File }));
-
-  return { slots, setImage, clearImage, hasAnyImage, filledSlots };
 }

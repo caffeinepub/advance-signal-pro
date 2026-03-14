@@ -223,7 +223,7 @@ export default function TimeframeUploadSlot({
     <div
       role="button"
       tabIndex={0}
-      className={`bg-zinc-900 rounded-2xl border overflow-hidden transition-all duration-200 cursor-pointer ${
+      className={`bg-card rounded-2xl border overflow-hidden transition-all duration-200 cursor-pointer ${
         isActive
           ? `${activeBorderColor} ${activeRingColor}`
           : "border-zinc-800 hover:border-zinc-700"
@@ -239,11 +239,11 @@ export default function TimeframeUploadSlot({
           >
             {timeframe}
           </span>
-          <span className="text-white/60 text-sm">
+          <span className="text-foreground/60 text-sm">
             {TIMEFRAME_LABELS[timeframe]}
           </span>
           {isActive && (
-            <span className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-white/10 text-white/70">
+            <span className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-white/10 text-foreground/70">
               <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block" />
               Ativo — Ctrl+V
             </span>
@@ -306,7 +306,7 @@ export default function TimeframeUploadSlot({
             <Button
               size="sm"
               variant="outline"
-              className="border-zinc-700 text-white/60 hover:text-white"
+              className="border-zinc-700 text-foreground/60 hover:text-foreground"
               onClick={() => setShowCamera(false)}
             >
               Cancelar
@@ -333,7 +333,7 @@ export default function TimeframeUploadSlot({
                 onClick={handleRemove}
                 className="w-7 h-7 rounded-full bg-black/70 hover:bg-black/90 flex items-center justify-center transition-colors"
               >
-                <X className="w-4 h-4 text-white" />
+                <X className="w-4 h-4 text-foreground" />
               </button>
             </div>
             <div className="absolute bottom-2 left-2">
@@ -382,7 +382,7 @@ export default function TimeframeUploadSlot({
             onChange={handleInputChange}
           />
           <Upload className="w-7 h-7 text-zinc-600 mx-auto mb-2" />
-          <p className="text-white/50 text-sm font-medium mb-1">
+          <p className="text-foreground/50 text-sm font-medium mb-1">
             {isActive
               ? "Pronto para colar — pressione Ctrl+V"
               : "Arraste ou clique para enviar"}
@@ -405,7 +405,7 @@ export default function TimeframeUploadSlot({
               onActivate(timeframe);
               fileInputRef.current?.click();
             }}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white/60 hover:text-white text-xs font-medium transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-foreground/60 hover:text-foreground text-xs font-medium transition-colors"
           >
             <Upload className="w-3.5 h-3.5" />
             Arquivo
@@ -417,7 +417,7 @@ export default function TimeframeUploadSlot({
               onActivate(timeframe);
               setShowCamera(true);
             }}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white/60 hover:text-white text-xs font-medium transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-foreground/60 hover:text-foreground text-xs font-medium transition-colors"
           >
             <Camera className="w-3.5 h-3.5" />
             Câmera
@@ -432,7 +432,7 @@ export default function TimeframeUploadSlot({
                   : timeframe === "M3"
                     ? "bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/40"
                     : "bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/40"
-                : "bg-zinc-800 hover:bg-zinc-700 text-white/60 hover:text-white"
+                : "bg-zinc-800 hover:bg-zinc-700 text-foreground/60 hover:text-foreground"
             }`}
           >
             <Clipboard className="w-3.5 h-3.5" />
@@ -461,7 +461,7 @@ export default function TimeframeUploadSlot({
               e.stopPropagation();
               replaceInputRef.current?.click();
             }}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white/60 hover:text-white text-xs font-medium transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-foreground/60 hover:text-foreground text-xs font-medium transition-colors"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             Trocar imagem

@@ -17,31 +17,20 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("dark");
+  // Always dark — the "dark" CSS variables define the yellow-lime theme
+  const [theme] = useState<Theme>("dark");
 
   useEffect(() => {
-    // Load theme from localStorage or default to dark
-    const savedTheme = localStorage.getItem("theme") as Theme;
-    if (savedTheme) {
-      setThemeState(savedTheme);
-    }
+    // Always force "dark" class — yellow-lime is defined in .dark CSS vars
+    const root = document.documentElement;
+    root.classList.remove("light");
+    root.classList.add("dark");
+    localStorage.setItem("theme", "dark");
   }, []);
 
-  useEffect(() => {
-    // Apply theme to document
-    const root = document.documentElement;
-    root.classList.remove("light", "dark");
-    root.classList.add(theme);
-    localStorage.setItem("theme", theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setThemeState((prev) => (prev === "dark" ? "light" : "dark"));
-  };
-
-  const setTheme = (newTheme: Theme) => {
-    setThemeState(newTheme);
-  };
+  // Kept for API compatibility — no-op toggles
+  const toggleTheme = () => {};
+  const setTheme = (_: Theme) => {};
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>

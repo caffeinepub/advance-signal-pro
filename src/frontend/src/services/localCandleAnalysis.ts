@@ -4,7 +4,6 @@ type TimeframeStr = "M1" | "M3" | "M5";
 
 const SETTINGS_KEY = "userSettings";
 
-// Read timeframe from localStorage at call time (not at module load time)
 function getCurrentTimeframe(): TimeframeStr {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
@@ -161,7 +160,7 @@ function detectSupportResistance(
 function detectPatterns(columns: ColumnScan[]): string[] {
   const patterns: string[] = [];
   const len = columns.length;
-  if (len < 3) return ["Sem padrão identificado"];
+  if (len < 3) return ["Sem padr\u00e3o identificado"];
 
   const last = columns[len - 1];
   const prev = columns[len - 2];
@@ -212,7 +211,7 @@ function detectPatterns(columns: ColumnScan[]): string[] {
     columns[len - 2].bullish > columns[len - 2].bearish &&
     columns[len - 3].bullish > columns[len - 3].bearish
   ) {
-    patterns.push("Três Soldados Brancos");
+    patterns.push("Tr\u00eas Soldados Brancos");
   }
 
   if (
@@ -220,23 +219,23 @@ function detectPatterns(columns: ColumnScan[]): string[] {
     columns[len - 2].bearish > columns[len - 2].bullish &&
     columns[len - 3].bearish > columns[len - 3].bullish
   ) {
-    patterns.push("Três Corvos Negros");
+    patterns.push("Tr\u00eas Corvos Negros");
   }
 
   if (patterns.length === 0) {
     const bullishTotal = columns.reduce((s, c) => s + c.bullish, 0);
     const bearishTotal = columns.reduce((s, c) => s + c.bearish, 0);
-    if (bullishTotal > bearishTotal * 1.3) patterns.push("Tendência de Alta");
+    if (bullishTotal > bearishTotal * 1.3)
+      patterns.push("Tend\u00eancia de Alta");
     else if (bearishTotal > bullishTotal * 1.3)
-      patterns.push("Tendência de Baixa");
-    else patterns.push("Consolidação Lateral");
+      patterns.push("Tend\u00eancia de Baixa");
+    else patterns.push("Consolida\u00e7\u00e3o Lateral");
   }
 
   return patterns.slice(0, 2);
 }
 
-function generateProfessionalExplanation(
-  tendencia: string,
+function buildExplanation(
   sinal: string,
   patterns: string[],
   confianca: number,
@@ -246,71 +245,93 @@ function generateProfessionalExplanation(
   suportes: number[],
   resistencias: number[],
   volume: string,
-  precisao: number,
   bullishRatio: number,
   bearishRatio: number,
   momentumCount: number,
   timeframe: TimeframeStr,
 ): string {
-  const patternNames = patterns.join(" e ");
-  const forcaText =
-    forca === "forte" ? "elevada" : forca === "média" ? "moderada" : "reduzida";
+  const dominantPattern = patterns[0] ?? "padr\u00e3o de pre\u00e7o";
+  const secondPattern = patterns[1];
 
-  const volumeContext =
+  const bullPct = (bullishRatio * 100).toFixed(1);
+  const bearPct = (bearishRatio * 100).toFixed(1);
+
+  const volumeDesc =
     volume === "alto"
-      ? "O volume elevado confirma a força do movimento."
-      : volume === "médio"
-        ? "O volume moderado sugere participação razoável do mercado."
-        : "O volume reduzido indica menor convicção no movimento atual.";
-
-  let srContext = "";
-  if (suportes.length > 0 && resistencias.length > 0) {
-    srContext = ` O ativo está posicionado entre ${suportes.length} nível(is) de suporte e ${resistencias.length} de resistência, reforçando a validade do setup.`;
-  } else if (suportes.length > 0) {
-    srContext = ` Identificado(s) ${suportes.length} nível(is) de suporte próximo(s) ao preço atual.`;
-  } else if (resistencias.length > 0) {
-    srContext = ` Detectada(s) ${resistencias.length} resistência(s) acima do preço atual.`;
-  }
+      ? "Volume elevado confirma a for\u00e7a do movimento."
+      : volume === "m\u00e9dio"
+        ? "Volume moderado \u2014 participa\u00e7\u00e3o razo\u00e1vel do mercado."
+        : "Volume reduzido \u2014 convic\u00e7\u00e3o limitada no movimento.";
 
   const momentumDesc =
-    momentumCount >= 5
-      ? `${momentumCount} zonas de pressão intensa detectadas`
+    momentumCount >= 6
+      ? `Press\u00e3o intensa em ${momentumCount} zonas \u2014 movimento com for\u00e7a consistente.`
       : momentumCount >= 3
-        ? `${momentumCount} zonas de pressão identificadas`
-        : `pressão de mercado limitada (${momentumCount} zona(s))`;
+        ? `Press\u00e3o identificada em ${momentumCount} zonas de pre\u00e7o.`
+        : `Poucas zonas de press\u00e3o (${momentumCount}) \u2014 movimento incipiente.`;
 
-  const precisaoDesc =
-    precisao >= 80
-      ? "alta precisão"
-      : precisao >= 60
-        ? "precisão razoável"
-        : "precisão moderada";
+  const srDesc =
+    suportes.length > 0 && resistencias.length > 0
+      ? `Entre ${suportes.length} suporte(s) e ${resistencias.length} resist\u00eancia(s) identificada(s).`
+      : suportes.length > 0
+        ? `${suportes.length} suporte(s) pr\u00f3ximo(s) ao pre\u00e7o atual \u2014 base s\u00f3lida.`
+        : resistencias.length > 0
+          ? `${resistencias.length} resist\u00eancia(s) acima \u2014 potencial barreira ao avan\u00e7o.`
+          : "";
 
-  let rationale = "";
+  const patternContext: Record<string, string> = {
+    "Engolfo de Alta":
+      "candle de alta engoliu completamente a vela anterior \u2014 sinal de revers\u00e3o compradora",
+    "Engolfo de Baixa":
+      "candle de baixa engoliu completamente a vela anterior \u2014 sinal de revers\u00e3o vendedora",
+    Martelo:
+      "sombra inferior longa indica rejei\u00e7\u00e3o de pre\u00e7os baixos e retomada compradora",
+    "Estrela Cadente":
+      "sombra superior longa indica rejei\u00e7\u00e3o de pre\u00e7os altos e press\u00e3o vendedora",
+    Doji: "corpo m\u00ednimo indica indecis\u00e3o \u2014 mercado em equil\u00edbrio tempor\u00e1rio",
+    "Tr\u00eas Soldados Brancos":
+      "tr\u00eas candles de alta consecutivos confirmam tend\u00eancia ascendente s\u00f3lida",
+    "Tr\u00eas Corvos Negros":
+      "tr\u00eas candles de baixa consecutivos confirmam tend\u00eancia descendente s\u00f3lida",
+    "Tend\u00eancia de Alta":
+      "sequ\u00eancia de fechamentos crescentes mant\u00e9m press\u00e3o compradora",
+    "Tend\u00eancia de Baixa":
+      "sequ\u00eancia de fechamentos decrescentes mant\u00e9m press\u00e3o vendedora",
+    "Consolida\u00e7\u00e3o Lateral":
+      "velas alternadas sem direcionalidade \u2014 mercado em acumula\u00e7\u00e3o",
+  };
+
+  const patternDesc =
+    patternContext[dominantPattern] ??
+    `padr\u00e3o ${dominantPattern} detectado`;
+  const secondDesc = secondPattern
+    ? ` Complementado por ${secondPattern}.`
+    : "";
 
   if (sinal === "COMPRA") {
-    rationale =
-      `[${timeframe}] A análise identificou o padrão ${patternNames} com tendência de ${tendencia}. ` +
-      `A pressão compradora representa ${(bullishRatio * 100).toFixed(1)}% dos pixels analisados, ` +
-      `com ${momentumDesc}. Confiança ${forcaText} de ${confianca}% (${precisaoDesc}) ` +
-      `e probabilidade de ${probAlta.toFixed(0)}% de continuidade ascendente. ` +
-      `${volumeContext}${srContext}`;
-  } else if (sinal === "VENDA") {
-    rationale =
-      `[${timeframe}] A análise identificou o padrão ${patternNames} com tendência de ${tendencia}. ` +
-      `A pressão vendedora representa ${(bearishRatio * 100).toFixed(1)}% dos pixels analisados, ` +
-      `com ${momentumDesc}. Confiança ${forcaText} de ${confianca}% (${precisaoDesc}) ` +
-      `e probabilidade de ${probBaixa.toFixed(0)}% de movimento descendente. ` +
-      `${volumeContext}${srContext}`;
-  } else {
-    rationale =
-      `[${timeframe}] O padrão ${patternNames} identificado em tendência ${tendencia} não apresenta direcionalidade clara. ` +
-      `Pressão compradora: ${(bullishRatio * 100).toFixed(1)}% | Vendedora: ${(bearishRatio * 100).toFixed(1)}%. ` +
-      `Com ${momentumDesc} e probabilidades equilibradas (Alta: ${probAlta.toFixed(0)}% / Baixa: ${probBaixa.toFixed(0)}%), ` +
-      `recomenda-se aguardar confirmação antes de posicionar. ${volumeContext}${srContext}`;
+    return (
+      `[${timeframe}] ${dominantPattern}: ${patternDesc}.${secondDesc} ` +
+      `Press\u00e3o compradora: ${bullPct}% vs vendedora: ${bearPct}%. ` +
+      `Confian\u00e7a ${confianca}% com for\u00e7a ${forca}. ${momentumDesc} ` +
+      `Probabilidade de alta: ${probAlta.toFixed(0)}%. ${volumeDesc} ${srDesc}`
+    ).trim();
   }
 
-  return rationale;
+  if (sinal === "VENDA") {
+    return (
+      `[${timeframe}] ${dominantPattern}: ${patternDesc}.${secondDesc} ` +
+      `Press\u00e3o vendedora: ${bearPct}% vs compradora: ${bullPct}%. ` +
+      `Confian\u00e7a ${confianca}% com for\u00e7a ${forca}. ${momentumDesc} ` +
+      `Probabilidade de baixa: ${probBaixa.toFixed(0)}%. ${volumeDesc} ${srDesc}`
+    ).trim();
+  }
+
+  return (
+    `[${timeframe}] ${dominantPattern}: ${patternDesc}.${secondDesc} ` +
+    `Compradora: ${bullPct}% | Vendedora: ${bearPct}% \u2014 sem direcionalidade clara. ` +
+    `${momentumDesc} Probabilidades: Alta ${probAlta.toFixed(0)}% / Baixa ${probBaixa.toFixed(0)}%. ` +
+    `${volumeDesc} ${srDesc} Aguarde confirma\u00e7\u00e3o antes de posicionar.`
+  ).trim();
 }
 
 function getFallbackResult(timeframe: TimeframeStr): LocalAnalysisResult {
@@ -319,8 +340,8 @@ function getFallbackResult(timeframe: TimeframeStr): LocalAnalysisResult {
     sinal: "NEUTRO",
     confianca: 40,
     forca: "fraca",
-    padroes: ["Consolidação Lateral"],
-    explicacao: `[${timeframe}] Não foi possível identificar padrões técnicos conclusivos no gráfico enviado. O mercado apresenta movimento lateral sem direcionalidade definida. Recomenda-se aguardar a formação de um padrão mais claro antes de posicionar.`,
+    padroes: ["Consolida\u00e7\u00e3o Lateral"],
+    explicacao: `[${timeframe}] N\u00e3o foi poss\u00edvel identificar padr\u00f5es t\u00e9cnicos conclusivos no gr\u00e1fico enviado. O mercado apresenta movimento lateral sem direcionalidade definida. Recomenda-se aguardar a forma\u00e7\u00e3o de um padr\u00e3o mais claro antes de posicionar.`,
     probAlta: 50,
     probBaixa: 50,
     suportes: [],
@@ -333,9 +354,9 @@ function getFallbackResult(timeframe: TimeframeStr): LocalAnalysisResult {
 
 export async function analyzeChartImage(
   imageFile: File,
+  overrideTimeframe?: "M1" | "M3" | "M5",
 ): Promise<LocalAnalysisResult> {
-  // Read timeframe at call time — always reflects the latest localStorage value
-  const timeframe = getCurrentTimeframe();
+  const timeframe = overrideTimeframe ?? getCurrentTimeframe();
 
   return new Promise((resolve) => {
     const img = new Image();
@@ -367,13 +388,11 @@ export async function analyzeChartImage(
           canvas.height,
           numColumns,
         );
-
         const { suportes, resistencias } = detectSupportResistance(
           imageData.data,
           canvas.width,
           canvas.height,
         );
-
         const patterns = detectPatterns(columns);
 
         const recentColumns = columns.slice(-8);
@@ -415,11 +434,13 @@ export async function analyzeChartImage(
 
         const diff = Math.abs(bullishRatio - bearishRatio);
         const baseConfianca = Math.round(50 + diff * 200);
-        const confianca = Math.min(95, Math.max(30, baseConfianca));
+        // COMPRA/VENDA always show minimum 75% confidence; only NEUTRO can go below
+        const confiancaMin = sinal === "NEUTRO" ? 30 : 75;
+        const confianca = Math.min(95, Math.max(confiancaMin, baseConfianca));
 
-        let forca: "fraca" | "média" | "forte";
+        let forca: "fraca" | "m\u00e9dia" | "forte";
         if (confianca >= 70) forca = "forte";
-        else if (confianca >= 50) forca = "média";
+        else if (confianca >= 50) forca = "m\u00e9dia";
         else forca = "fraca";
 
         const brightnessValues = columns.map((c) => c.avgBrightness);
@@ -428,9 +449,9 @@ export async function analyzeChartImage(
         const variance =
           brightnessValues.reduce((s, v) => s + (v - avgBrightness) ** 2, 0) /
           brightnessValues.length;
-        let volume: "baixo" | "médio" | "alto";
+        let volume: "baixo" | "m\u00e9dio" | "alto";
         if (variance > 1000) volume = "alto";
-        else if (variance > 400) volume = "médio";
+        else if (variance > 400) volume = "m\u00e9dio";
         else volume = "baixo";
 
         const precisao = Math.min(
@@ -438,8 +459,7 @@ export async function analyzeChartImage(
           Math.max(40, Math.round(50 + diff * 150)),
         );
 
-        const explicacao = generateProfessionalExplanation(
-          tendencia,
+        const explicacao = buildExplanation(
           sinal,
           patterns,
           confianca,
@@ -449,7 +469,6 @@ export async function analyzeChartImage(
           suportes,
           resistencias,
           volume,
-          precisao,
           bullishRatio,
           bearishRatio,
           momentumCount,

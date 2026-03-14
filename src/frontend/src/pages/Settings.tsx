@@ -62,11 +62,8 @@ export default function Settings() {
   const updateSettingsMutation = useUpdateSettings();
   const { user, updateDisplayName, logout } = useAuth();
 
-  // Profile editing state
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(user?.displayName ?? "");
-
-  // Local state — source of truth for UI (never reverts)
   const [currentTimeframe, setCurrentTimeframe] = useState<TimeframeStr>(
     loadTimeframeFromStorage,
   );
@@ -75,11 +72,9 @@ export default function Settings() {
   const [notifications, setNotifications] = useState<boolean>(true);
   const [initialized, setInitialized] = useState(false);
 
-  // Initialize from backend settings once loaded
   useEffect(() => {
     if (settings && !initialized) {
       const tfStr = timeframeToStr(settings.defaultTimeframe);
-      // Only use backend value if localStorage doesn't have one yet
       const storedTf = loadTimeframeFromStorage();
       const storedRaw = localStorage.getItem(SETTINGS_KEY);
       if (!storedRaw) {
@@ -99,20 +94,18 @@ export default function Settings() {
     try {
       const raw = localStorage.getItem(SETTINGS_KEY);
       const existing = raw ? JSON.parse(raw) : {};
-      const updated = { ...existing, defaultTimeframe: tf };
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(updated));
+      localStorage.setItem(
+        SETTINGS_KEY,
+        JSON.stringify({ ...existing, defaultTimeframe: tf }),
+      );
     } catch {
       // ignore
     }
   }
 
   const handleTimeframeChange = (tf: TimeframeStr) => {
-    // Update UI immediately — never reverts
     setCurrentTimeframe(tf);
-    // Persist to localStorage immediately
     persistTimeframe(tf);
-
-    // Try to persist to backend (best-effort, won't revert UI on failure)
     if (identity && settings) {
       const newSettings = {
         ...settings,
@@ -121,13 +114,8 @@ export default function Settings() {
         dailyOperationLimit: BigInt(dailyLimit),
       };
       updateSettingsMutation.mutate(newSettings, {
-        onSuccess: () => {
-          toast.success("Configuração salva!");
-        },
-        onError: () => {
-          // UI already updated — just show a subtle note
-          toast.info("Timeframe salvo localmente.");
-        },
+        onSuccess: () => toast.success("Configuração salva!"),
+        onError: () => toast.info("Timeframe salvo localmente."),
       });
     } else {
       toast.success("Configuração salva!");
@@ -136,7 +124,6 @@ export default function Settings() {
 
   const handleSave = () => {
     persistTimeframe(currentTimeframe);
-
     if (identity && settings) {
       const newSettings = {
         ...settings,
@@ -146,12 +133,8 @@ export default function Settings() {
         signalNotifications: notifications,
       };
       updateSettingsMutation.mutate(newSettings, {
-        onSuccess: () => {
-          toast.success("Configurações salvas com sucesso!");
-        },
-        onError: () => {
-          toast.success("Configurações salvas localmente!");
-        },
+        onSuccess: () => toast.success("Configurações salvas com sucesso!"),
+        onError: () => toast.success("Configurações salvas localmente!"),
       });
     } else {
       toast.success("Configurações salvas localmente!");
@@ -169,15 +152,13 @@ export default function Settings() {
 
   const handleCopyId = () => {
     if (user?.userId) {
-      navigator.clipboard.writeText(user.userId).then(() => {
-        toast.success("ID copiado!");
-      });
+      navigator.clipboard
+        .writeText(user.userId)
+        .then(() => toast.success("ID copiado!"));
     }
   };
 
-  const handleLogout = () => {
-    logout();
-  };
+  const handleLogout = () => logout();
 
   const timeframeOptions: {
     value: TimeframeStr;
@@ -192,34 +173,36 @@ export default function Settings() {
   const limitOptions = [3, 4, 6, 8];
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 pt-12 pb-6">
         <button
           type="button"
+          data-ocid="settings.back_button"
           onClick={() => navigate({ to: "/" })}
-          className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+          className="p-2 rounded-full bg-white/70 hover:bg-white border border-gray-200 transition-colors shadow-sm"
         >
-          <ArrowLeft className="w-5 h-5 text-white" />
+          <ArrowLeft className="w-5 h-5 text-gray-700" />
         </button>
         <div>
-          <h1 className="text-xl font-bold text-white">Configurações</h1>
-          <p className="text-sm text-white/50">Personalize sua experiência</p>
+          <h1 className="text-xl font-bold text-foreground">Configurações</h1>
+          <p className="text-sm text-gray-500">Personalize sua experiência</p>
         </div>
       </div>
 
       <div className="px-4 pb-24 space-y-6">
         {/* Profile */}
         {user && (
-          <div className="bg-white/5 rounded-2xl p-5 border border-white/10">
+          <div className="bg-white/80 rounded-2xl p-5 border border-gray-200 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
-              <User className="w-5 h-5 text-white/60" />
-              <h2 className="text-base font-semibold text-white">Perfil</h2>
+              <User className="w-5 h-5 text-gray-600" />
+              <h2 className="text-base font-semibold text-foreground">
+                Perfil
+              </h2>
             </div>
 
-            {/* Display Name */}
             <div className="mb-3">
-              <p className="text-xs text-white/40 uppercase tracking-wider mb-1.5">
+              <p className="text-xs text-gray-400 uppercase tracking-wider mb-1.5">
                 Nome
               </p>
               {editingName ? (
@@ -230,21 +213,20 @@ export default function Settings() {
                     value={nameInput}
                     onChange={(e) => setNameInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleSaveName()}
-                    className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white
-                      text-sm focus:outline-none focus:border-white/40 transition-colors"
+                    className="flex-1 bg-white border border-gray-300 rounded-lg px-3 py-2 text-foreground text-sm focus:outline-none focus:border-gray-500 transition-colors"
                   />
                   <button
                     type="button"
                     data-ocid="profile.save_button"
                     onClick={handleSaveName}
-                    className="p-2 rounded-lg bg-white/15 hover:bg-white/25 text-white transition-colors"
+                    className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-foreground transition-colors"
                   >
                     <Check className="w-4 h-4" />
                   </button>
                 </div>
               ) : (
                 <div className="flex items-center justify-between">
-                  <span className="text-white font-medium">
+                  <span className="text-foreground font-medium">
                     {user.displayName}
                   </span>
                   <button
@@ -254,8 +236,7 @@ export default function Settings() {
                       setNameInput(user.displayName);
                       setEditingName(true);
                     }}
-                    className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70
-                      transition-colors px-2 py-1 rounded-lg hover:bg-white/10"
+                    className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-700 transition-colors px-2 py-1 rounded-lg hover:bg-gray-100"
                   >
                     <Pencil className="w-3.5 h-3.5" />
                     Editar
@@ -264,21 +245,19 @@ export default function Settings() {
               )}
             </div>
 
-            {/* User ID */}
             <div className="mb-3">
-              <p className="text-xs text-white/40 uppercase tracking-wider mb-1.5">
+              <p className="text-xs text-gray-400 uppercase tracking-wider mb-1.5">
                 ID do Usuário
               </p>
               <div className="flex items-center justify-between gap-2">
-                <span className="text-white/60 text-sm font-mono truncate">
+                <span className="text-gray-600 text-sm font-mono truncate">
                   {user.userId.slice(0, 8)}...
                 </span>
                 <button
                   type="button"
                   data-ocid="profile.copy_id_button"
                   onClick={handleCopyId}
-                  className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70
-                    transition-colors px-2 py-1 rounded-lg hover:bg-white/10 shrink-0"
+                  className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-700 transition-colors px-2 py-1 rounded-lg hover:bg-gray-100 shrink-0"
                 >
                   <Copy className="w-3.5 h-3.5" />
                   Copiar
@@ -286,29 +265,28 @@ export default function Settings() {
               </div>
             </div>
 
-            {/* Email */}
             <div>
-              <p className="text-xs text-white/40 uppercase tracking-wider mb-1.5">
+              <p className="text-xs text-gray-400 uppercase tracking-wider mb-1.5">
                 Email
               </p>
-              <span className="text-white/60 text-sm">{user.email}</span>
+              <span className="text-gray-600 text-sm">{user.email}</span>
             </div>
           </div>
         )}
 
         {/* Timeframe */}
-        <div className="bg-white/5 rounded-2xl p-5 border border-white/10">
+        <div className="bg-white/80 rounded-2xl p-5 border border-gray-200 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
-            <Clock className="w-5 h-5 text-amber-400" />
-            <h2 className="text-base font-semibold text-white">
+            <Clock className="w-5 h-5 text-amber-500" />
+            <h2 className="text-base font-semibold text-foreground">
               Timeframe Padrão
             </h2>
           </div>
-          <p className="text-sm text-white/50 mb-4">
+          <p className="text-sm text-gray-500 mb-4">
             Selecione o período de cada vela para análise
           </p>
           {settingsLoading ? (
-            <div className="flex items-center gap-2 text-white/40">
+            <div className="flex items-center gap-2 text-gray-400">
               <Loader2 className="w-4 h-4 animate-spin" />
               <span className="text-sm">Carregando...</span>
             </div>
@@ -318,11 +296,12 @@ export default function Settings() {
                 <button
                   key={opt.value}
                   type="button"
+                  data-ocid={`settings.timeframe_${opt.value.toLowerCase()}_button`}
                   onClick={() => handleTimeframeChange(opt.value)}
                   className={`py-3 px-2 rounded-xl border-2 transition-all text-center ${
                     currentTimeframe === opt.value
-                      ? "border-amber-400 bg-amber-400/10 text-amber-400"
-                      : "border-white/10 bg-white/5 text-white/60 hover:border-white/30"
+                      ? "border-amber-400 bg-amber-50 text-amber-700"
+                      : "border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300"
                   }`}
                 >
                   <div className="text-lg font-bold">{opt.label}</div>
@@ -331,23 +310,23 @@ export default function Settings() {
               ))}
             </div>
           )}
-          <p className="text-xs text-white/30 mt-3">
+          <p className="text-xs text-gray-400 mt-3">
             Selecionado:{" "}
-            <span className="text-amber-400 font-semibold">
+            <span className="text-amber-600 font-semibold">
               {currentTimeframe}
             </span>
           </p>
         </div>
 
         {/* AI Sensitivity */}
-        <div className="bg-white/5 rounded-2xl p-5 border border-white/10">
+        <div className="bg-white/80 rounded-2xl p-5 border border-gray-200 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
-            <Zap className="w-5 h-5 text-cyan-400" />
-            <h2 className="text-base font-semibold text-white">
+            <Zap className="w-5 h-5 text-cyan-500" />
+            <h2 className="text-base font-semibold text-foreground">
               Sensibilidade da IA
             </h2>
           </div>
-          <p className="text-sm text-white/50 mb-4">
+          <p className="text-sm text-gray-500 mb-4">
             Ajuste a sensibilidade da análise ({sensitivity}%)
           </p>
           <input
@@ -356,23 +335,23 @@ export default function Settings() {
             max={100}
             value={sensitivity}
             onChange={(e) => setSensitivity(Number(e.target.value))}
-            className="w-full accent-cyan-400"
+            className="w-full accent-cyan-500"
           />
-          <div className="flex justify-between text-xs text-white/30 mt-1">
+          <div className="flex justify-between text-xs text-gray-400 mt-1">
             <span>Conservador</span>
             <span>Agressivo</span>
           </div>
         </div>
 
         {/* Daily Limit */}
-        <div className="bg-white/5 rounded-2xl p-5 border border-white/10">
+        <div className="bg-white/80 rounded-2xl p-5 border border-gray-200 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
-            <BarChart2 className="w-5 h-5 text-green-400" />
-            <h2 className="text-base font-semibold text-white">
+            <BarChart2 className="w-5 h-5 text-green-600" />
+            <h2 className="text-base font-semibold text-foreground">
               Limite Diário de Operações
             </h2>
           </div>
-          <p className="text-sm text-white/50 mb-4">
+          <p className="text-sm text-gray-500 mb-4">
             Máximo de operações por dia
           </p>
           <div className="grid grid-cols-4 gap-2">
@@ -380,11 +359,12 @@ export default function Settings() {
               <button
                 key={opt}
                 type="button"
+                data-ocid={`settings.limit_${opt}_button`}
                 onClick={() => setDailyLimit(opt)}
                 className={`py-3 rounded-xl border-2 transition-all text-center font-bold ${
                   dailyLimit === opt
-                    ? "border-green-400 bg-green-400/10 text-green-400"
-                    : "border-white/10 bg-white/5 text-white/60 hover:border-white/30"
+                    ? "border-green-400 bg-green-50 text-green-700"
+                    : "border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300"
                 }`}
               >
                 {opt}
@@ -394,24 +374,25 @@ export default function Settings() {
         </div>
 
         {/* Notifications */}
-        <div className="bg-white/5 rounded-2xl p-5 border border-white/10">
+        <div className="bg-white/80 rounded-2xl p-5 border border-gray-200 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Bell className="w-5 h-5 text-purple-400" />
+              <Bell className="w-5 h-5 text-purple-500" />
               <div>
-                <h2 className="text-base font-semibold text-white">
+                <h2 className="text-base font-semibold text-foreground">
                   Notificações de Sinal
                 </h2>
-                <p className="text-sm text-white/50">
+                <p className="text-sm text-gray-500">
                   Receber alertas de novos sinais
                 </p>
               </div>
             </div>
             <button
               type="button"
+              data-ocid="settings.notifications_toggle"
               onClick={() => setNotifications(!notifications)}
               className={`w-12 h-6 rounded-full transition-colors relative ${
-                notifications ? "bg-purple-500" : "bg-white/20"
+                notifications ? "bg-purple-500" : "bg-gray-300"
               }`}
             >
               <span
@@ -423,13 +404,15 @@ export default function Settings() {
           </div>
         </div>
 
-        {/* Language info */}
-        <div className="bg-white/5 rounded-2xl p-5 border border-white/10">
+        {/* Language */}
+        <div className="bg-white/80 rounded-2xl p-5 border border-gray-200 shadow-sm">
           <div className="flex items-center gap-2">
-            <Globe className="w-5 h-5 text-blue-400" />
+            <Globe className="w-5 h-5 text-blue-500" />
             <div>
-              <h2 className="text-base font-semibold text-white">Idioma</h2>
-              <p className="text-sm text-white/50">Português (Brasil)</p>
+              <h2 className="text-base font-semibold text-foreground">
+                Idioma
+              </h2>
+              <p className="text-sm text-gray-500">Português (Brasil)</p>
             </div>
           </div>
         </div>
@@ -440,7 +423,7 @@ export default function Settings() {
           data-ocid="settings.save_button"
           onClick={handleSave}
           disabled={updateSettingsMutation.isPending}
-          className="w-full py-4 rounded-2xl bg-white text-black font-bold text-base flex items-center justify-center gap-2 hover:bg-white/90 transition-colors disabled:opacity-50"
+          className="w-full py-4 rounded-2xl bg-gray-900 text-white font-bold text-base flex items-center justify-center gap-2 hover:bg-gray-700 transition-colors disabled:opacity-50 shadow-sm"
         >
           {updateSettingsMutation.isPending ? (
             <Loader2 className="w-5 h-5 animate-spin" />
@@ -455,8 +438,7 @@ export default function Settings() {
           type="button"
           data-ocid="settings.logout_button"
           onClick={handleLogout}
-          className="w-full py-4 rounded-2xl bg-transparent border border-white/15 text-white/50 font-medium text-base
-            flex items-center justify-center gap-2 hover:bg-white/5 hover:text-white/70 transition-colors"
+          className="w-full py-4 rounded-2xl bg-white/60 border border-gray-200 text-gray-500 font-medium text-base flex items-center justify-center gap-2 hover:bg-white hover:text-gray-700 transition-colors"
         >
           <LogOut className="w-5 h-5" />
           Sair da Conta

@@ -31,26 +31,27 @@
     --chart-5: 0.488 0.243 264.376;
   }
 
+  /* Tema amarelo limão — fundo yellow-lime com cards brancos/cinza */
   .dark {
-    --background: 0.145 0 0;
-    --foreground: 0.985 0 0;
-    --card: 0.205 0 0;
-    --card-foreground: 0.985 0 0;
-    --popover: 0.205 0 0;
-    --popover-foreground: 0.985 0 0;
-    --primary: 0.922 0 0;
-    --primary-foreground: 0.145 0 0;
-    --secondary: 0.269 0 0;
-    --secondary-foreground: 0.985 0 0;
-    --muted: 0.269 0 0;
-    --muted-foreground: 0.708 0 0;
-    --accent: 0.269 0 0;
-    --accent-foreground: 0.985 0 0;
+    --background: 0.91 0.22 103;
+    --foreground: 0.18 0.01 80;
+    --card: 0.98 0 0;
+    --card-foreground: 0.18 0.01 80;
+    --popover: 0.98 0 0;
+    --popover-foreground: 0.18 0.01 80;
+    --primary: 0.18 0.01 80;
+    --primary-foreground: 0.98 0 0;
+    --secondary: 0.92 0.04 100;
+    --secondary-foreground: 0.18 0.01 80;
+    --muted: 0.93 0.03 100;
+    --muted-foreground: 0.45 0.01 80;
+    --accent: 0.88 0.06 100;
+    --accent-foreground: 0.18 0.01 80;
     --destructive: 0.577 0.245 27.325;
     --destructive-foreground: 0.985 0 0;
-    --border: 0.269 0 0;
-    --input: 0.269 0 0;
-    --ring: 0.708 0 0;
+    --border: 0.82 0.04 100;
+    --input: 0.85 0.03 100;
+    --ring: 0.6 0.15 103;
     --chart-1: 0.646 0.222 142.495;
     --chart-2: 0.6 0.118 184.704;
     --chart-3: 0.769 0.188 70.08;
@@ -63,16 +64,17 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    background-color: oklch(0.91 0.22 103);
+    color: oklch(0.18 0.01 80);
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
 /* ── Processing bar styles ── */
 .processing-bar-active {
-  background: #ffffff;
-  box-shadow: 0 0 6px 1px rgba(255, 255, 255, 0.8), 0 0 14px 3px
-    rgba(255, 255, 255, 0.4), 0 0 28px 6px rgba(255, 255, 255, 0.15);
+  background: #333333;
+  box-shadow: 0 0 6px 1px rgba(0, 0, 0, 0.4), 0 0 14px 3px rgba(0, 0, 0, 0.2), 0
+    0 28px 6px rgba(0, 0, 0, 0.1);
   position: relative;
   overflow: hidden;
 }
@@ -87,16 +89,15 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.9) 50%,
+    rgba(255, 255, 255, 0.7) 50%,
     transparent 100%
   );
   animation: bar-shine 1.4s ease-in-out infinite;
 }
 
 .processing-bar-complete {
-  background: #ffffff;
-  box-shadow: 0 0 4px 1px rgba(255, 255, 255, 0.5), 0 0 10px 2px
-    rgba(255, 255, 255, 0.2);
+  background: #333333;
+  box-shadow: 0 0 4px 1px rgba(0, 0, 0, 0.3), 0 0 10px 2px rgba(0, 0, 0, 0.1);
 }
 
 @keyframes bar-shine {

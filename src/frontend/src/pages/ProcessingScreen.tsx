@@ -69,11 +69,9 @@ export default function ProcessingScreen() {
     setError(null);
     setIsChartDetectionError(false);
 
-    // ── Stage 0: Load images ──
     setCurrentStage(0);
     await delay(STAGES[0].duration);
 
-    // Read multi-timeframe images from sessionStorage
     const countStr = sessionStorage.getItem("chartImages_count");
     const count = countStr ? Number.parseInt(countStr, 10) : 0;
 
@@ -81,7 +79,6 @@ export default function ProcessingScreen() {
       [];
 
     if (count > 0) {
-      // Multi-timeframe flow
       const tfs: TimeframeKey[] = ["M1", "M3", "M5"];
       for (const tf of tfs) {
         const data = sessionStorage.getItem(`chartImage_${tf}`);
@@ -91,7 +88,6 @@ export default function ProcessingScreen() {
       }
     }
 
-    // Fallback to legacy single image
     if (imagesToProcess.length === 0) {
       const legacyData = sessionStorage.getItem("chartImage");
       if (legacyData?.startsWith("data:")) {
@@ -105,7 +101,6 @@ export default function ProcessingScreen() {
       return;
     }
 
-    // Convert first image to blob for backend save
     const firstImageFile = dataUrlToFile(
       imagesToProcess[0].dataUrl,
       "chart.png",
@@ -121,13 +116,10 @@ export default function ProcessingScreen() {
     }
 
     markComplete(0);
-
-    // ── Stage 1: Process data ──
     setCurrentStage(1);
     await delay(STAGES[1].duration);
     markComplete(1);
 
-    // ── Stage 2: Detect patterns (run analysis on all images) ──
     setCurrentStage(2);
 
     const analysisResults: Array<{
@@ -140,15 +132,13 @@ export default function ProcessingScreen() {
         imagesToProcess.length > 1 ? `Analisando ${timeframe}...` : "",
       );
       const imageFile = dataUrlToFile(dataUrl, `chart_${timeframe}.png`);
-      if (!imageFile) {
-        // Skip invalid images but don't crash
-        continue;
-      }
+      if (!imageFile) continue;
       try {
-        const result = await analyzeChartImage(imageFile);
+        // Pass the image's timeframe so analysis uses the correct one
+        const result = await analyzeChartImage(imageFile, timeframe);
         analysisResults.push({ timeframe, result });
       } catch {
-        // Skip failed analyses
+        // Skip failed
       }
     }
 
@@ -160,7 +150,6 @@ export default function ProcessingScreen() {
       return;
     }
 
-    // Check if all results are low-confidence NEUTRO
     const allNeutroLowConf = analysisResults.every(
       ({ result }) => result.sinal === "NEUTRO" && result.confianca < 35,
     );
@@ -173,7 +162,6 @@ export default function ProcessingScreen() {
     setProcessingLabel("");
     markComplete(2);
 
-    // ── Stage 3: Generate result ──
     setCurrentStage(3);
     await delay(STAGES[3].duration);
     markComplete(3);
@@ -188,7 +176,6 @@ export default function ProcessingScreen() {
       return;
     }
 
-    // ── Backend save: non-blocking, best-effort ──
     if (actor && imageBlob) {
       const primaryResult = analysisResults[0].result;
       Promise.resolve().then(async () => {
@@ -228,27 +215,27 @@ export default function ProcessingScreen() {
 
   if (isChartDetectionError) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-4">
-        <Card className="w-full max-w-md p-8 text-center space-y-6 bg-zinc-900 border-zinc-800">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md p-8 text-center space-y-6 bg-white border-gray-200 shadow-md">
           <div className="flex justify-center">
-            <div className="w-20 h-20 rounded-full bg-orange-950/40 flex items-center justify-center">
-              <ImageOff className="w-10 h-10 text-orange-400" />
+            <div className="w-20 h-20 rounded-full bg-orange-100 flex items-center justify-center">
+              <ImageOff className="w-10 h-10 text-orange-500" />
             </div>
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-white mb-3">
+            <h2 className="text-2xl font-bold text-foreground mb-3">
               Gráfico Não Identificado
             </h2>
-            <p className="text-zinc-400">
+            <p className="text-gray-500">
               Não foi possível identificar o gráfico corretamente
             </p>
           </div>
-          <div className="p-4 bg-orange-950/20 border border-orange-800/50 rounded-lg text-sm text-orange-200">
+          <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg text-sm text-orange-700">
             Certifique-se de que o print contém um gráfico de candles visível
             com velas coloridas (verde/vermelho).
           </div>
           <Button
-            className="w-full gap-2 bg-white text-black hover:bg-zinc-200"
+            className="w-full gap-2 bg-gray-900 text-white hover:bg-gray-700"
             onClick={() => navigate({ to: "/analyze" })}
           >
             <RefreshCw className="w-4 h-4" />
@@ -261,21 +248,21 @@ export default function ProcessingScreen() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-4">
-        <Card className="w-full max-w-md p-8 text-center space-y-6 bg-zinc-900 border-zinc-800">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md p-8 text-center space-y-6 bg-white border-gray-200 shadow-md">
           <div className="flex justify-center">
-            <div className="w-20 h-20 rounded-full bg-red-950/30 flex items-center justify-center">
-              <ImageOff className="w-10 h-10 text-red-400" />
+            <div className="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center">
+              <ImageOff className="w-10 h-10 text-red-500" />
             </div>
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white mb-2">
+            <h2 className="text-xl font-bold text-foreground mb-2">
               Erro na Análise
             </h2>
-            <p className="text-zinc-400 text-sm">{error}</p>
+            <p className="text-gray-500 text-sm">{error}</p>
           </div>
           <Button
-            className="w-full gap-2 bg-white text-black hover:bg-zinc-200"
+            className="w-full gap-2 bg-gray-900 text-white hover:bg-gray-700"
             onClick={() => navigate({ to: "/analyze" })}
           >
             <RefreshCw className="w-4 h-4" />
@@ -291,23 +278,23 @@ export default function ProcessingScreen() {
   );
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center px-4 py-8">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-8">
       <div className="mb-8 flex flex-col items-center">
         <img
           src="/assets/generated/app-icon.dim_512x512.png"
           alt="Logo"
           className="w-14 h-14 rounded-2xl mb-4 shadow-lg"
-          style={{ filter: "drop-shadow(0 0 12px rgba(255,255,255,0.18))" }}
+          style={{ filter: "drop-shadow(0 0 12px rgba(0,0,0,0.15))" }}
         />
-        <h1 className="text-white text-2xl font-bold tracking-tight">
+        <h1 className="text-foreground text-2xl font-bold tracking-tight">
           Analisando Gráfico
         </h1>
-        <p className="text-zinc-500 text-sm mt-1">
+        <p className="text-gray-500 text-sm mt-1">
           {processingLabel || "Processamento local com IA"}
         </p>
       </div>
 
-      <div className="w-full max-w-sm bg-zinc-900 rounded-2xl p-6 shadow-2xl border border-zinc-800">
+      <div className="w-full max-w-sm bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
         <div className="space-y-5">
           {STAGES.map((stage, idx) => (
             <ProcessingStage
@@ -322,15 +309,15 @@ export default function ProcessingScreen() {
           ))}
         </div>
 
-        <div className="mt-6 pt-4 border-t border-zinc-800 flex items-center justify-between">
-          <span className="text-zinc-500 text-xs">Progresso total</span>
-          <span className="text-white text-sm font-bold">
+        <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between">
+          <span className="text-gray-400 text-xs">Progresso total</span>
+          <span className="text-foreground text-sm font-bold">
             {overallProgress}%
           </span>
         </div>
       </div>
 
-      <p className="text-zinc-600 text-xs mt-8 text-center max-w-xs">
+      <p className="text-gray-400 text-xs mt-8 text-center max-w-xs">
         Análise realizada localmente. Não constitui recomendação financeira.
       </p>
     </div>
